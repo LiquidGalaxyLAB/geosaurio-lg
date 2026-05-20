@@ -1,0 +1,50 @@
+# Nombre interno del proyecto Flutter.
+# Este nombre se usa para identificar el paquete dentro del proyecto.
+name: geosaurio
+
+# Descripción breve del proyecto.
+# Puede aparecer en herramientas o metadatos del paquete.
+description: "A new Flutter project."
+
+# Indica que este paquete no se publicará en pub.dev.
+# Es útil para proyectos privados o aplicaciones finales.
+publish_to: 'none'
+
+# Versión de la aplicación.
+# El primer número es la versión visible para el usuario.
+# El número después del + es el número interno de compilación.
+version: 1.0.0+1
+
+# Configuración del entorno de Dart.
+# Indica qué versiones del SDK son compatibles con este proyecto.
+environment:
+  sdk: ">=3.11.0 <4.0.0"
+
+# Dependencias principales necesarias para que funcione la aplicación.
+dependencies:
+  # SDK principal de Flutter.
+  flutter:
+    sdk: flutter
+
+  # Paquete de iconos estilo iOS.
+  # Se suele incluir por defecto en proyectos Flutter.
+  cupertino_icons: ^1.0.8
+
+# Dependencias usadas solo durante el desarrollo o las pruebas.
+dev_dependencies:
+  # Herramientas de testing de Flutter.
+  flutter_test:
+    sdk: flutter
+
+  # Reglas de análisis y buenas prácticas para el código Dart/Flutter.
+  flutter_lints: ^6.0.0
+
+# Configuración específica de Flutter.
+flutter:
+  # Permite usar los iconos de Material Design en la aplicación.
+  uses-material-design: true
+
+  # Declara carpetas o archivos de recursos que la app podrá usar.
+  # En este caso se incluye toda la carpeta assets/images/.
+  assets:
+    - assets/images/
