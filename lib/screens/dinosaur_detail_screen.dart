@@ -1,33 +1,33 @@
-// Importa los componentes principales de Flutter para construir la interfaz visual.
+// Imports the main Flutter components used to build the visual interface.
 import 'package:flutter/material.dart';
 
-// Importa la pantalla de configuración de Liquid Galaxy.
+// Imports the Liquid Galaxy settings screen.
 import 'lg_settings_screen.dart';
 
-// Importa la pantalla de información/acerca de la aplicación.
+// Imports the application information/about screen.
 import 'about_screen.dart';
 
-// Pantalla que muestra la información detallada de un dinosaurio concreto.
+// Screen that displays detailed information about a specific dinosaur.
 class DinosaurDetailScreen extends StatelessWidget {
-  // Nombre del dinosaurio que se mostrará en esta pantalla.
+  // Name of the dinosaur displayed on this screen.
   final String dinosaurName;
 
-  // Constructor de la pantalla.
-  // Recibe obligatoriamente el nombre del dinosaurio.
+  // Screen constructor.
+  // Requires the dinosaur name.
   const DinosaurDetailScreen({
     super.key,
     required this.dinosaurName,
   });
 
-  // Indica si Liquid Galaxy está conectado.
-  // Actualmente está simulado y siempre devuelve false.
+  // Indicates whether Liquid Galaxy is connected.
+  // Currently simulated and always returns false.
   bool get isLgConnected => false;
 
-  // Devuelve la información del dinosaurio según su nombre.
-  // Si el dinosaurio existe en el mapa, devuelve sus datos.
-  // Si no existe, devuelve información genérica.
+  // Returns dinosaur information based on its name.
+  // If the dinosaur exists in the map, its data is returned.
+  // Otherwise, generic information is returned.
   Map<String, String> getDinosaurInfo(String name) {
-    // Base de datos local con información básica de varios dinosaurios.
+    // Local database containing basic dinosaur information.
     final data = {
       'Aragosaurus': {
         'period': 'Jurassic',
@@ -63,8 +63,8 @@ class DinosaurDetailScreen extends StatelessWidget {
       },
     };
 
-    // Devuelve los datos del dinosaurio seleccionado.
-    // Si no encuentra el nombre, devuelve valores por defecto.
+    // Returns the selected dinosaur data.
+    // If the dinosaur is not found, default values are returned.
     return data[name] ??
         {
           'period': 'Unknown',
@@ -76,28 +76,28 @@ class DinosaurDetailScreen extends StatelessWidget {
         };
   }
 
-  // Simula el envío de una acción a Liquid Galaxy.
-  // Recibe el contexto de Flutter y el nombre de la acción seleccionada.
+  // Simulates sending an action to Liquid Galaxy.
+  // Receives the Flutter context and the selected action name.
   void sendToLg(BuildContext context, String action) {
-    // Comprueba si Liquid Galaxy está conectado.
+    // Checks whether Liquid Galaxy is connected.
     final success = isLgConnected;
 
-    // Muestra un mensaje flotante indicando si el envío fue correcto o falló.
+    // Displays a floating message indicating success or failure.
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        // Contenido visual del mensaje.
+        // Visual content of the message.
         content: Row(
           children: [
-            // Icono de éxito o error según el estado de conexión.
+            // Success or error icon depending on connection status.
             Icon(
               success ? Icons.check_circle : Icons.error,
               color: Colors.white,
             ),
 
-            // Espacio horizontal entre el icono y el texto.
+            // Horizontal spacing between icon and text.
             const SizedBox(width: 10),
 
-            // Texto del mensaje.
+            // Message text.
             Expanded(
               child: Text(
                 success
@@ -108,57 +108,57 @@ class DinosaurDetailScreen extends StatelessWidget {
           ],
         ),
 
-        // Color del mensaje: verde si hay éxito, rojo si falla.
+        // SnackBar color: green for success, red for failure.
         backgroundColor: success ? Colors.green : Colors.red,
 
-        // Hace que el SnackBar aparezca flotante.
+        // Makes the SnackBar float above the interface.
         behavior: SnackBarBehavior.floating,
 
-        // Margen alrededor del SnackBar.
+        // Margin around the SnackBar.
         margin: const EdgeInsets.all(16),
 
-        // Bordes redondeados del SnackBar.
+        // Rounded corners for the SnackBar.
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
 
-        // Duración del mensaje en pantalla.
+        // Duration of the SnackBar on screen.
         duration: const Duration(seconds: 2),
       ),
     );
   }
 
-  // Construye toda la interfaz visual de la pantalla.
+  // Builds the complete visual interface of the screen.
   @override
   Widget build(BuildContext context) {
-    // Obtiene la información correspondiente al dinosaurio recibido.
+    // Retrieves the dinosaur information based on the received name.
     final info = getDinosaurInfo(dinosaurName);
 
-    // Estructura principal de la pantalla.
+    // Main screen structure.
     return Scaffold(
-      // Color de fondo de la pantalla.
+      // Background color of the screen.
       backgroundColor: const Color(0xFFF7F4EF),
 
-      // Menú lateral de navegación.
+      // Side navigation drawer.
       drawer: buildDrawer(context),
 
-      // Contenido principal de la pantalla.
+      // Main content of the screen.
       body: SafeArea(
-        // Builder permite usar un contexto válido para abrir el Drawer.
+        // Builder provides a valid context to open the Drawer.
         child: Builder(
           builder: (context) {
-            // Permite hacer scroll si el contenido no cabe en pantalla.
+            // Allows scrolling if the content exceeds screen size.
             return SingleChildScrollView(
-              // Margen horizontal del contenido.
+              // Horizontal padding for the content.
               padding: const EdgeInsets.symmetric(horizontal: 24),
 
-              // Organiza los elementos verticalmente.
+              // Organizes elements vertically.
               child: Column(
                 children: [
-                  // Fila superior con botón de menú y título.
+                  // Top row with menu button and title.
                   Row(
                     children: [
-                      // Botón para abrir el menú lateral.
+                      // Button to open the side menu.
                       IconButton(
                         icon: const Icon(Icons.menu, size: 32),
                         onPressed: () {
@@ -166,7 +166,7 @@ class DinosaurDetailScreen extends StatelessWidget {
                         },
                       ),
 
-                      // Título centrado de la pantalla.
+                      // Centered screen title.
                       const Expanded(
                         child: Text(
                           'Dinosaur Information',
@@ -178,24 +178,24 @@ class DinosaurDetailScreen extends StatelessWidget {
                         ),
                       ),
 
-                      // Espacio para equilibrar visualmente la fila.
+                      // Space to visually balance the row.
                       const SizedBox(width: 48),
                     ],
                   ),
 
-                  // Espacio vertical entre el título y la tarjeta principal.
+                  // Vertical spacing between title and main card.
                   const SizedBox(height: 20),
 
-                  // Tarjeta principal con imagen/icono, nombre y periodo.
+                  // Main card with image/icon, name, and period.
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
                     decoration: cardDecoration(),
 
-                    // Contenido de la tarjeta principal.
+                    // Main card content.
                     child: Column(
                       children: [
-                        // Contenedor del icono del dinosaurio.
+                        // Dinosaur icon container.
                         Container(
                           height: 180,
                           width: double.infinity,
@@ -204,7 +204,7 @@ class DinosaurDetailScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(18),
                           ),
 
-                          // Icono temporal que representa al dinosaurio.
+                          // Temporary icon representing the dinosaur.
                           child: const Icon(
                             Icons.pets,
                             size: 90,
@@ -212,10 +212,10 @@ class DinosaurDetailScreen extends StatelessWidget {
                           ),
                         ),
 
-                        // Espacio entre el icono y el nombre.
+                        // Spacing between icon and name.
                         const SizedBox(height: 18),
 
-                        // Nombre del dinosaurio.
+                        // Dinosaur name.
                         Text(
                           dinosaurName,
                           textAlign: TextAlign.center,
@@ -225,10 +225,10 @@ class DinosaurDetailScreen extends StatelessWidget {
                           ),
                         ),
 
-                        // Espacio entre el nombre y el periodo.
+                        // Spacing between name and period.
                         const SizedBox(height: 10),
 
-                        // Periodo del dinosaurio.
+                        // Dinosaur period.
                         Text(
                           info['period']!,
                           style: const TextStyle(
@@ -240,13 +240,13 @@ class DinosaurDetailScreen extends StatelessWidget {
                     ),
                   ),
 
-                  // Espacio entre la tarjeta principal y las tarjetas de datos.
+                  // Space between main card and info cards.
                   const SizedBox(height: 20),
 
-                  // Primera fila de tarjetas: dieta y altura.
+                  // First row of cards: diet and height.
                   Row(
                     children: [
-                      // Tarjeta de dieta.
+                      // Diet card.
                       Expanded(
                         child: infoCard(
                           icon: Icons.restaurant,
@@ -255,10 +255,10 @@ class DinosaurDetailScreen extends StatelessWidget {
                         ),
                       ),
 
-                      // Espacio horizontal entre tarjetas.
+                      // Horizontal spacing between cards.
                       const SizedBox(width: 12),
 
-                      // Tarjeta de altura.
+                      // Height card.
                       Expanded(
                         child: infoCard(
                           icon: Icons.height,
@@ -269,13 +269,13 @@ class DinosaurDetailScreen extends StatelessWidget {
                     ],
                   ),
 
-                  // Espacio entre filas de tarjetas.
+                  // Space between rows.
                   const SizedBox(height: 12),
 
-                  // Segunda fila de tarjetas: peso y periodo.
+                  // Second row of cards: weight and period.
                   Row(
                     children: [
-                      // Tarjeta de peso.
+                      // Weight card.
                       Expanded(
                         child: infoCard(
                           icon: Icons.monitor_weight,
@@ -284,10 +284,10 @@ class DinosaurDetailScreen extends StatelessWidget {
                         ),
                       ),
 
-                      // Espacio horizontal entre tarjetas.
+                      // Horizontal spacing between cards.
                       const SizedBox(width: 12),
 
-                      // Tarjeta de periodo.
+                      // Period card.
                       Expanded(
                         child: infoCard(
                           icon: Icons.timeline,
@@ -298,20 +298,20 @@ class DinosaurDetailScreen extends StatelessWidget {
                     ],
                   ),
 
-                  // Espacio antes de la descripción.
+                  // Space before description section.
                   const SizedBox(height: 22),
 
-                  // Tarjeta con la descripción del dinosaurio.
+                  // Card containing the dinosaur description.
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(18),
                     decoration: cardDecoration(),
 
-                    // Contenido de la descripción.
+                    // Description content.
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Título de la sección.
+                        // Section title.
                         const Text(
                           'Description',
                           style: TextStyle(
@@ -320,10 +320,10 @@ class DinosaurDetailScreen extends StatelessWidget {
                           ),
                         ),
 
-                        // Espacio entre el título y el texto.
+                        // Space between title and text.
                         const SizedBox(height: 12),
 
-                        // Texto descriptivo del dinosaurio.
+                        // Dinosaur description text.
                         Text(
                           info['description']!,
                           style: const TextStyle(
@@ -335,10 +335,10 @@ class DinosaurDetailScreen extends StatelessWidget {
                     ),
                   ),
 
-                  // Espacio antes de los botones de opciones.
+                  // Space before action buttons.
                   const SizedBox(height: 24),
 
-                  // Cuadrícula de botones con acciones para Liquid Galaxy.
+                  // Grid of Liquid Galaxy action buttons.
                   GridView.count(
                     crossAxisCount: 2,
                     shrinkWrap: true,
@@ -347,30 +347,30 @@ class DinosaurDetailScreen extends StatelessWidget {
                     mainAxisSpacing: 14,
                     childAspectRatio: 1.45,
 
-                    // Botones disponibles.
+                    // Available action buttons.
                     children: [
-                      // Botón para enviar la acción de narración con IA.
+                      // AI narration action button.
                       optionButton(
                         icon: Icons.menu_book,
                         text: 'AI Narration',
                         onTap: () => sendToLg(context, 'AI Narration'),
                       ),
 
-                      // Botón para enviar la acción de comparación.
+                      // Comparison action button.
                       optionButton(
                         icon: Icons.groups,
                         text: 'Comparison',
                         onTap: () => sendToLg(context, 'Comparison'),
                       ),
 
-                      // Botón para enviar la acción de transformación.
+                      // Transformation action button.
                       optionButton(
                         icon: Icons.sync,
                         text: 'Transformation',
                         onTap: () => sendToLg(context, 'Transformation'),
                       ),
 
-                      // Botón para enviar la acción del modelo 3D.
+                      // 3D model action button.
                       optionButton(
                         icon: Icons.view_in_ar,
                         text: '3D Model',
@@ -379,7 +379,7 @@ class DinosaurDetailScreen extends StatelessWidget {
                     ],
                   ),
 
-                  // Espacio final inferior.
+                  // Bottom spacing.
                   const SizedBox(height: 30),
                 ],
               ),
@@ -390,28 +390,28 @@ class DinosaurDetailScreen extends StatelessWidget {
     );
   }
 
-  // Crea una tarjeta pequeña de información.
-  // Se usa para mostrar datos como dieta, altura, peso o periodo.
+  // Creates a small information card.
+  // Used to display details such as diet, height, weight, or period.
   Widget infoCard({
     required IconData icon,
     required String title,
     required String value,
   }) {
-    // Contenedor principal de la tarjeta.
+    // Main card container.
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: cardDecoration(),
 
-      // Contenido vertical de la tarjeta.
+      // Vertical content layout.
       child: Column(
         children: [
-          // Icono representativo del dato.
+          // Icon representing the information.
           Icon(icon, color: Colors.brown, size: 28),
 
-          // Espacio entre el icono y el título.
+          // Space between icon and title.
           const SizedBox(height: 8),
 
-          // Título del dato.
+          // Information title.
           Text(
             title,
             style: const TextStyle(
@@ -420,10 +420,10 @@ class DinosaurDetailScreen extends StatelessWidget {
             ),
           ),
 
-          // Espacio entre el título y el valor.
+          // Space between title and value.
           const SizedBox(height: 6),
 
-          // Valor del dato.
+          // Information value.
           Text(
             value,
             textAlign: TextAlign.center,
@@ -434,13 +434,13 @@ class DinosaurDetailScreen extends StatelessWidget {
     );
   }
 
-  // Crea un botón de opción para ejecutar acciones relacionadas con Liquid Galaxy.
+  // Creates an option button for Liquid Galaxy actions.
   Widget optionButton({
     required IconData icon,
     required String text,
     required VoidCallback onTap,
   }) {
-    // Botón elevado con estilo personalizado.
+    // Elevated button with custom styling.
     return ElevatedButton(
       onPressed: onTap,
       style: ElevatedButton.styleFrom(
@@ -453,17 +453,17 @@ class DinosaurDetailScreen extends StatelessWidget {
         ),
       ),
 
-      // Contenido del botón.
+      // Button content.
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Icono del botón.
+          // Button icon.
           Icon(icon, size: 30),
 
-          // Espacio entre icono y texto.
+          // Space between icon and text.
           const SizedBox(height: 8),
 
-          // Texto del botón.
+          // Button text.
           Text(
             text,
             textAlign: TextAlign.center,
@@ -474,16 +474,16 @@ class DinosaurDetailScreen extends StatelessWidget {
     );
   }
 
-  // Devuelve una decoración común para las tarjetas de la pantalla.
+  // Returns a shared decoration style for cards.
   BoxDecoration cardDecoration() {
     return BoxDecoration(
-      // Color de fondo de las tarjetas.
+      // Background color.
       color: Colors.white,
 
-      // Bordes redondeados.
+      // Rounded corners.
       borderRadius: BorderRadius.circular(22),
 
-      // Sombra suave para dar efecto de elevación.
+      // Soft shadow effect.
       boxShadow: [
         BoxShadow(
           color: Colors.black.withOpacity(0.08),
@@ -494,45 +494,45 @@ class DinosaurDetailScreen extends StatelessWidget {
     );
   }
 
-  // Construye el menú lateral de navegación.
+  // Builds the side navigation drawer.
   Widget buildDrawer(BuildContext context) {
     return Drawer(
       backgroundColor: const Color(0xFFF7F4EF),
 
-      // Evita que el contenido del menú choque con la barra superior del dispositivo.
+      // Prevents content from overlapping device top areas.
       child: SafeArea(
-        // Organiza los elementos del menú verticalmente.
+        // Organizes drawer elements vertically.
         child: Column(
           children: [
-            // Espacio superior del menú.
+            // Top spacing.
             const SizedBox(height: 28),
 
-            // Icono principal del proyecto.
+            // Main project icon.
             const CircleAvatar(
               radius: 38,
               backgroundColor: Color(0xFF3E2A1F),
               child: Icon(Icons.public, size: 42, color: Colors.white),
             ),
 
-            // Espacio entre el icono y el nombre.
+            // Space between icon and title.
             const SizedBox(height: 12),
 
-            // Nombre de la aplicación.
+            // Application name.
             const Text(
               'GeoSaurio',
               style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
             ),
 
-            // Subtítulo de la aplicación.
+            // Application subtitle.
             const Text(
               'For Liquid Galaxy',
               style: TextStyle(color: Colors.black54),
             ),
 
-            // Espacio antes de las opciones del menú.
+            // Space before menu options.
             const SizedBox(height: 22),
 
-            // Opción para volver al menú principal.
+            // Main menu option.
             drawerTile(
               icon: Icons.home,
               title: 'Main Menu',
@@ -542,7 +542,7 @@ class DinosaurDetailScreen extends StatelessWidget {
               },
             ),
 
-            // Opción para abrir la pantalla de información.
+            // Information screen option.
             drawerTile(
               icon: Icons.info,
               title: 'Information',
@@ -557,7 +557,7 @@ class DinosaurDetailScreen extends StatelessWidget {
               },
             ),
 
-            // Opción para abrir la pantalla de configuración de Liquid Galaxy.
+            // Liquid Galaxy settings option.
             drawerTile(
               icon: Icons.settings,
               title: 'LG Settings',
@@ -572,10 +572,10 @@ class DinosaurDetailScreen extends StatelessWidget {
               },
             ),
 
-            // Empuja el estado de conexión hacia la parte inferior del menú.
+            // Pushes connection status to the bottom.
             const Spacer(),
 
-            // Contenedor que muestra el estado de conexión con Liquid Galaxy.
+            // Container displaying Liquid Galaxy connection status.
             Container(
               margin: const EdgeInsets.all(18),
               padding: const EdgeInsets.all(14),
@@ -584,20 +584,20 @@ class DinosaurDetailScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
               ),
 
-              // Fila con icono de estado y texto.
+              // Row with status icon and text.
               child: Row(
                 children: [
-                  // Círculo verde si está conectado, rojo si está desconectado.
+                  // Green circle if connected, red if disconnected.
                   Icon(
                     Icons.circle,
                     color: isLgConnected ? Colors.green : Colors.red,
                     size: 14,
                   ),
 
-                  // Espacio entre el círculo y el texto.
+                  // Space between icon and text.
                   const SizedBox(width: 10),
 
-                  // Texto del estado de conexión.
+                  // Connection status text.
                   Text(
                     isLgConnected ? 'LG connected' : 'LG disconnected',
                     style: const TextStyle(fontWeight: FontWeight.w500),
@@ -611,36 +611,36 @@ class DinosaurDetailScreen extends StatelessWidget {
     );
   }
 
-  // Crea una opción reutilizable del menú lateral.
+  // Creates a reusable drawer menu option.
   Widget drawerTile({
     required IconData icon,
     required String title,
     required VoidCallback onTap,
   }) {
-    // Añade margen alrededor de cada opción del menú.
+    // Adds spacing around each menu item.
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
 
-      // Material permite aplicar color, bordes y efecto visual al ListTile.
+      // Material widget allows styling and visual effects.
       child: Material(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
 
-        // Elemento de lista del menú.
+        // Drawer menu item.
         child: ListTile(
-          // Icono izquierdo.
+          // Left icon.
           leading: Icon(icon, color: Colors.brown),
 
-          // Texto principal de la opción.
+          // Main option text.
           title: Text(
             title,
             style: const TextStyle(fontWeight: FontWeight.w600),
           ),
 
-          // Icono derecho indicando navegación.
+          // Right navigation icon.
           trailing: const Icon(Icons.chevron_right, size: 20),
 
-          // Acción al pulsar la opción.
+          // Action when tapping the option.
           onTap: onTap,
         ),
       ),

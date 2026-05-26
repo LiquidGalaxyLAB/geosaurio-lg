@@ -1,46 +1,46 @@
-// Importa los widgets principales de Flutter.
+// Imports the main Flutter widgets.
 import 'package:flutter/material.dart';
 
-// Importa la pantalla de detalle del dinosaurio.
+// Imports the dinosaur detail screen.
 import 'dinosaur_detail_screen.dart';
 
-// Importa la pantalla de configuración de Liquid Galaxy.
+// Imports the Liquid Galaxy settings screen.
 import 'lg_settings_screen.dart';
 
-// Importa la pantalla de información de la app.
+// Imports the application information screen.
 import 'about_screen.dart';
 
-// Pantalla principal de la aplicación.
+// Main application screen.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
-  // Crea el estado asociado a HomeScreen.
+  // Creates the state associated with HomeScreen.
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-// Enum que define los periodos geológicos disponibles.
+// Enum that defines the available geological periods.
 enum GeologicalPeriod {
   triassic,
   jurassic,
   cretaceous,
 }
 
-// Estado de la pantalla principal.
+// State class for the main screen.
 class _HomeScreenState extends State<HomeScreen> {
-  // Periodo geológico seleccionado inicialmente.
+  // Initially selected geological period.
   GeologicalPeriod selectedPeriod = GeologicalPeriod.jurassic;
 
-  // Variables que guardan la selección actual del usuario.
+  // Variables storing the current user selection.
   String? selectedContinent;
   String? selectedCountry;
   String? expandedRegion;
   String? selectedDinosaur;
 
-  // Controlador del campo de búsqueda.
+  // Search field controller.
   final TextEditingController searchController = TextEditingController();
 
-  // Lista de países agrupados por continente.
+  // List of countries grouped by continent.
   final Map<String, List<String>> countriesByContinent = {
     'Africa': ['Algeria', 'Egypt', 'Morocco', 'South Africa', 'Tunisia'],
     'Antarctica': ['Antarctica'],
@@ -60,19 +60,24 @@ class _HomeScreenState extends State<HomeScreen> {
     'South America': ['Argentina', 'Brazil', 'Chile', 'Colombia', 'Peru'],
   };
 
-  // Lista de regiones y dinosaurios disponibles por país.
+  // List of regions and dinosaurs available by country.
   final Map<String, Map<String, List<String>>> regionsByCountry = {
     'Spain': {
       'Aragón': ['Aragosaurus'],
       'Catalonia': ['Pararhabdodon', 'Tamarro'],
       'Asturias': ['Asturceratops'],
       'Castilla y León': ['Demandasaurus'],
-      'La Rioja': ['Riojavenatrix', 'Demandasaurus', 'Turiasaurus', 'Iguanodon'],
+      'La Rioja': [
+        'Riojavenatrix',
+        'Demandasaurus',
+        'Turiasaurus',
+        'Iguanodon',
+      ],
       'Valencia': ['Morelladon'],
     },
   };
 
-  // Relaciona cada dinosaurio con su periodo geológico.
+  // Maps each dinosaur to its geological period.
   final Map<String, GeologicalPeriod> dinosaurPeriods = {
     'Aragosaurus': GeologicalPeriod.jurassic,
     'Turiasaurus': GeologicalPeriod.jurassic,
@@ -85,36 +90,39 @@ class _HomeScreenState extends State<HomeScreen> {
     'Morelladon': GeologicalPeriod.cretaceous,
   };
 
-  // Devuelve la lista de continentes disponibles.
+  // Returns the list of available continents.
   List<String> get continents => countriesByContinent.keys.toList();
 
-  // Libera el controlador de búsqueda cuando la pantalla se destruye.
+  // Releases the search controller when the screen is destroyed.
   @override
   void dispose() {
     searchController.dispose();
     super.dispose();
   }
 
-  // Convierte el enum del periodo geológico en texto visible.
+  // Converts the geological period enum into visible text.
   String getPeriodName(GeologicalPeriod period) {
     switch (period) {
       case GeologicalPeriod.triassic:
         return 'Triassic';
+
       case GeologicalPeriod.jurassic:
         return 'Jurassic';
+
       case GeologicalPeriod.cretaceous:
         return 'Cretaceous';
     }
   }
 
-  // Comprueba si un dinosaurio pertenece al periodo seleccionado.
+  // Checks whether a dinosaur belongs to the selected period.
   bool dinosaurMatchesSelectedPeriod(String dinosaur) {
     return dinosaurPeriods[dinosaur] == selectedPeriod;
   }
 
-  // Filtra países según el texto introducido en el buscador.
+  // Filters countries according to the search text.
   List<String> filteredCountries(List<String> countries) {
     final query = searchController.text.toLowerCase();
+
     if (query.isEmpty) return countries;
 
     return countries.where((country) {
@@ -122,9 +130,12 @@ class _HomeScreenState extends State<HomeScreen> {
     }).toList();
   }
 
-  // Filtra regiones según el texto introducido en el buscador.
-  Map<String, List<String>> filteredRegions(Map<String, List<String>> regions) {
+  // Filters regions according to the search text.
+  Map<String, List<String>> filteredRegions(
+      Map<String, List<String>> regions,
+      ) {
     final query = searchController.text.toLowerCase();
+
     if (query.isEmpty) return regions;
 
     return Map.fromEntries(
@@ -134,7 +145,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Selecciona un país y limpia selecciones anteriores.
+  // Selects a country and clears previous selections.
   void selectCountry(String country) {
     setState(() {
       selectedCountry = country;
@@ -144,7 +155,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  // Vuelve desde la vista de regiones a la lista de países.
+  // Returns from the regions view to the countries list.
   void goBackToCountries() {
     setState(() {
       selectedCountry = null;
@@ -154,59 +165,69 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  // Muestra un mensaje indicando que se ha enviado algo a Liquid Galaxy.
+  // Displays a message indicating something was sent to Liquid Galaxy.
   void showLgMessage() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: const Row(
           children: [
             Icon(Icons.check_circle, color: Colors.white),
+
             SizedBox(width: 10),
+
             Expanded(
               child: Text('Sent correctly to Liquid Galaxy'),
             ),
           ],
         ),
+
         backgroundColor: Colors.green,
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.all(16),
+
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(16)),
         ),
+
         duration: const Duration(seconds: 2),
       ),
     );
   }
 
-  // Construye la pantalla principal.
+  // Builds the main screen.
   @override
   Widget build(BuildContext context) {
-    // Obtiene los países del continente seleccionado.
+    // Retrieves the countries for the selected continent.
     final List<String> countries = selectedContinent == null
         ? []
         : countriesByContinent[selectedContinent] ?? [];
 
-    // Obtiene las regiones del país seleccionado.
+    // Retrieves the regions for the selected country.
     final Map<String, List<String>> regions =
-    selectedCountry == null ? {} : regionsByCountry[selectedCountry] ?? {};
+    selectedCountry == null
+        ? {}
+        : regionsByCountry[selectedCountry] ?? {};
 
-    // Estructura principal de la pantalla.
+    // Main screen structure.
     return Scaffold(
       backgroundColor: const Color(0xFFF7F4EF),
+
       drawer: buildDrawer(),
+
       body: SafeArea(
         child: Builder(
           builder: (context) {
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 22),
+
               child: Column(
                 children: [
-                  // Barra superior con menú y título.
+                  // Top bar with menu and title.
                   buildTopBar(context),
 
                   const SizedBox(height: 18),
 
-                  // Título que cambia según la selección actual.
+                  // Dynamic title depending on current selection.
                   Text(
                     selectedCountry ?? 'Select geological period',
                     style: const TextStyle(
@@ -218,13 +239,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   const SizedBox(height: 18),
 
-                  // Selector de periodo geológico.
+                  // Geological period selector.
                   buildPeriodSelector(),
 
                   const SizedBox(height: 24),
 
-                  // Si no hay país seleccionado, muestra continentes y países.
-                  // Si hay país seleccionado, muestra regiones y dinosaurios.
+                  // If no country is selected, show continents and countries.
+                  // Otherwise, show regions and dinosaurs.
                   if (selectedCountry == null)
                     buildContinentSelector(countries)
                   else
@@ -238,16 +259,17 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Construye la barra superior de la pantalla.
+  // Builds the top bar of the screen.
   Widget buildTopBar(BuildContext context) {
     return Row(
       children: [
-        // Botón para abrir el menú lateral.
+        // Button used to open the side drawer.
         Container(
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(14),
           ),
+
           child: IconButton(
             icon: const Icon(Icons.menu, size: 30),
             onPressed: () => Scaffold.of(context).openDrawer(),
@@ -256,7 +278,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
         const Spacer(),
 
-        // Título de la aplicación.
+        // Application title.
         const Text(
           'GeoSaurio',
           style: TextStyle(
@@ -267,43 +289,50 @@ class _HomeScreenState extends State<HomeScreen> {
 
         const Spacer(),
 
-        // Espacio para equilibrar visualmente la barra.
+        // Space to visually balance the bar.
         const SizedBox(width: 48),
       ],
     );
   }
 
-  // Construye los tres botones de periodos geológicos.
+  // Builds the geological period selector buttons.
   Widget buildPeriodSelector() {
     return Row(
       children: [
         Expanded(child: periodButton(GeologicalPeriod.triassic)),
+
         const SizedBox(width: 8),
+
         Expanded(child: periodButton(GeologicalPeriod.jurassic)),
+
         const SizedBox(width: 8),
+
         Expanded(child: periodButton(GeologicalPeriod.cretaceous)),
       ],
     );
   }
 
-  // Construye la vista para seleccionar continente y país.
+  // Builds the continent and country selection view.
   Widget buildContinentSelector(List<String> countries) {
-    // Países visibles después de aplicar el filtro de búsqueda.
+    // Countries visible after applying the search filter.
     final visibleCountries = filteredCountries(countries);
 
     return Expanded(
       child: Column(
         children: [
-          // Texto principal de la sección.
+          // Main section title.
           const Text(
             'Select a continent to explore',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+            ),
           ),
 
           const SizedBox(height: 16),
 
-          // Caja de búsqueda para continentes o países.
+          // Search box for continents or countries.
           searchBox(
             hintText: selectedContinent == null
                 ? 'Search continent...'
@@ -312,19 +341,19 @@ class _HomeScreenState extends State<HomeScreen> {
 
           const SizedBox(height: 16),
 
-          // Dropdown para elegir continente.
+          // Dropdown used to select a continent.
           continentDropdown(),
 
           const SizedBox(height: 18),
 
-          // Contenedor con la lista de países.
+          // Container with the list of countries.
           Expanded(
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: cardDecoration(),
 
-              // Muestra mensaje vacío, mensaje de búsqueda o lista de países.
+              // Displays empty message, search message, or country list.
               child: selectedContinent == null
                   ? emptyMessage(
                 icon: Icons.public,
@@ -337,17 +366,22 @@ class _HomeScreenState extends State<HomeScreen> {
               )
                   : Scrollbar(
                 thumbVisibility: true,
+
                 child: ListView.separated(
                   itemCount: visibleCountries.length,
+
                   separatorBuilder: (_, __) =>
                   const SizedBox(height: 10),
+
                   itemBuilder: (context, index) {
-                    final country = visibleCountries[index];
+                    final country =
+                    visibleCountries[index];
 
                     return niceListTile(
                       title: country,
                       icon: Icons.flag,
-                      onTap: () => selectCountry(country),
+                      onTap: () =>
+                          selectCountry(country),
                     );
                   },
                 ),
@@ -361,143 +395,185 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Construye la vista de regiones y dinosaurios de un país.
-  Widget buildRegionSelector(Map<String, List<String>> regions) {
-    // Regiones visibles después de aplicar el filtro de búsqueda.
+  // Builds the regions and dinosaurs view for a country.
+  Widget buildRegionSelector(
+      Map<String, List<String>> regions,
+      ) {
+    // Regions visible after applying the search filter.
     final visibleRegions = filteredRegions(regions);
 
     return Expanded(
       child: Column(
         children: [
-          // Buscador de regiones.
+          // Region search box.
           searchBox(hintText: 'Search regions...'),
 
           const SizedBox(height: 18),
 
-          // Contenedor con la lista de regiones.
+          // Container with the list of regions.
           Expanded(
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: cardDecoration(),
 
-              // Si no hay regiones, muestra un mensaje.
+              // Displays a message if no regions are available.
               child: visibleRegions.isEmpty
                   ? emptyMessage(
                 icon: Icons.map_outlined,
-                text: 'No regions available\nfor this country yet',
+                text:
+                'No regions available\nfor this country yet',
               )
                   : Scrollbar(
                 thumbVisibility: true,
 
-                // Lista de regiones disponibles.
+                // List of available regions.
                 child: ListView(
                   children: visibleRegions.entries.map((entry) {
                     final regionName = entry.key;
 
-                    // Filtra los dinosaurios de la región según el periodo seleccionado.
+                    // Filters dinosaurs according to the selected period.
                     final dinosaurs = entry.value
-                        .where((dinosaur) =>
-                        dinosaurMatchesSelectedPeriod(dinosaur))
+                        .where(
+                          (dinosaur) =>
+                          dinosaurMatchesSelectedPeriod(
+                            dinosaur,
+                          ),
+                    )
                         .toList();
 
-                    // Si no hay dinosaurios para ese periodo, no muestra la región.
+                    // If no dinosaurs exist for the selected period,
+                    // the region is not displayed.
                     if (dinosaurs.isEmpty) {
                       return const SizedBox.shrink();
                     }
 
-                    // Comprueba si la región está desplegada.
-                    final isExpanded = expandedRegion == regionName;
+                    // Checks whether the region is expanded.
+                    final isExpanded =
+                        expandedRegion == regionName;
 
-                    // Tarjeta de región.
+                    // Region card.
                     return Container(
-                      margin: const EdgeInsets.only(bottom: 10),
+                      margin:
+                      const EdgeInsets.only(bottom: 10),
+
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.black12),
+                        borderRadius:
+                        BorderRadius.circular(16),
+
+                        border: Border.all(
+                          color: Colors.black12,
+                        ),
                       ),
+
                       child: Column(
                         children: [
-                          // Cabecera de la región.
+                          // Region header.
                           ListTile(
-                            leading: const Icon(Icons.place),
+                            leading:
+                            const Icon(Icons.place),
+
                             title: Text(
                               regionName,
                               style: const TextStyle(
                                 fontSize: 19,
-                                fontWeight: FontWeight.w600,
+                                fontWeight:
+                                FontWeight.w600,
                               ),
                             ),
+
                             trailing: Icon(
                               isExpanded
-                                  ? Icons.keyboard_arrow_up
-                                  : Icons.keyboard_arrow_down,
+                                  ? Icons
+                                  .keyboard_arrow_up
+                                  : Icons
+                                  .keyboard_arrow_down,
                             ),
+
                             onTap: () {
                               setState(() {
-                                expandedRegion =
-                                isExpanded ? null : regionName;
+                                expandedRegion = isExpanded
+                                    ? null
+                                    : regionName;
+
                                 selectedDinosaur = null;
                               });
                             },
                           ),
 
-                          // Si la región está desplegada, muestra sus dinosaurios.
+                          // If expanded, display the region dinosaurs.
                           if (isExpanded)
                             ...dinosaurs.map((dinosaur) {
                               final isSelected =
-                                  selectedDinosaur == dinosaur;
+                                  selectedDinosaur ==
+                                      dinosaur;
 
                               return Column(
                                 children: [
-                                  // Dinosaurio dentro de la región.
+                                  // Dinosaur item.
                                   ListTile(
                                     title: Text(
                                       dinosaur,
-                                      textAlign: TextAlign.center,
-                                      style: const TextStyle(
+                                      textAlign:
+                                      TextAlign.center,
+                                      style:
+                                      const TextStyle(
                                         fontSize: 20,
-                                        fontWeight: FontWeight.w500,
+                                        fontWeight:
+                                        FontWeight.w500,
                                       ),
                                     ),
+
                                     onTap: () {
                                       setState(() {
-                                        selectedDinosaur = dinosaur;
+                                        selectedDinosaur =
+                                            dinosaur;
                                       });
                                     },
                                   ),
 
-                                  // Si el dinosaurio está seleccionado, muestra botones de acción.
+                                  // If selected, display action buttons.
                                   if (isSelected)
                                     Padding(
-                                      padding: const EdgeInsets.only(
+                                      padding:
+                                      const EdgeInsets.only(
                                         bottom: 14,
                                       ),
+
                                       child: Row(
                                         mainAxisAlignment:
-                                        MainAxisAlignment.center,
+                                        MainAxisAlignment
+                                            .center,
+
                                         children: [
-                                          // Botón para enviar acción de rotación a LG.
+                                          // Rotate action button.
                                           lgActionButton(
-                                            icon: Icons.rotate_right,
+                                            icon: Icons
+                                                .rotate_right,
                                             text: 'Rotate',
                                             onTap: () {
                                               showLgMessage();
                                             },
                                           ),
 
-                                          const SizedBox(width: 12),
+                                          const SizedBox(
+                                            width: 12,
+                                          ),
 
-                                          // Botón para abrir la pantalla de detalle del dinosaurio.
+                                          // Opens the dinosaur detail screen.
                                           lgActionButton(
-                                            icon: Icons.info,
+                                            icon:
+                                            Icons.info,
                                             text: 'About',
                                             onTap: () {
                                               Navigator.push(
                                                 context,
                                                 MaterialPageRoute(
-                                                  builder: (context) =>
+                                                  builder:
+                                                      (
+                                                      context,
+                                                      ) =>
                                                       DinosaurDetailScreen(
                                                         dinosaurName:
                                                         dinosaur,
@@ -523,10 +599,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
           const SizedBox(height: 12),
 
-          // Botón para volver a la lista de países.
+          // Button to return to the countries list.
           ElevatedButton.icon(
             onPressed: goBackToCountries,
+
             icon: const Icon(Icons.arrow_back),
+
             label: const Text('Back to countries'),
           ),
 
@@ -536,30 +614,34 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Crea una caja de búsqueda reutilizable.
+  // Creates a reusable search box.
   Widget searchBox({required String hintText}) {
     return Container(
       height: 48,
+
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.black12),
       ),
 
-      // Campo de texto para buscar.
+      // Text field used for searching.
       child: TextField(
         controller: searchController,
+
         onChanged: (_) => setState(() {}),
+
         decoration: InputDecoration(
           hintText: hintText,
           border: InputBorder.none,
           prefixIcon: const Icon(Icons.search),
 
-          // Si hay texto escrito, muestra botón para limpiar.
+          // If text exists, show a clear button.
           suffixIcon: searchController.text.isEmpty
               ? null
               : IconButton(
             icon: const Icon(Icons.close),
+
             onPressed: () {
               setState(() {
                 searchController.clear();
@@ -571,29 +653,35 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Crea el desplegable para seleccionar continente.
+  // Creates the dropdown used to select a continent.
   Widget continentDropdown() {
     return Container(
       height: 50,
       padding: const EdgeInsets.symmetric(horizontal: 14),
+
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.black12),
       ),
 
-      // Oculta la línea inferior por defecto del DropdownButton.
+      // Hides the default underline of the DropdownButton.
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: selectedContinent,
           isExpanded: true,
+
           hint: const Text(
             'Select Continent',
-            style: TextStyle(fontSize: 17, color: Colors.black),
+            style: TextStyle(
+              fontSize: 17,
+              color: Colors.black,
+            ),
           ),
+
           icon: const Icon(Icons.keyboard_arrow_down),
 
-          // Crea las opciones del desplegable a partir de la lista de continentes.
+          // Creates dropdown options from the continent list.
           items: continents.map((continent) {
             return DropdownMenuItem(
               value: continent,
@@ -601,7 +689,7 @@ class _HomeScreenState extends State<HomeScreen> {
             );
           }).toList(),
 
-          // Cambia el continente seleccionado y limpia selecciones anteriores.
+          // Updates the selected continent and clears previous selections.
           onChanged: (value) {
             setState(() {
               selectedContinent = value;
@@ -616,7 +704,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Crea una fila visual reutilizable para listas.
+  // Creates a reusable visual list tile.
   Widget niceListTile({
     required String title,
     required IconData icon,
@@ -625,8 +713,10 @@ class _HomeScreenState extends State<HomeScreen> {
     return Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(16),
+
       child: ListTile(
         leading: Icon(icon, color: Colors.brown),
+
         title: Text(
           title,
           style: const TextStyle(
@@ -634,13 +724,15 @@ class _HomeScreenState extends State<HomeScreen> {
             fontWeight: FontWeight.w500,
           ),
         ),
+
         trailing: const Icon(Icons.chevron_right),
+
         onTap: onTap,
       ),
     );
   }
 
-  // Muestra un mensaje centrado cuando no hay contenido disponible.
+  // Displays a centered message when no content is available.
   Widget emptyMessage({
     required IconData icon,
     required String text,
@@ -648,20 +740,26 @@ class _HomeScreenState extends State<HomeScreen> {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
+
         children: [
           Icon(icon, size: 55, color: Colors.black38),
+
           const SizedBox(height: 14),
+
           Text(
             text,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 19, color: Colors.black54),
+            style: const TextStyle(
+              fontSize: 19,
+              color: Colors.black54,
+            ),
           ),
         ],
       ),
     );
   }
 
-  // Decoración reutilizable para tarjetas y contenedores principales.
+  // Shared decoration used for cards and main containers.
   BoxDecoration cardDecoration() {
     return BoxDecoration(
       color: const Color(0xFFE8E1D8),
@@ -669,7 +767,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Botón reutilizable para acciones relacionadas con Liquid Galaxy.
+  // Reusable button for Liquid Galaxy actions.
   Widget lgActionButton({
     required IconData icon,
     required String text,
@@ -677,8 +775,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }) {
     return ElevatedButton.icon(
       onPressed: onTap,
+
       icon: Icon(icon, size: 20),
+
       label: Text(text),
+
       style: ElevatedButton.styleFrom(
         backgroundColor: const Color(0xFF3E2A1F),
         foregroundColor: Colors.white,
@@ -686,13 +787,13 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Crea un botón para seleccionar un periodo geológico.
+  // Creates a button for selecting a geological period.
   Widget periodButton(GeologicalPeriod period) {
-    // Comprueba si este periodo es el que está seleccionado.
+    // Checks whether this period is currently selected.
     final bool isSelected = selectedPeriod == period;
 
     return GestureDetector(
-      // Cambia el periodo seleccionado al pulsar.
+      // Updates the selected period when tapped.
       onTap: () {
         setState(() {
           selectedPeriod = period;
@@ -701,21 +802,30 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       },
 
-      // Contenedor visual del botón.
+      // Visual container for the button.
       child: Container(
         height: 45,
         alignment: Alignment.center,
+
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF3E2A1F) : Colors.white,
+          color: isSelected
+              ? const Color(0xFF3E2A1F)
+              : Colors.white,
+
           borderRadius: BorderRadius.circular(22),
+
           border: Border.all(color: Colors.black12),
         ),
 
-        // Nombre del periodo.
+        // Geological period name.
         child: Text(
           getPeriodName(period),
+
           style: TextStyle(
-            color: isSelected ? Colors.white : Colors.black,
+            color: isSelected
+                ? Colors.white
+                : Colors.black,
+
             fontSize: 13,
             fontWeight: FontWeight.w600,
           ),
@@ -724,32 +834,40 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Construye el menú lateral de la aplicación.
+  // Builds the side navigation drawer.
   Widget buildDrawer() {
     return Drawer(
       backgroundColor: const Color(0xFFF7F4EF),
+
       child: SafeArea(
         child: Column(
           children: [
-            // Espacio superior del menú.
+            // Top spacing.
             const SizedBox(height: 28),
 
-            // Icono principal del proyecto.
+            // Main project icon.
             const CircleAvatar(
               radius: 38,
               backgroundColor: Color(0xFF3E2A1F),
-              child: Icon(Icons.public, size: 42, color: Colors.white),
+              child: Icon(
+                Icons.public,
+                size: 42,
+                color: Colors.white,
+              ),
             ),
 
             const SizedBox(height: 12),
 
-            // Nombre de la aplicación.
+            // Application name.
             const Text(
               'GeoSaurio',
-              style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 25,
+                fontWeight: FontWeight.bold,
+              ),
             ),
 
-            // Subtítulo de la aplicación.
+            // Application subtitle.
             const Text(
               'For Liquid Galaxy',
               style: TextStyle(color: Colors.black54),
@@ -757,45 +875,49 @@ class _HomeScreenState extends State<HomeScreen> {
 
             const SizedBox(height: 22),
 
-            // Opción para volver/cerrar el menú principal.
+            // Main menu option.
             drawerTile(
               icon: Icons.home,
               title: 'Main Menu',
               onTap: () => Navigator.pop(context),
             ),
 
-            // Opción para abrir la pantalla de información.
+            // Information screen option.
             drawerTile(
               icon: Icons.info,
               title: 'Information',
               onTap: () {
                 Navigator.pop(context);
+
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const AboutScreen(),
+                    builder: (context) =>
+                    const AboutScreen(),
                   ),
                 );
               },
             ),
 
-            // Opción para abrir la configuración de Liquid Galaxy.
+            // Liquid Galaxy settings option.
             drawerTile(
               icon: Icons.settings,
               title: 'LG Settings',
               onTap: () {
                 Navigator.pop(context);
+
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const LgSettingsScreen(),
+                    builder: (context) =>
+                    const LgSettingsScreen(),
                   ),
                 );
               },
             ),
 
-            // Opción de idioma.
-            // Actualmente solo imprime un mensaje en consola.
+            // Language option.
+            // Currently only prints a message to the console.
             drawerTile(
               icon: Icons.language,
               title: 'Language',
@@ -804,24 +926,34 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
 
-            // Empuja el estado de conexión hacia abajo.
+            // Pushes the connection indicator to the bottom.
             const Spacer(),
 
-            // Indicador visual de conexión con Liquid Galaxy.
+            // Visual Liquid Galaxy connection indicator.
             Container(
               margin: const EdgeInsets.all(18),
               padding: const EdgeInsets.all(14),
+
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
               ),
+
               child: const Row(
                 children: [
-                  Icon(Icons.circle, color: Colors.red, size: 14),
+                  Icon(
+                    Icons.circle,
+                    color: Colors.red,
+                    size: 14,
+                  ),
+
                   SizedBox(width: 10),
+
                   Text(
                     'LG disconnected',
-                    style: TextStyle(fontWeight: FontWeight.w500),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ],
               ),
@@ -832,24 +964,37 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Crea una opción reutilizable del menú lateral.
+  // Creates a reusable drawer menu option.
   Widget drawerTile({
     required IconData icon,
     required String title,
     required VoidCallback onTap,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 14,
+        vertical: 4,
+      ),
+
       child: Material(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
+
         child: ListTile(
           leading: Icon(icon, color: Colors.brown),
+
           title: Text(
             title,
-            style: const TextStyle(fontWeight: FontWeight.w600),
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+            ),
           ),
-          trailing: const Icon(Icons.chevron_right, size: 20),
+
+          trailing: const Icon(
+            Icons.chevron_right,
+            size: 20,
+          ),
+
           onTap: onTap,
         ),
       ),

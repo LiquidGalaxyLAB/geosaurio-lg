@@ -1,44 +1,44 @@
-// Importa los widgets principales de Flutter.
+// Imports the main Flutter widgets.
 import 'package:flutter/material.dart';
 
-// Importa la pantalla de conexión con Liquid Galaxy.
+// Imports the Liquid Galaxy connection screen.
 import 'connection_screen.dart';
 
-// Pantalla de configuración de Liquid Galaxy.
+// Liquid Galaxy settings screen.
 class LgSettingsScreen extends StatelessWidget {
-  // Constructor constante de la pantalla.
+  // Constant constructor for the screen.
   const LgSettingsScreen({super.key});
 
-  // Indica si Liquid Galaxy está conectado o no.
-  // Actualmente está simulado y siempre devuelve false.
-  // Si lo cambias a true, las acciones mostrarán mensaje de éxito.
+  // Indicates whether Liquid Galaxy is connected.
+  // Currently simulated and always returns false.
+  // If changed to true, the actions will display success messages.
   bool get isLgConnected => false;
 
-  // Gestiona las acciones de Liquid Galaxy.
-  // Si no está conectado, muestra una alerta de error.
-  // Si está conectado, muestra una alerta de éxito.
+  // Handles Liquid Galaxy actions.
+  // If not connected, shows an error alert.
+  // If connected, shows a success alert.
   void handleLgAction(BuildContext context, String actionName) {
-    // Guarda el estado actual de conexión.
+    // Stores the current connection status.
     final bool success = isLgConnected;
 
-    // Muestra una ventana emergente con el resultado de la acción.
+    // Displays a dialog with the result of the action.
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          // Título de la alerta según el estado de conexión.
+          // Alert title depending on the connection status.
           title: Text(
             success ? 'Action completed' : 'Action unavailable',
           ),
 
-          // Mensaje de la alerta según el estado de conexión.
+          // Alert message depending on the connection status.
           content: Text(
             success
                 ? '$actionName completed successfully.'
                 : 'Unable to perform this action. Liquid Galaxy is not connected.',
           ),
 
-          // Botón para cerrar la alerta.
+          // Button used to close the dialog.
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -50,32 +50,32 @@ class LgSettingsScreen extends StatelessWidget {
     );
   }
 
-  // Construye la interfaz visual de la pantalla.
+  // Builds the visual interface of the screen.
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Color de fondo de la pantalla.
+      // Background color of the screen.
       backgroundColor: const Color(0xFFF7F4EF),
 
-      // Contenido principal dentro de SafeArea.
+      // Main content protected by SafeArea.
       body: SafeArea(
         child: Padding(
-          // Margen horizontal de la pantalla.
+          // Horizontal screen padding.
           padding: const EdgeInsets.symmetric(horizontal: 24),
 
-          // Organiza los elementos verticalmente.
+          // Organizes elements vertically.
           child: Column(
             children: [
-              // Barra superior con botón de volver y título.
+              // Top bar with back button and title.
               Row(
                 children: [
-                  // Botón para volver a la pantalla anterior.
+                  // Button used to return to the previous screen.
                   IconButton(
                     icon: const Icon(Icons.arrow_back),
                     onPressed: () => Navigator.pop(context),
                   ),
 
-                  // Título centrado de la pantalla.
+                  // Centered screen title.
                   const Expanded(
                     child: Text(
                       'LG Settings',
@@ -87,22 +87,23 @@ class LgSettingsScreen extends StatelessWidget {
                     ),
                   ),
 
-                  // Espacio para equilibrar visualmente la fila.
+                  // Space to visually balance the row.
                   const SizedBox(width: 48),
                 ],
               ),
 
-              // Espacio entre la barra superior y la tarjeta principal.
+              // Space between the top bar and the main card.
               const SizedBox(height: 20),
 
-              // Tarjeta informativa del panel de control.
+              // Informational control panel card.
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(18),
                 decoration: cardDecoration(),
+
                 child: const Column(
                   children: [
-                    // Icono principal de Liquid Galaxy.
+                    // Main Liquid Galaxy icon.
                     Icon(
                       Icons.public,
                       size: 60,
@@ -111,7 +112,7 @@ class LgSettingsScreen extends StatelessWidget {
 
                     SizedBox(height: 10),
 
-                    // Título de la tarjeta.
+                    // Card title.
                     Text(
                       'Liquid Galaxy Control Panel',
                       textAlign: TextAlign.center,
@@ -123,7 +124,7 @@ class LgSettingsScreen extends StatelessWidget {
 
                     SizedBox(height: 8),
 
-                    // Descripción breve del panel.
+                    // Short panel description.
                     Text(
                       'Manage system actions and connection settings.',
                       textAlign: TextAlign.center,
@@ -133,16 +134,16 @@ class LgSettingsScreen extends StatelessWidget {
                 ),
               ),
 
-              // Espacio entre la tarjeta y la lista de botones.
+              // Space between the card and the button list.
               const SizedBox(height: 24),
 
-              // Lista de acciones disponibles para Liquid Galaxy.
+              // List of available Liquid Galaxy actions.
               Expanded(
                 child: ListView(
                   children: [
-                    // Botón para reiniciar Liquid Galaxy.
-                    // Si no está conectado, muestra alerta de error.
-                    // Si está conectado, muestra alerta de éxito.
+                    // Button used to reboot Liquid Galaxy.
+                    // Displays an error if disconnected.
+                    // Displays success if connected.
                     lgButton(
                       icon: Icons.restart_alt,
                       text: 'Reboot',
@@ -152,7 +153,7 @@ class LgSettingsScreen extends StatelessWidget {
                       },
                     ),
 
-                    // Botón para relanzar Liquid Galaxy.
+                    // Button used to relaunch Liquid Galaxy.
                     lgButton(
                       icon: Icons.refresh,
                       text: 'Relaunch',
@@ -162,7 +163,7 @@ class LgSettingsScreen extends StatelessWidget {
                       },
                     ),
 
-                    // Botón para apagar Liquid Galaxy.
+                    // Button used to shut down Liquid Galaxy.
                     lgButton(
                       icon: Icons.power_settings_new,
                       text: 'Shutdown',
@@ -172,28 +173,35 @@ class LgSettingsScreen extends StatelessWidget {
                       },
                     ),
 
-                    // Botón para mostrar u ocultar los logos.
+                    // Button used to show or hide logos.
                     lgButton(
                       icon: Icons.visibility,
                       text: 'Show / Hide Logos',
                       color: Colors.purple,
                       onTap: () {
-                        handleLgAction(context, 'Show / Hide Logos');
+                        handleLgAction(
+                          context,
+                          'Show / Hide Logos',
+                        );
                       },
                     ),
 
-                    // Botón para limpiar archivos KML.
+                    // Button used to clean KML files.
                     lgButton(
                       icon: Icons.cleaning_services,
                       text: "Clean KML's",
                       color: Colors.cyan,
                       onTap: () {
-                        handleLgAction(context, "Clean KML's");
+                        handleLgAction(
+                          context,
+                          "Clean KML's",
+                        );
                       },
                     ),
 
-                    // Botón para abrir la pantalla de conexión.
-                    // Este botón no muestra alerta porque sirve para configurar la conexión.
+                    // Button used to open the connection screen.
+                    // This button does not display alerts because
+                    // it is used to configure the connection.
                     lgButton(
                       icon: Icons.wifi,
                       text: 'Connection',
@@ -202,7 +210,8 @@ class LgSettingsScreen extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const ConnectionScreen(),
+                            builder: (context) =>
+                            const ConnectionScreen(),
                           ),
                         );
                       },
@@ -217,16 +226,16 @@ class LgSettingsScreen extends StatelessWidget {
     );
   }
 
-  // Decoración reutilizable para tarjetas.
+  // Reusable decoration for cards.
   static BoxDecoration cardDecoration() {
     return BoxDecoration(
-      // Fondo blanco de la tarjeta.
+      // White card background.
       color: Colors.white,
 
-      // Bordes redondeados.
+      // Rounded corners.
       borderRadius: BorderRadius.circular(22),
 
-      // Sombra suave para dar profundidad.
+      // Soft shadow for depth effect.
       boxShadow: [
         BoxShadow(
           color: Colors.black.withOpacity(0.08),
@@ -237,7 +246,7 @@ class LgSettingsScreen extends StatelessWidget {
     );
   }
 
-  // Crea un botón reutilizable para acciones de Liquid Galaxy.
+  // Creates a reusable button for Liquid Galaxy actions.
   Widget lgButton({
     required IconData icon,
     required String text,
@@ -245,44 +254,45 @@ class LgSettingsScreen extends StatelessWidget {
     required VoidCallback onTap,
   }) {
     return Container(
-      // Separación inferior entre botones.
+      // Bottom spacing between buttons.
       margin: const EdgeInsets.only(bottom: 14),
 
-      // Altura fija del botón.
+      // Fixed button height.
       height: 62,
 
-      // Botón principal.
+      // Main button widget.
       child: ElevatedButton(
         onPressed: onTap,
+
         style: ElevatedButton.styleFrom(
-          // Color de fondo personalizado.
+          // Custom background color.
           backgroundColor: color,
 
-          // Color del texto e iconos.
+          // Text and icon color.
           foregroundColor: Colors.white,
 
-          // Elevación del botón.
+          // Button elevation.
           elevation: 5,
 
-          // Sombra basada en el color del botón.
+          // Shadow based on button color.
           shadowColor: color.withOpacity(0.4),
 
-          // Bordes redondeados.
+          // Rounded corners.
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
         ),
 
-        // Contenido interno del botón.
+        // Internal button content.
         child: Row(
           children: [
-            // Icono izquierdo del botón.
+            // Left button icon.
             Icon(icon, size: 26),
 
-            // Espacio entre icono y texto.
+            // Space between icon and text.
             const SizedBox(width: 16),
 
-            // Texto del botón.
+            // Button text.
             Expanded(
               child: Text(
                 text,
@@ -293,7 +303,7 @@ class LgSettingsScreen extends StatelessWidget {
               ),
             ),
 
-            // Icono derecho que indica navegación o acción.
+            // Right icon indicating navigation or action.
             const Icon(Icons.chevron_right),
           ],
         ),

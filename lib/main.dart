@@ -1,41 +1,41 @@
-// Importa los widgets y herramientas principales de Flutter con Material Design.
+// Imports the main Flutter widgets and Material Design tools.
 import 'package:flutter/material.dart';
 
-// Importa la pantalla inicial de la aplicación, en este caso la SplashScreen.
+// Imports the initial application screen, in this case SplashScreen.
 import 'package:geosaurio/screens/splash_screen.dart';
 
-// Función principal de la aplicación.
-// Es el primer método que se ejecuta cuando se abre la app.
+// Main function of the application.
+// This is the first method executed when the app opens.
 void main() {
-  // Inicia la aplicación y carga el widget principal GeoSaurioApp.
+  // Starts the application and loads the main GeoSaurioApp widget.
   runApp(const GeoSaurioApp());
 }
 
-// Widget principal de la aplicación.
-// Define la configuración general de GeoSaurio.
+// Main widget of the application.
+// Defines the general configuration of GeoSaurio.
 class GeoSaurioApp extends StatelessWidget {
-  // Constructor constante del widget principal.
+  // Constant constructor for the main widget.
   const GeoSaurioApp({super.key});
 
-  // Construye la estructura principal de la aplicación.
+  // Builds the main structure of the application.
   @override
   Widget build(BuildContext context) {
-    // MaterialApp configura la app completa:
-    // título, tema, pantalla inicial y opciones generales.
+    // MaterialApp configures the whole app:
+    // title, theme, initial screen, and general options.
     return MaterialApp(
-      // Nombre de la aplicación.
+      // Application name.
       title: 'GeoSaurio',
 
-      // Oculta la etiqueta roja de "DEBUG" que aparece en la esquina superior.
+      // Hides the red "DEBUG" banner shown in the top corner.
       debugShowCheckedModeBanner: false,
 
-      // Define el tema visual general de la app.
+      // Defines the general visual theme of the app.
       theme: ThemeData(
-        // Activa Material Design 3 para usar estilos modernos.
+        // Enables Material Design 3 to use modern styles.
         useMaterial3: true,
       ),
 
-      // Pantalla inicial que se muestra al abrir la aplicación.
+      // Initial screen displayed when the application opens.
       home: const SplashScreen(),
     );
   }

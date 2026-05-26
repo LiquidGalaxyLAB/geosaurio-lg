@@ -1,35 +1,35 @@
-// Importa la librería async de Dart.
-// Se usa aquí para utilizar Timer y ejecutar una acción después de un tiempo.
+// Imports Dart async library.
+// Used here to work with Timer and execute actions after a delay.
 import 'dart:async';
 
-// Importa los widgets principales de Flutter con Material Design.
+// Imports the main Flutter Material Design widgets.
 import 'package:flutter/material.dart';
 
-// Importa la pantalla principal a la que se navegará después del splash.
+// Imports the main screen displayed after the splash screen.
 import 'home_screen.dart';
 
-// Pantalla de carga inicial de la aplicación.
+// Initial loading screen of the application.
 class SplashScreen extends StatefulWidget {
-  // Constructor constante de la pantalla splash.
+  // Constant constructor for the splash screen.
   const SplashScreen({super.key});
 
-  // Crea el estado asociado a esta pantalla.
+  // Creates the state associated with this screen.
   @override
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-// Estado de la pantalla SplashScreen.
-// Aquí se controla la lógica temporal y la interfaz.
+// State class for SplashScreen.
+// Controls the temporary logic and visual interface.
 class _SplashScreenState extends State<SplashScreen> {
-  // Método que se ejecuta una sola vez cuando la pantalla se crea.
+  // Method executed once when the screen is created.
   @override
   void initState() {
     super.initState();
 
-    // Espera 1 segundo y después cambia automáticamente a la pantalla HomeScreen.
+    // Waits 1 second and automatically navigates to HomeScreen.
     Timer(const Duration(seconds: 1), () {
-      // Reemplaza la pantalla actual por HomeScreen.
-      // Así el usuario no puede volver al splash con el botón atrás.
+      // Replaces the current screen with HomeScreen.
+      // This prevents the user from returning to the splash screen.
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -39,25 +39,29 @@ class _SplashScreenState extends State<SplashScreen> {
     });
   }
 
-  // Widget reutilizable para mostrar cajas que representan logos.
-  // Recibe el texto del logo y permite personalizar ancho y alto.
-  Widget logoBox(String text, {double width = 130, double height = 70}) {
-    // Contenedor visual del logo.
+  // Reusable widget used to display boxes representing logos.
+  // Receives the logo text and allows custom width and height.
+  Widget logoBox(
+      String text, {
+        double width = 130,
+        double height = 70,
+      }) {
+    // Visual logo container.
     return Container(
       width: width,
       height: height,
 
-      // Decoración de la caja del logo.
+      // Logo box decoration.
       decoration: BoxDecoration(
         color: Colors.grey.shade300,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.black12),
       ),
 
-      // Centra el texto dentro del contenedor.
+      // Centers the text inside the container.
       alignment: Alignment.center,
 
-      // Texto que aparece dentro de la caja del logo.
+      // Text displayed inside the logo box.
       child: Text(
         text,
         textAlign: TextAlign.center,
@@ -66,37 +70,37 @@ class _SplashScreenState extends State<SplashScreen> {
     );
   }
 
-  // Construye la interfaz visual de la pantalla splash.
+  // Builds the visual interface of the splash screen.
   @override
   Widget build(BuildContext context) {
-    // Estructura principal de la pantalla.
+    // Main screen structure.
     return Scaffold(
-      // Fondo blanco de la pantalla.
+      // White background color.
       backgroundColor: Colors.white,
 
-      // SafeArea evita que el contenido se solape con la barra de estado o zonas del sistema.
+      // SafeArea prevents content overlap with system UI areas.
       body: SafeArea(
-        // Padding añade margen horizontal al contenido.
+        // Padding adds horizontal spacing around the content.
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32),
 
-          // Organiza todos los elementos verticalmente.
+          // Organizes all elements vertically.
           child: Column(
             children: [
-              // Espacio flexible superior para centrar visualmente el contenido principal.
+              // Top flexible space used to visually center the content.
               const Spacer(flex: 2),
 
-              // Logo principal de GeoSaurio.
+              // Main GeoSaurio logo.
               logoBox(
                 'GeoSaurio\nLogo',
                 width: 150,
                 height: 150,
               ),
 
-              // Espacio entre el logo principal y el título.
+              // Space between logo and title.
               const SizedBox(height: 20),
 
-              // Nombre principal de la aplicación.
+              // Main application title.
               const Text(
                 'GEOSAURIO',
                 style: TextStyle(
@@ -106,10 +110,10 @@ class _SplashScreenState extends State<SplashScreen> {
                 ),
               ),
 
-              // Espacio entre el título y el subtítulo.
+              // Space between title and subtitle.
               const SizedBox(height: 12),
 
-              // Subtítulo de la aplicación.
+              // Application subtitle.
               const Text(
                 'FOR LIQUID GALAXY',
                 style: TextStyle(
@@ -118,43 +122,49 @@ class _SplashScreenState extends State<SplashScreen> {
                 ),
               ),
 
-              // Espacio flexible entre el bloque principal y los logos inferiores.
+              // Flexible space between the main section and partner logos.
               const Spacer(flex: 2),
 
-              // Primera fila de logos colaboradores.
+              // First row of collaborator logos.
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment:
+                MainAxisAlignment.spaceBetween,
                 children: [
-                  // Logo de Google Summer of Code.
+                  // Google Summer of Code logo.
                   logoBox('GSoC\nLogo'),
 
-                  // Logo de Liquid Galaxy.
+                  // Liquid Galaxy logo.
                   logoBox('Liquid Galaxy\nLogo'),
                 ],
               ),
 
-              // Espacio entre filas de logos.
+              // Space between logo rows.
               const SizedBox(height: 35),
 
-              // Segunda fila de logos colaboradores.
+              // Second row of collaborator logos.
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment:
+                MainAxisAlignment.spaceBetween,
                 children: [
-                  // Logo de Liquid Galaxy Europe.
+                  // Liquid Galaxy Europe logo.
                   logoBox('LG EU\nLogo'),
 
-                  // Logo del laboratorio de Liquid Galaxy.
+                  // Liquid Galaxy Lab logo.
                   logoBox('LG Lab\nLogo'),
                 ],
               ),
 
-              // Espacio entre la segunda fila y el último logo.
+              // Space between the second row and the last logo.
               const SizedBox(height: 35),
 
-              // Logo inferior de AOTIC.
-              logoBox('AOTIC\nLogo', width: 150, height: 70),
+              // Bottom AOTIC logo.
+              logoBox(
+                'AOTIC\nLogo',
+                width: 150,
+                height: 70,
+              ),
 
-              // Espacio flexible inferior para equilibrar la pantalla.
+              // Bottom flexible space to balance the layout.
               const Spacer(flex: 3),
             ],
           ),

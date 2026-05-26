@@ -1,43 +1,43 @@
-// Importa los widgets principales de Flutter.
+// Imports the main Flutter widgets.
 import 'package:flutter/material.dart';
 
-// Importa la pantalla principal de la app.
+// Imports the main application screen.
 import 'home_screen.dart';
 
-// Importa la pantalla de configuración de Liquid Galaxy.
+// Imports the Liquid Galaxy settings screen.
 import 'lg_settings_screen.dart';
 
-// Pantalla de información sobre el proyecto.
+// Information screen about the project.
 class AboutScreen extends StatelessWidget {
-  // Constructor constante de la pantalla.
+  // Constant constructor for the screen.
   const AboutScreen({super.key});
 
-  // Construye la interfaz visual de la pantalla.
+  // Builds the visual interface of the screen.
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Color de fondo de la pantalla.
+      // Background color of the screen.
       backgroundColor: const Color(0xFFF7F4EF),
 
-      // Menú lateral de navegación.
+      // Side navigation drawer.
       drawer: buildDrawer(context),
 
-      // Contenido principal protegido por SafeArea.
+      // Main content protected by SafeArea.
       body: SafeArea(
         child: Builder(
           builder: (context) {
-            // Permite hacer scroll si el contenido no cabe en pantalla.
+            // Allows scrolling if the content exceeds the screen size.
             return SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
                 children: [
-                  // Espacio superior.
+                  // Top spacing.
                   const SizedBox(height: 10),
 
-                  // Barra superior con botón de menú y título.
+                  // Top bar with menu button and title.
                   Row(
                     children: [
-                      // Botón que abre el menú lateral.
+                      // Button that opens the side drawer.
                       IconButton(
                         icon: const Icon(Icons.menu, size: 32),
                         onPressed: () {
@@ -45,7 +45,7 @@ class AboutScreen extends StatelessWidget {
                         },
                       ),
 
-                      // Título centrado de la pantalla.
+                      // Centered screen title.
                       const Expanded(
                         child: Text(
                           'Information',
@@ -57,24 +57,24 @@ class AboutScreen extends StatelessWidget {
                         ),
                       ),
 
-                      // Espacio para equilibrar visualmente la fila.
+                      // Space to visually balance the row.
                       const SizedBox(width: 48),
                     ],
                   ),
 
-                  // Espacio entre la barra superior y el logo.
+                  // Space between top bar and logo.
                   const SizedBox(height: 20),
 
-                  // Logo de GeoSaurio cargado desde assets.
+                  // GeoSaurio logo loaded from assets.
                   Image.asset(
                     'assets/images/GeoSaurio.png',
                     height: 140,
                   ),
 
-                  // Espacio entre el logo y el título.
+                  // Space between logo and title.
                   const SizedBox(height: 12),
 
-                  // Nombre de la aplicación.
+                  // Application name.
                   const Text(
                     'GEOSAURIO',
                     style: TextStyle(
@@ -83,49 +83,55 @@ class AboutScreen extends StatelessWidget {
                     ),
                   ),
 
-                  // Espacio entre el título y el subtítulo.
+                  // Space between title and subtitle.
                   const SizedBox(height: 6),
 
-                  // Subtítulo de la aplicación.
+                  // Application subtitle.
                   const Text('FOR LIQUID GALAXY'),
 
-                  // Espacio antes de la sección del autor.
+                  // Space before author section.
                   const SizedBox(height: 30),
 
-                  // Título de la sección Autor.
+                  // Author section title.
                   const Text(
                     'Author',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
 
-                  // Espacio entre título y nombre del autor.
+                  // Space between title and author name.
                   const SizedBox(height: 10),
 
-                  // Nombre del autor del proyecto.
+                  // Project author name.
                   const Text(
                     'Josep Miquel Sert Esteban',
                     textAlign: TextAlign.center,
                   ),
 
-                  // Espacio antes de la descripción del proyecto.
+                  // Space before project description section.
                   const SizedBox(height: 30),
 
-                  // Título de la sección de descripción.
+                  // Project description section title.
                   const Text(
                     'Project Description',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
 
-                  // Espacio entre título y descripción.
+                  // Space between title and description.
                   const SizedBox(height: 12),
 
-                  // Texto descriptivo del proyecto.
+                  // Project description text.
                   const Text(
                     'GeoSaurio allows users to explore dinosaurs using the Liquid Galaxy platform.',
                     textAlign: TextAlign.center,
                   ),
 
-                  // Espacio inferior final.
+                  // Final bottom spacing.
                   const SizedBox(height: 30),
                 ],
               ),
@@ -136,30 +142,33 @@ class AboutScreen extends StatelessWidget {
     );
   }
 
-  // Construye el menú lateral de esta pantalla.
+  // Builds the side navigation drawer for this screen.
   Widget buildDrawer(BuildContext context) {
     return Drawer(
       child: SafeArea(
         child: Column(
           children: [
-            // Espacio superior del menú.
+            // Top spacing inside the drawer.
             const SizedBox(height: 25),
 
-            // Título del menú.
+            // Drawer title.
             const Text(
               'GeoSaurio',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
             ),
 
-            // Espacio entre el título y las opciones.
+            // Space between title and menu options.
             const SizedBox(height: 25),
 
-            // Opción para volver al menú principal.
+            // Option to return to the main menu.
             ListTile(
               leading: const Icon(Icons.home),
               title: const Text('Main Menu'),
               onTap: () {
-                // Navega a HomeScreen y elimina las pantallas anteriores.
+                // Navigates to HomeScreen and removes previous screens.
                 Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute(
                     builder: (context) => const HomeScreen(),
@@ -169,15 +178,15 @@ class AboutScreen extends StatelessWidget {
               },
             ),
 
-            // Opción para abrir la pantalla de configuración de Liquid Galaxy.
+            // Option to open the Liquid Galaxy settings screen.
             ListTile(
               leading: const Icon(Icons.settings),
               title: const Text('LG Settings'),
               onTap: () {
-                // Cierra el drawer actual.
+                // Closes the current drawer.
                 Navigator.pop(context);
 
-                // Abre la pantalla de configuración.
+                // Opens the settings screen.
                 Navigator.push(
                   context,
                   MaterialPageRoute(
