@@ -1,38 +1,54 @@
-// Imports the main Flutter material components.
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-// Screen used to configure and manage the Liquid Galaxy connection.
+import '../services/LGService.dart';
+
 class ConnectionScreen extends StatefulWidget {
-  // Constant constructor for the screen.
   const ConnectionScreen({super.key});
 
   @override
   State<ConnectionScreen> createState() => _ConnectionScreenState();
 }
 
-// State class for the ConnectionScreen.
 class _ConnectionScreenState extends State<ConnectionScreen> {
-  // Controller for the IP address input field.
   final TextEditingController ipController = TextEditingController();
-
-  // Controller for the username input field.
-  final TextEditingController userController = TextEditingController();
-
-  // Controller for the password input field.
+  final TextEditingController userController = TextEditingController(text: 'lg');
   final TextEditingController passwordController =
-  TextEditingController();
-
-  // Controller for the port input field.
-  final TextEditingController portController = TextEditingController();
-
-  // Controller for the number of screens input field.
+  TextEditingController(text: 'lqgalaxy');
+  final TextEditingController portController = TextEditingController(text: '22');
   final TextEditingController screensController =
-  TextEditingController();
+  TextEditingController(text: '5');
 
-  // Indicates whether the connection to Liquid Galaxy is active.
-  bool isConnected = false;
+  bool isConnecting = false;
 
-  // Releases all controllers when the screen is destroyed.
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedSettings();
+  }
+
+  Future<void> _loadSavedSettings() async {
+    final model = await LgConnectionModel.loadFromPreferences();
+
+    if (!mounted) return;
+
+    setState(() {
+      ipController.text = model.ip;
+      userController.text = model.username;
+      passwordController.text = model.password;
+      portController.text = model.port.toString();
+      screensController.text = model.screens.toString();
+    });
+
+    context.read<LgService>().updateConnectionSettings(
+      ip: model.ip,
+      port: model.port,
+      username: model.username,
+      password: model.password,
+      screens: model.screens,
+    );
+  }
+
   @override
   void dispose() {
     ipController.dispose();
@@ -43,61 +59,92 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
     super.dispose();
   }
 
-  // Simulates the connection process to Liquid Galaxy.
-  void connectToLg() {
-    // Updates the connection state based on whether all fields are filled.
-    setState(() {
-      isConnected = ipController.text.isNotEmpty &&
-          userController.text.isNotEmpty &&
-          passwordController.text.isNotEmpty &&
-          portController.text.isNotEmpty &&
-          screensController.text.isNotEmpty;
-    });
-
-    // Displays a SnackBar with the connection result.
+  void snack(String message, {bool success = true}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          isConnected
-              ? 'Connected to Liquid Galaxy'
-              : 'Please fill all connection fields',
-        ),
-
-        // Green if connected, red otherwise.
-        backgroundColor: isConnected ? Colors.green : Colors.red,
-
-        // Floating style for the SnackBar.
+        content: Text(message),
+        backgroundColor: success ? Colors.green : Colors.red,
         behavior: SnackBarBehavior.floating,
       ),
     );
   }
 
-  // Builds the visual interface of the screen.
+  int parseInt(String value, int fallback) {
+    return int.tryParse(value.trim()) ?? fallback;
+  }
+
+  LgConnectionModel buildModel() {
+    return LgConnectionModel(
+      ip: ipController.text.trim(),
+      username: userController.text.trim(),
+      password: passwordController.text,
+      port: parseInt(portController.text, 22),
+      screens: parseInt(screensController.text, 5),
+    );
+  }
+
+  Future<void> applySettings() async {
+    final model = buildModel();
+    await model.saveToPreferences();
+
+    context.read<LgService>().updateConnectionSettings(
+      ip: model.ip,
+      port: model.port,
+      username: model.username,
+      password: model.password,
+      screens: model.screens,
+    );
+  }
+
+  Future<void> connectToLg() async {
+    if (ipController.text.trim().isEmpty ||
+        userController.text.trim().isEmpty ||
+        passwordController.text.isEmpty ||
+        portController.text.trim().isEmpty ||
+        screensController.text.trim().isEmpty) {
+      snack('Please fill all connection fields', success: false);
+      return;
+    }
+
+    setState(() => isConnecting = true);
+
+    await applySettings();
+
+    final connected = await context.read<LgService>().connectToLG() ?? false;
+
+    if (!mounted) return;
+
+    setState(() => isConnecting = false);
+
+    snack(
+      connected ? 'Connected to Liquid Galaxy' : 'Could not connect to LG',
+      success: connected,
+    );
+  }
+
+  Future<void> disconnectLg() async {
+    context.read<LgService>().disconnect();
+    snack('Disconnected from Liquid Galaxy');
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      // Background color of the screen.
-      backgroundColor: const Color(0xFFF7F4EF),
+    final lgService = context.watch<LgService>();
+    final isConnected = lgService.isConnected;
 
-      // Main content protected by SafeArea.
+    return Scaffold(
+      backgroundColor: const Color(0xFFF7F4EF),
       body: SafeArea(
         child: SingleChildScrollView(
-          // Horizontal padding around the content.
           padding: const EdgeInsets.symmetric(horizontal: 24),
-
-          // Organizes the content vertically.
           child: Column(
             children: [
-              // Top row with back button and title.
               Row(
                 children: [
-                  // Back navigation button.
                   IconButton(
                     icon: const Icon(Icons.arrow_back),
                     onPressed: () => Navigator.pop(context),
                   ),
-
-                  // Centered screen title.
                   const Expanded(
                     child: Text(
                       'Connection',
@@ -108,49 +155,30 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
                       ),
                     ),
                   ),
-
-                  // Space to visually balance the row.
                   const SizedBox(width: 48),
                 ],
               ),
-
-              // Space below the top bar.
               const SizedBox(height: 20),
-
-              // Connection status card.
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(18),
                 decoration: cardDecoration(),
-
-                // Card content.
                 child: Column(
                   children: [
-                    // Connection status icon.
                     Icon(
                       isConnected ? Icons.wifi : Icons.wifi_off,
                       size: 58,
                       color: isConnected ? Colors.green : Colors.red,
                     ),
-
-                    // Space between icon and text.
                     const SizedBox(height: 10),
-
-                    // Connection status text.
                     Text(
-                      isConnected
-                          ? 'LG Connected'
-                          : 'LG Disconnected',
+                      isConnected ? 'LG Connected' : 'LG Disconnected',
                       style: const TextStyle(
                         fontSize: 21,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-
-                    // Space between title and description.
                     const SizedBox(height: 6),
-
-                    // Connection description text.
                     const Text(
                       'Configure the Liquid Galaxy master machine connection.',
                       textAlign: TextAlign.center,
@@ -159,36 +187,26 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
                   ],
                 ),
               ),
-
-              // Space before the configuration fields.
               const SizedBox(height: 24),
-
-              // IP address configuration field.
               configField(
                 label: 'IP Address',
                 icon: Icons.computer,
                 controller: ipController,
                 hint: '192.168.1.100',
               ),
-
-              // Username configuration field.
               configField(
                 label: 'Username',
                 icon: Icons.person,
                 controller: userController,
                 hint: 'lg',
               ),
-
-              // Password configuration field.
               configField(
                 label: 'Password',
                 icon: Icons.lock,
                 controller: passwordController,
-                hint: 'password',
+                hint: 'lqgalaxy',
                 obscure: true,
               ),
-
-              // Port configuration field.
               configField(
                 label: 'Port',
                 icon: Icons.settings_ethernet,
@@ -196,8 +214,6 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
                 hint: '22',
                 keyboardType: TextInputType.number,
               ),
-
-              // Number of screens configuration field.
               configField(
                 label: 'Number of Screens',
                 icon: Icons.screenshot_monitor,
@@ -205,44 +221,23 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
                 hint: '5',
                 keyboardType: TextInputType.number,
               ),
-
-              // Space before the connect button.
               const SizedBox(height: 18),
-
-              // Connect button container.
-              SizedBox(
-                width: double.infinity,
-                height: 58,
-
-                // Button used to connect to Liquid Galaxy.
-                child: ElevatedButton.icon(
-                  onPressed: connectToLg,
-
-                  // Button icon.
-                  icon: const Icon(Icons.link),
-
-                  // Button label.
-                  label: const Text(
-                    'Connect',
-                    style: TextStyle(
-                      fontSize: 19,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-
-                  // Button styling.
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF3E2A1F),
-                    foregroundColor: Colors.white,
-                    elevation: 6,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                ),
+              mainButton(
+                label: isConnecting
+                    ? 'Connecting...'
+                    : isConnected
+                    ? 'Reconnect'
+                    : 'Connect',
+                icon: Icons.link,
+                onPressed: isConnecting ? null : connectToLg,
               ),
-
-              // Bottom spacing.
+              const SizedBox(height: 12),
+              mainButton(
+                label: 'Disconnect',
+                icon: Icons.link_off,
+                onPressed: isConnected ? disconnectLg : null,
+                isSecondary: true,
+              ),
               const SizedBox(height: 30),
             ],
           ),
@@ -251,27 +246,48 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
     );
   }
 
-  // Creates a reusable configuration input field.
+  Widget mainButton({
+    required String label,
+    required IconData icon,
+    required VoidCallback? onPressed,
+    bool isSecondary = false,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      height: 58,
+      child: ElevatedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon),
+        label: Text(
+          label,
+          style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor:
+          isSecondary ? Colors.grey.shade300 : const Color(0xFF3E2A1F),
+          foregroundColor: isSecondary ? Colors.grey.shade700 : Colors.white,
+          elevation: isSecondary ? 0 : 6,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget configField({
     required String label,
     required IconData icon,
     required TextEditingController controller,
     required String hint,
-
-    // Indicates whether the field hides the text.
     bool obscure = false,
-
-    // Keyboard type used for the input field.
     TextInputType keyboardType = TextInputType.text,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
-
-      // Organizes label and text field vertically.
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Field label.
           Text(
             label,
             style: const TextStyle(
@@ -279,34 +295,20 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
               color: Colors.black87,
             ),
           ),
-
-          // Space between label and text field.
           const SizedBox(height: 7),
-
-          // Text input field.
           TextField(
             controller: controller,
             obscureText: obscure,
             keyboardType: keyboardType,
-
-            // Input field decoration.
             decoration: InputDecoration(
               hintText: hint,
-
-              // Leading icon inside the field.
               prefixIcon: Icon(icon, color: Colors.brown),
-
-              // Background styling.
               filled: true,
               fillColor: Colors.white,
-
-              // Internal padding.
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 14,
               ),
-
-              // Rounded border style.
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(18),
                 borderSide: BorderSide.none,
@@ -318,16 +320,10 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
     );
   }
 
-  // Returns a shared decoration style for cards.
   BoxDecoration cardDecoration() {
     return BoxDecoration(
-      // Background color.
       color: Colors.white,
-
-      // Rounded corners.
       borderRadius: BorderRadius.circular(22),
-
-      // Soft shadow effect.
       boxShadow: [
         BoxShadow(
           color: Colors.black.withOpacity(0.08),
