@@ -16,7 +16,7 @@ void main() {
 class GeoSaurioApp extends StatelessWidget {
   // Constant constructor for the main widget.
   const GeoSaurioApp({super.key});
-
+ a
   // Builds the main structure of the application.
   @override
   Widget build(BuildContext context) {
