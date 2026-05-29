@@ -271,24 +271,13 @@ class LgService extends ChangeNotifier {
 <?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
 <Document>
-    <name>Logo</name>
-    <ScreenOverlay>
-        <name>Logo</name>
-        <Icon>
-          <href>https://raw.githubusercontent.com/LiquidGalaxyLAB/liquid-galaxy/main/assets/logo.png</href>
-        </Icon>
-        <overlayXY x="0" y="0" xunits="fraction" yunits="fraction"/>
-        <screenXY x="0.02" y="0.75" xunits="fraction" yunits="fraction"/>
-        <rotationXY x="0" y="0" xunits="fraction" yunits="fraction"/>
-        <size x="450" y="0" xunits="pixels" yunits="pixels"/>
-    </ScreenOverlay>
 </Document>
 </kml>
 ''';
 
     final result = await execute(
       "echo '$kmlContent' > /var/www/html/kml/slave_$leftMostScreen.kml",
-      'Logo sent',
+      'Empty logo sent',
     );
 
     return result != null;

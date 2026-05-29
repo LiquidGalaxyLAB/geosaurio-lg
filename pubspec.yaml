@@ -1,54 +1,61 @@
-# Nombre interno del proyecto Flutter.
-# Este nombre se usa para identificar el paquete dentro del proyecto.
+# Flutter project internal name.
+# This name identifies the package inside the project.
 name: geosaurio
 
-# Descripción breve del proyecto.
-# Puede aparecer en herramientas o metadatos del paquete.
+# Short project description.
 description: "A new Flutter project."
 
-# Indica que este paquete no se publicará en pub.dev.
-# Es útil para proyectos privados o aplicaciones finales.
+# Prevents publishing to pub.dev.
 publish_to: 'none'
 
-# Versión de la aplicación.
-# El primer número es la versión visible para el usuario.
-# El número después del + es el número interno de compilación.
+# Application version.
+# First number = visible version.
+# Number after + = internal build number.
 version: 1.0.0+1
 
-# Configuración del entorno de Dart.
-# Indica qué versiones del SDK son compatibles con este proyecto.
+# Dart SDK compatibility.
 environment:
   sdk: ">=3.11.0 <4.0.0"
 
-# Dependencias principales necesarias para que funcione la aplicación.
+# Main dependencies used by the application.
 dependencies:
-  # SDK principal de Flutter.
+  # Main Flutter SDK.
   flutter:
     sdk: flutter
 
-  # Paquete de iconos estilo iOS.
-  # Se suele incluir por defecto en proyectos Flutter.
+  # iOS-style icons package.
   cupertino_icons: ^1.0.8
+
+  # State management.
   provider: ^6.1.5+1
+
+  # SSH connection package for Liquid Galaxy.
   dartssh2: ^2.17.1
+
+  # Save local app preferences.
   shared_preferences: ^2.5.5
+
+  # Access device storage paths.
   path_provider: ^2.1.5
 
-# Dependencias usadas solo durante el desarrollo o las pruebas.
+  # CSV parser package.
+  csv: ^6.0.0
+
+# Development-only dependencies.
 dev_dependencies:
-  # Herramientas de testing de Flutter.
+  # Flutter testing tools.
   flutter_test:
     sdk: flutter
 
-  # Reglas de análisis y buenas prácticas para el código Dart/Flutter.
+  # Recommended lint rules.
   flutter_lints: ^6.0.0
 
-# Configuración específica de Flutter.
+# Flutter-specific configuration.
 flutter:
-  # Permite usar los iconos de Material Design en la aplicación.
+  # Enables Material Design icons.
   uses-material-design: true
 
-  # Declara carpetas o archivos de recursos que la app podrá usar.
-  # En este caso se incluye toda la carpeta assets/images/.
+  # Application assets.
   assets:
     - assets/images/
+    - assets/data/geosaurio.csv
