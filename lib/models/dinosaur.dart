@@ -46,6 +46,27 @@ class Dinosaur {
   // Fossil material information
   final String material;
 
+  // General dinosaur information
+  final String generalInfo;
+
+  // Dinosaur diet
+  final String diet;
+
+  // Dinosaur habitat
+  final String habitat;
+
+  // Narration audio link
+  final String audioLink;
+
+  // Liquid Galaxy coordinates
+  final double longitude;
+  final double latitude;
+  final double altitude;
+  final double heading;
+  final double tilt;
+  final double range;
+  final String altitudeMode;
+
   // Constructor
   Dinosaur({
     required this.name,
@@ -61,6 +82,17 @@ class Dinosaur {
     required this.time1,
     required this.time2,
     required this.material,
+    required this.generalInfo,
+    required this.diet,
+    required this.habitat,
+    required this.audioLink,
+    required this.longitude,
+    required this.latitude,
+    required this.altitude,
+    required this.heading,
+    required this.tilt,
+    required this.range,
+    required this.altitudeMode,
   });
 
   // Detects the dinosaur geological period automatically
@@ -87,34 +119,59 @@ class Dinosaur {
     switch (period) {
       case DinosaurPeriod.triassic:
         return 'Triassic';
-
       case DinosaurPeriod.jurassic:
         return 'Jurassic';
-
       case DinosaurPeriod.cretaceous:
         return 'Cretaceous';
-
       case DinosaurPeriod.unknown:
         return 'Unknown';
     }
   }
 
+  // Parses numbers with comma decimal format from CSV
+  static double parseNumber(dynamic value) {
+    final text = value?.toString().trim() ?? '';
+
+    if (text.isEmpty) return 0;
+
+    final normalized = text.replaceAll('.', '').replaceAll(',', '.');
+
+    return double.tryParse(normalized) ?? 0;
+  }
+
   // Creates a Dinosaur object from a CSV row
   factory Dinosaur.fromCsv(List<dynamic> row) {
     return Dinosaur(
-      name: row[1]?.toString() ?? '',
-      status: row[2]?.toString() ?? '',
-      author: row[3]?.toString() ?? '',
-      year: row[4]?.toString() ?? '',
-      length: row[5]?.toString() ?? '',
-      weight: row[6]?.toString() ?? '',
-      area: row[8]?.toString() ?? '',
-      country: row[9]?.toString() ?? '',
-      region: row[10]?.toString() ?? '',
-      formation: row[11]?.toString() ?? '',
-      time1: row[12]?.toString() ?? '',
-      time2: row[13]?.toString() ?? '',
-      material: row[34]?.toString() ?? '',
+      name: row[1]?.toString().trim() ?? '',
+      status: row[2]?.toString().trim() ?? '',
+      author: row[3]?.toString().trim() ?? '',
+      year: row[4]?.toString().trim() ?? '',
+      length: row[5]?.toString().trim() ?? '',
+      weight: row[6]?.toString().trim() ?? '',
+      area: row[8]?.toString().trim() ?? '',
+      country: row[9]?.toString().trim() ?? '',
+
+      region: row[66]?.toString().trim() ?? '',
+      formation: row[67]?.toString().trim() ?? '',
+
+      longitude: parseNumber(row[69]),
+      latitude: parseNumber(row[70]),
+      altitude: parseNumber(row[71]),
+      heading: parseNumber(row[72]),
+      tilt: parseNumber(row[73]),
+      range: parseNumber(row[74]),
+      altitudeMode: row[75]?.toString().trim().isEmpty ?? true
+          ? 'relativeToGround'
+          : row[75].toString().trim(),
+
+      time1: row[172]?.toString().trim() ?? '',
+      time2: row[173]?.toString().trim() ?? '',
+
+      material: row[194]?.toString().trim() ?? '',
+      generalInfo: row[196]?.toString().trim() ?? '',
+      diet: row[197]?.toString().trim() ?? '',
+      habitat: row[198]?.toString().trim() ?? '',
+      audioLink: row[199]?.toString().trim() ?? '',
     );
   }
 }

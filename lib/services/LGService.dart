@@ -6,6 +6,8 @@ import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/services.dart';
+import '../models/dinosaur.dart';
 
 class LgConnectionModel {
   String username;
@@ -201,6 +203,22 @@ class LgService extends ChangeNotifier {
     return await query('flytoview=$kmlViewTag');
   }
 
+  Future<bool> flyToDinosaur(Dinosaur dinosaur) async {
+    final lookAt = '''
+<LookAt>
+  <longitude>${dinosaur.longitude}</longitude>
+  <latitude>${dinosaur.latitude}</latitude>
+  <altitude>${dinosaur.altitude}</altitude>
+  <heading>${dinosaur.heading}</heading>
+  <tilt>${dinosaur.tilt}</tilt>
+  <range>${dinosaur.range}</range>
+  <altitudeMode>${dinosaur.altitudeMode}</altitudeMode>
+</LookAt>
+''';
+
+    return await flyTo(lookAt);
+  }
+
   int calculateLeftMostScreen(int screenCount) {
     if (screenCount == 1) return 1;
     return (screenCount / 2).floor() + 2;
@@ -264,23 +282,91 @@ class LgService extends ChangeNotifier {
   }
 
   Future<bool> sendLogo() async {
-    final leftMostScreen =
-    calculateLeftMostScreen(_lgConnectionModel.screens);
+    try {
+      final leftMostScreen =
+      calculateLeftMostScreen(_lgConnectionModel.screens);
 
-    const String kmlContent = '''
+      // Load image from Flutter assets
+      final bytes = await rootBundle.load(
+        'assets/images/logos.png',
+      );
+
+      // Create temporary file
+      final tempDir = await getTemporaryDirectory();
+
+      final file = File(
+        '${tempDir.path}/logos.png',
+      );
+
+      // Write image bytes
+      await file.writeAsBytes(
+        bytes.buffer.asUint8List(),
+      );
+
+      // Upload image to LG web server
+      final sftp = await _client!.sftp();
+
+      await sftp.open(
+        '/var/www/html/logos.png',
+        mode: SftpFileOpenMode.create |
+        SftpFileOpenMode.write,
+      ).then((remoteFile) async {
+        final imageBytes = await file.readAsBytes();
+
+        await remoteFile.write(
+          Stream.value(Uint8List.fromList(imageBytes)),
+        );
+
+        await remoteFile.close();
+      });
+
+      // Create KML overlay
+      const String kmlContent = '''
 <?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
 <Document>
+
+<ScreenOverlay>
+  <name>GeoSaurio Overlay</name>
+
+  <Icon>
+    <href>http://lg1:81/logos.png</href>
+  </Icon>
+
+  <overlayXY
+      x="0"
+      y="1"
+      xunits="fraction"
+      yunits="fraction"/>
+
+  <screenXY
+      x="0.02"
+      y="0.98"
+      xunits="fraction"
+      yunits="fraction"/>
+
+  <size
+      x="700"
+      y="0"
+      xunits="pixels"
+      yunits="pixels"/>
+
+</ScreenOverlay>
+
 </Document>
 </kml>
 ''';
 
-    final result = await execute(
-      "echo '$kmlContent' > /var/www/html/kml/slave_$leftMostScreen.kml",
-      'Empty logo sent',
-    );
+      final result = await execute(
+        "echo '$kmlContent' > /var/www/html/kml/slave_$leftMostScreen.kml",
+        'Logo overlay sent',
+      );
 
-    return result != null;
+      return result != null;
+    } catch (e) {
+      debugPrint('Error sending logo: $e');
+      return false;
+    }
   }
 
   Future<bool> reboot() async {

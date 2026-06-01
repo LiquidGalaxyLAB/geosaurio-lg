@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../models/dinosaur.dart';
 import '../services/dinosaur_service.dart';
+import '../services/LGService.dart';
 
 import 'dinosaur_detail_screen.dart';
 import 'lg_settings_screen.dart';
@@ -158,6 +160,40 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Future<void> openDinosaurAbout(String dinosaurName) async {
+    final selectedDino = getDinosaurByName(dinosaurName);
+    final lgService = context.read<LgService>();
+
+    if (lgService.isConnected) {
+      final ok = await lgService.flyToDinosaur(selectedDino);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            ok
+                ? 'Flying to ${selectedDino.name}'
+                : 'Could not move Liquid Galaxy',
+          ),
+          backgroundColor: ok ? Colors.green : Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+
+    if (!mounted) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => DinosaurDetailScreen(
+          dinosaur: selectedDino,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final List<String> countries = selectedContinent == null
@@ -180,7 +216,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   buildTopBar(context),
                   const SizedBox(height: 18),
-
                   if (isLoadingDinosaurs)
                     const Expanded(
                       child: Center(
@@ -416,17 +451,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                           lgActionButton(
                                             icon: Icons.info,
                                             text: 'About',
-                                            onTap: () {
-                                              Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      DinosaurDetailScreen(
-                                                        dinosaur: getDinosaurByName(dinosaur),
-                                                      ),
+                                            onTap: () =>
+                                                openDinosaurAbout(
+                                                  dinosaur,
                                                 ),
-                                              );
-                                            },
                                           ),
                                         ],
                                       ),
