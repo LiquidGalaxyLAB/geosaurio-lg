@@ -200,23 +200,44 @@ class LgService extends ChangeNotifier {
   }
 
   Future<bool> flyTo(String kmlViewTag) async {
-    return await query('flytoview=$kmlViewTag');
+    final command = "echo 'flytoview=$kmlViewTag' > /tmp/query.txt";
+
+    final result = await execute(
+      command,
+      'FlyTo command sent',
+    );
+
+    return result != null;
   }
 
   Future<bool> flyToDinosaur(Dinosaur dinosaur) async {
-    final lookAt = '''
-<LookAt>
-  <longitude>${dinosaur.longitude}</longitude>
-  <latitude>${dinosaur.latitude}</latitude>
-  <altitude>${dinosaur.altitude}</altitude>
-  <heading>${dinosaur.heading}</heading>
-  <tilt>${dinosaur.tilt}</tilt>
-  <range>${dinosaur.range}</range>
-  <altitudeMode>${dinosaur.altitudeMode}</altitudeMode>
-</LookAt>
-''';
+    try {
+      debugPrint('FLY TO DINOSAUR: ${dinosaur.name}');
+      debugPrint('LONG: ${dinosaur.longitude}');
+      debugPrint('LAT: ${dinosaur.latitude}');
+      debugPrint('RANGE: ${dinosaur.range}');
 
-    return await flyTo(lookAt);
+      if (dinosaur.longitude == 0 || dinosaur.latitude == 0) {
+        debugPrint('Invalid dinosaur coordinates');
+        return false;
+      }
+
+      final lookAt =
+          '<LookAt>'
+          '<longitude>${dinosaur.longitude}</longitude>'
+          '<latitude>${dinosaur.latitude}</latitude>'
+          '<altitude>${dinosaur.altitude}</altitude>'
+          '<heading>${dinosaur.heading}</heading>'
+          '<tilt>${dinosaur.tilt}</tilt>'
+          '<range>${dinosaur.range == 0 ? 8000 : dinosaur.range}</range>'
+          '<altitudeMode>${dinosaur.altitudeMode}</altitudeMode>'
+          '</LookAt>';
+
+      return await flyTo(lookAt);
+    } catch (e) {
+      debugPrint('Error flying to dinosaur: $e');
+      return false;
+    }
   }
 
   int calculateLeftMostScreen(int screenCount) {
@@ -371,16 +392,29 @@ class LgService extends ChangeNotifier {
 
   Future<bool> reboot() async {
     try {
-      for (int i = _lgConnectionModel.screens; i >= 1; i--) {
-        final command = i == 1
-            ? 'echo ${_lgConnectionModel.password} | sudo -S reboot'
-            : 'sshpass -p ${_lgConnectionModel.password} ssh -t lg$i "echo ${_lgConnectionModel.password} | sudo -S reboot"';
 
-        await execute(command, 'Screen $i rebooted');
+      for (int i = _lgConnectionModel.screens; i >= 1; i--) {
+
+        final command =
+            'sshpass -p ${_lgConnectionModel.password} '
+            'ssh -t lg$i '
+            '"echo ${_lgConnectionModel.password} | sudo -S reboot"';
+
+        await execute(
+          command,
+          'Screen $i rebooted',
+        );
+
+        // Wait 2 seconds before next screen
+        await Future.delayed(
+          const Duration(seconds: 2),
+        );
       }
 
       disconnect();
+
       return true;
+
     } catch (e) {
       debugPrint('Error rebooting LG: $e');
       return false;
@@ -418,19 +452,29 @@ fi
 
   Future<bool> shutdown() async {
     try {
+
       for (int i = _lgConnectionModel.screens; i >= 1; i--) {
-        final shutdownCommand =
-            'sshpass -p ${_lgConnectionModel.password} ssh -t lg$i '
+
+        final command =
+            'sshpass -p ${_lgConnectionModel.password} '
+            'ssh -t lg$i '
             '"echo ${_lgConnectionModel.password} | sudo -S shutdown now"';
 
         await execute(
-          shutdownCommand,
+          command,
           'Screen $i shutdown',
+        );
+
+        // Wait 2 seconds before next screen
+        await Future.delayed(
+          const Duration(seconds: 2),
         );
       }
 
       disconnect();
+
       return true;
+
     } catch (e) {
       debugPrint('Error shutting down LG: $e');
       return false;

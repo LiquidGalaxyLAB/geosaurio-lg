@@ -152,7 +152,42 @@ class LgSettingsScreen extends StatelessWidget {
                       onTap: () => runAction(
                         context,
                         'Reboot',
-                            (lg) => lg.reboot(),
+                            (lg) async {
+
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (context) {
+                              return AlertDialog(
+                                title: const Text('Reboot Liquid Galaxy'),
+                                content: const Text(
+                                  'Are you sure you want to reboot all screens?',
+                                ),
+                                actions: [
+
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.pop(context, false);
+                                    },
+                                    child: const Text('Cancel'),
+                                  ),
+
+                                  ElevatedButton(
+                                    onPressed: () {
+                                      Navigator.pop(context, true);
+                                    },
+                                    child: const Text('Reboot'),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+
+                          if (confirm == true) {
+                            return await lg.reboot();
+                          }
+
+                          return false;
+                        },
                       ),
                     ),
                     lgButton(
@@ -172,7 +207,42 @@ class LgSettingsScreen extends StatelessWidget {
                       onTap: () => runAction(
                         context,
                         'Shutdown',
-                            (lg) => lg.shutdown(),
+                            (lg) async {
+
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (context) {
+                              return AlertDialog(
+                                title: const Text('Shutdown Liquid Galaxy'),
+                                content: const Text(
+                                  'Are you sure you want to shutdown all screens?',
+                                ),
+                                actions: [
+
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.pop(context, false);
+                                    },
+                                    child: const Text('Cancel'),
+                                  ),
+
+                                  ElevatedButton(
+                                    onPressed: () {
+                                      Navigator.pop(context, true);
+                                    },
+                                    child: const Text('Shutdown'),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+
+                          if (confirm == true) {
+                            return await lg.shutdown();
+                          }
+
+                          return false;
+                        },
                       ),
                     ),
                     lgButton(
