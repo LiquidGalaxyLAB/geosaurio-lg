@@ -155,7 +155,9 @@ class LgSettingsScreen extends StatelessWidget {
                       icon: Icons.restart_alt,
                       text: 'Reboot',
                       color: Colors.green,
-                      onTap: () => runAction(context, 'Reboot', (LgService lg) async {
+                      onTap: () => runAction(context, 'Reboot', (
+                        LgService lg,
+                      ) async {
                         final confirm = await showDialog<bool>(
                           context: context,
                           builder: (context) {
@@ -203,7 +205,9 @@ class LgSettingsScreen extends StatelessWidget {
                       icon: Icons.power_settings_new,
                       text: 'Shutdown',
                       color: Colors.red,
-                      onTap: () => runAction(context, 'Shutdown', (LgService lg) async {
+                      onTap: () => runAction(context, 'Shutdown', (
+                        LgService lg,
+                      ) async {
                         final confirm = await showDialog<bool>(
                           context: context,
                           builder: (context) {
