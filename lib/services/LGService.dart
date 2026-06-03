@@ -80,7 +80,6 @@ class LgService extends ChangeNotifier {
 
   bool _isConnected = false;
 
-
   int _currentConnectionAttempts = 0;
 
   static const int _maxConnectionAttempts = 5;
