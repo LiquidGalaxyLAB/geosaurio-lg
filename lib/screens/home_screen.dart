@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../models/dinosaur.dart';
 import '../services/dinosaur_service.dart';
-import '../services/LGService.dart';
+import '../services/lg_service.dart';
 
 import 'dinosaur_detail_screen.dart';
 import 'lg_settings_screen.dart';

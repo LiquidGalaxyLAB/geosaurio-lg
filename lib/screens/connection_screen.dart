@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../services/LGService.dart';
+import '../services/lg_service.dart';
 
 class ConnectionScreen extends StatefulWidget {
   const ConnectionScreen({super.key});
@@ -93,6 +93,8 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
     final model = buildModel();
     await model.saveToPreferences();
 
+    if (!mounted) return;
+
     context.read<LgService>().updateConnectionSettings(
       ip: model.ip,
       port: model.port,
@@ -115,6 +117,8 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
     setState(() => isConnecting = true);
 
     await applySettings();
+
+    if (!mounted) return;
 
     final connected = await context.read<LgService>().connectToLG() ?? false;
 
@@ -333,7 +337,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
       borderRadius: BorderRadius.circular(22),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.08),
+          color: Colors.black.withValues(alpha: 0.08),
           blurRadius: 10,
           offset: const Offset(0, 4),
         ),

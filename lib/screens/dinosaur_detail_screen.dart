@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/dinosaur.dart';
-import '../services/LGService.dart';
+import '../services/lg_service.dart';
 
 import 'lg_settings_screen.dart';
 import 'about_screen.dart';
@@ -40,6 +40,8 @@ class DinosaurDetailScreen extends StatelessWidget {
       '<altitudeMode>relativeToGround</altitudeMode>'
       '</LookAt>',
     );
+
+    if (!context.mounted) return;
 
     showSnack(
       context,
@@ -330,7 +332,7 @@ class DinosaurDetailScreen extends StatelessWidget {
       borderRadius: BorderRadius.circular(22),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.08),
+          color: Colors.black.withValues(alpha: 0.08),
           blurRadius: 10,
           offset: const Offset(0, 4),
         ),

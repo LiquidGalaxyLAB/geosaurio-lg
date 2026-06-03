@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../services/LGService.dart';
+import '../services/lg_service.dart';
 import 'connection_screen.dart';
 
 class LgSettingsScreen extends StatelessWidget {
@@ -30,6 +30,8 @@ class LgSettingsScreen extends StatelessWidget {
     }
 
     final ok = await action(lgService);
+
+    if (!context.mounted) return;
 
     showSnack(
       context,
@@ -66,8 +68,11 @@ class LgSettingsScreen extends StatelessWidget {
       },
     );
 
+    if (!context.mounted) return;
+
     if (result == true) {
       final ok = await lgService.sendLogo();
+      if (!context.mounted) return;
       showSnack(
         context,
         ok ? 'Logo shown.' : 'Error showing logo.',
@@ -75,6 +80,7 @@ class LgSettingsScreen extends StatelessWidget {
       );
     } else if (result == false) {
       await lgService.cleanLogos();
+      if (!context.mounted) return;
       showSnack(context, 'Logo hidden.');
     }
   }
@@ -278,7 +284,7 @@ class LgSettingsScreen extends StatelessWidget {
       borderRadius: BorderRadius.circular(22),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.08),
+          color: Colors.black.withValues(alpha: 0.08),
           blurRadius: 10,
           offset: const Offset(0, 4),
         ),
@@ -301,7 +307,7 @@ class LgSettingsScreen extends StatelessWidget {
           backgroundColor: color,
           foregroundColor: Colors.white,
           elevation: 5,
-          shadowColor: color.withOpacity(0.4),
+          shadowColor: color.withValues(alpha: 0.4),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
