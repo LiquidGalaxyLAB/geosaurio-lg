@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import 'package:geosaurio/services/lg_service.dart';
-import 'package:geosaurio/screens/home_screen.dart';
+import 'package:geosaurio/screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -11,7 +12,9 @@ void main() async {
 
   runApp(
     MultiProvider(
-      providers: [ChangeNotifierProvider.value(value: lgService)],
+      providers: [
+        ChangeNotifierProvider.value(value: lgService),
+      ],
       child: const GeoSaurioApp(),
     ),
   );
@@ -30,7 +33,7 @@ class GeoSaurioApp extends StatelessWidget {
         useMaterial3: true,
         fontFamily: 'Roboto',
       ),
-      home: const HomeScreen(),
+      home: const SplashScreen(),
     );
   }
 }

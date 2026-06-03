@@ -145,7 +145,12 @@ class LgService extends ChangeNotifier {
       _currentConnectionAttempts = 0;
       notifyListeners();
 
-      await sendLogo();
+      Future.delayed(
+        const Duration(seconds: 2),
+            () async {
+          await sendLogo();
+        },
+      );
 
       return true;
     } on TimeoutException {

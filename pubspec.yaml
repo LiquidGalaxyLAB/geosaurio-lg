@@ -1,61 +1,34 @@
-# Flutter project internal name.
-# This name identifies the package inside the project.
 name: geosaurio
 
-# Short project description.
 description: "A new Flutter project."
 
-# Prevents publishing to pub.dev.
 publish_to: 'none'
 
-# Application version.
-# First number = visible version.
-# Number after + = internal build number.
 version: 1.0.0+1
 
-# Dart SDK compatibility.
 environment:
   sdk: ">=3.11.0 <4.0.0"
 
-# Main dependencies used by the application.
 dependencies:
-  # Main Flutter SDK.
   flutter:
     sdk: flutter
 
-  # iOS-style icons package.
   cupertino_icons: ^1.0.8
-
-  # State management.
   provider: ^6.1.5+1
-
-  # SSH connection package for Liquid Galaxy.
   dartssh2: ^2.17.1
-
-  # Save local app preferences.
   shared_preferences: ^2.5.5
-
-  # Access device storage paths.
   path_provider: ^2.1.5
-
-  # CSV parser package.
   csv: ^6.0.0
 
-# Development-only dependencies.
 dev_dependencies:
-  # Flutter testing tools.
   flutter_test:
     sdk: flutter
 
-  # Recommended lint rules.
   flutter_lints: ^6.0.0
 
-# Flutter-specific configuration.
 flutter:
-  # Enables Material Design icons.
   uses-material-design: true
 
-  # Application assets.
   assets:
     - assets/images/
-    - assets/data/geosaurio.csv
+    - assets/data/
