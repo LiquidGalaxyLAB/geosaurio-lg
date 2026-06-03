@@ -5,7 +5,7 @@ import 'package:geosaurio/screens/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   final lgService = LgService();
   await lgService.initializeConnection();
 
