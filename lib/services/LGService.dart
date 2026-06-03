@@ -77,13 +77,9 @@ class LgService extends ChangeNotifier {
   final LgConnectionModel _lgConnectionModel = LgConnectionModel();
 
   SSHClient? _client;
-  Timer? _orbitTimer;
-  Timer? _connectionTimer;
 
-  bool _isTrailPlaying = false;
-  bool _orbitPlaying = false;
   bool _isConnected = false;
-  bool _isCheckingConnection = false;
+
 
   int _currentConnectionAttempts = 0;
 
