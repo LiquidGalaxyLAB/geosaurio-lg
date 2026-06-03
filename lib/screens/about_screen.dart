@@ -66,10 +66,7 @@ class AboutScreen extends StatelessWidget {
                   const SizedBox(height: 20),
 
                   // GeoSaurio logo loaded from assets.
-                  Image.asset(
-                    'assets/images/GeoSaurio.png',
-                    height: 140,
-                  ),
+                  Image.asset('assets/images/GeoSaurio.png', height: 140),
 
                   // Space between logo and title.
                   const SizedBox(height: 12),
@@ -77,10 +74,7 @@ class AboutScreen extends StatelessWidget {
                   // Application name.
                   const Text(
                     'GEOSAURIO',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                   ),
 
                   // Space between title and subtitle.
@@ -95,10 +89,7 @@ class AboutScreen extends StatelessWidget {
                   // Author section title.
                   const Text(
                     'Author',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                   ),
 
                   // Space between title and author name.
@@ -116,10 +107,7 @@ class AboutScreen extends StatelessWidget {
                   // Project description section title.
                   const Text(
                     'Project Description',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                   ),
 
                   // Space between title and description.
@@ -154,10 +142,7 @@ class AboutScreen extends StatelessWidget {
             // Drawer title.
             const Text(
               'GeoSaurio',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
 
             // Space between title and menu options.
@@ -170,10 +155,8 @@ class AboutScreen extends StatelessWidget {
               onTap: () {
                 // Navigates to HomeScreen and removes previous screens.
                 Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(
-                    builder: (context) => const HomeScreen(),
-                  ),
-                      (route) => false,
+                  MaterialPageRoute(builder: (context) => const HomeScreen()),
+                  (route) => false,
                 );
               },
             ),

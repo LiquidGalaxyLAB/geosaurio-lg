@@ -10,10 +10,7 @@ import 'about_screen.dart';
 class DinosaurDetailScreen extends StatelessWidget {
   final Dinosaur dinosaur;
 
-  const DinosaurDetailScreen({
-    super.key,
-    required this.dinosaur,
-  });
+  const DinosaurDetailScreen({super.key, required this.dinosaur});
 
   void showSnack(BuildContext context, String message, {bool success = true}) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -35,13 +32,13 @@ class DinosaurDetailScreen extends StatelessWidget {
 
     final ok = await lgService.flyTo(
       '<LookAt>'
-          '<longitude>0.6224</longitude>'
-          '<latitude>41.6170</latitude>'
-          '<range>8000</range>'
-          '<tilt>45</tilt>'
-          '<heading>0</heading>'
-          '<altitudeMode>relativeToGround</altitudeMode>'
-          '</LookAt>',
+      '<longitude>0.6224</longitude>'
+      '<latitude>41.6170</latitude>'
+      '<range>8000</range>'
+      '<tilt>45</tilt>'
+      '<heading>0</heading>'
+      '<altitudeMode>relativeToGround</altitudeMode>'
+      '</LookAt>',
     );
 
     showSnack(
@@ -183,8 +180,9 @@ class DinosaurDetailScreen extends StatelessWidget {
                         child: infoCard(
                           icon: Icons.calendar_month,
                           title: 'Year',
-                          value:
-                          dinosaur.year.isEmpty ? 'Unknown' : dinosaur.year,
+                          value: dinosaur.year.isEmpty
+                              ? 'Unknown'
+                              : dinosaur.year,
                         ),
                       ),
                     ],
@@ -192,7 +190,8 @@ class DinosaurDetailScreen extends StatelessWidget {
                   const SizedBox(height: 22),
                   sectionCard(
                     title: 'Scientific Information',
-                    text: 'Status: ${emptyText(dinosaur.status)}\n'
+                    text:
+                        'Status: ${emptyText(dinosaur.status)}\n'
                         'Author: ${emptyText(dinosaur.author)}\n'
                         'Formation: ${emptyText(dinosaur.formation)}\n'
                         'Time: ${emptyText(dinosaur.time1)} - ${emptyText(dinosaur.time2)}',
@@ -247,10 +246,7 @@ class DinosaurDetailScreen extends StatelessWidget {
     return value.trim().isEmpty ? 'Unknown' : value;
   }
 
-  Widget sectionCard({
-    required String title,
-    required String text,
-  }) {
+  Widget sectionCard({required String title, required String text}) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
@@ -260,19 +256,10 @@ class DinosaurDetailScreen extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
-          Text(
-            text,
-            style: const TextStyle(
-              fontSize: 16,
-              height: 1.35,
-            ),
-          ),
+          Text(text, style: const TextStyle(fontSize: 16, height: 1.35)),
         ],
       ),
     );
@@ -320,9 +307,7 @@ class DinosaurDetailScreen extends StatelessWidget {
         foregroundColor: Colors.white,
         elevation: 5,
         padding: const EdgeInsets.all(12),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -390,9 +375,7 @@ class DinosaurDetailScreen extends StatelessWidget {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => const AboutScreen(),
-                  ),
+                  MaterialPageRoute(builder: (context) => const AboutScreen()),
                 );
               },
             ),

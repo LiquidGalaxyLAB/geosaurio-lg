@@ -1,10 +1,5 @@
 // Geological periods available in the app
-enum DinosaurPeriod {
-  triassic,
-  jurassic,
-  cretaceous,
-  unknown,
-}
+enum DinosaurPeriod { triassic, jurassic, cretaceous, unknown }
 
 class Dinosaur {
   // Dinosaur name

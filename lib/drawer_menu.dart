@@ -7,10 +7,7 @@ import '../screens/lg_settings_screen.dart';
 class AppDrawer extends StatelessWidget {
   final bool isLgConnected;
 
-  const AppDrawer({
-    super.key,
-    required this.isLgConnected,
-  });
+  const AppDrawer({super.key, required this.isLgConnected});
 
   @override
   Widget build(BuildContext context) {
@@ -24,21 +21,14 @@ class AppDrawer extends StatelessWidget {
             const CircleAvatar(
               radius: 38,
               backgroundColor: Color(0xFF3E2A1F),
-              child: Icon(
-                Icons.public,
-                size: 42,
-                color: Colors.white,
-              ),
+              child: Icon(Icons.public, size: 42, color: Colors.white),
             ),
 
             const SizedBox(height: 12),
 
             const Text(
               'GeoSaurio',
-              style: TextStyle(
-                fontSize: 25,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
             ),
 
             const Text(
@@ -56,10 +46,8 @@ class AppDrawer extends StatelessWidget {
                 Navigator.pop(context);
                 Navigator.pushAndRemoveUntil(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => const HomeScreen(),
-                  ),
-                      (route) => false,
+                  MaterialPageRoute(builder: (context) => const HomeScreen()),
+                  (route) => false,
                 );
               },
             ),
@@ -72,9 +60,7 @@ class AppDrawer extends StatelessWidget {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => const AboutScreen(),
-                  ),
+                  MaterialPageRoute(builder: (context) => const AboutScreen()),
                 );
               },
             ),
@@ -123,9 +109,7 @@ class AppDrawer extends StatelessWidget {
                   const SizedBox(width: 10),
                   Text(
                     isLgConnected ? 'LG connected' : 'LG disconnected',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: const TextStyle(fontWeight: FontWeight.w500),
                   ),
                 ],
               ),
@@ -143,10 +127,7 @@ class AppDrawer extends StatelessWidget {
     required VoidCallback onTap,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 14,
-        vertical: 4,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
       child: Material(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
@@ -154,14 +135,9 @@ class AppDrawer extends StatelessWidget {
           leading: Icon(icon, color: Colors.brown),
           title: Text(
             title,
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.w600),
           ),
-          trailing: const Icon(
-            Icons.chevron_right,
-            size: 20,
-          ),
+          trailing: const Icon(Icons.chevron_right, size: 20),
           onTap: onTap,
         ),
       ),

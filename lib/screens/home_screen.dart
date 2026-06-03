@@ -48,17 +48,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Map<String, List<String>> get countriesByContinent {
-    return DinosaurService.buildCountriesByContinent(
-      dinosaurs,
-      selectedPeriod,
-    );
+    return DinosaurService.buildCountriesByContinent(dinosaurs, selectedPeriod);
   }
 
   Map<String, Map<String, List<String>>> get regionsByCountry {
-    return DinosaurService.buildRegionsByCountry(
-      dinosaurs,
-      selectedPeriod,
-    );
+    return DinosaurService.buildRegionsByCountry(dinosaurs, selectedPeriod);
   }
 
   List<String> get continents {
@@ -87,9 +81,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Dinosaur getDinosaurByName(String name) {
-    return dinosaurs.firstWhere(
-          (dinosaur) => dinosaur.name == name,
-    );
+    return dinosaurs.firstWhere((dinosaur) => dinosaur.name == name);
   }
 
   List<String> filteredCountries(List<String> countries) {
@@ -102,9 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }).toList();
   }
 
-  Map<String, List<String>> filteredRegions(
-      Map<String, List<String>> regions,
-      ) {
+  Map<String, List<String>> filteredRegions(Map<String, List<String>> regions) {
     final query = searchController.text.toLowerCase();
 
     if (query.isEmpty) return regions;
@@ -144,9 +134,7 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Icon(Icons.check_circle, color: Colors.white),
             SizedBox(width: 10),
-            Expanded(
-              child: Text('Sent correctly to Liquid Galaxy'),
-            ),
+            Expanded(child: Text('Sent correctly to Liquid Galaxy')),
           ],
         ),
         backgroundColor: Colors.green,
@@ -187,9 +175,7 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => DinosaurDetailScreen(
-          dinosaur: selectedDino,
-        ),
+        builder: (context) => DinosaurDetailScreen(dinosaur: selectedDino),
       ),
     );
   }
@@ -218,9 +204,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 18),
                   if (isLoadingDinosaurs)
                     const Expanded(
-                      child: Center(
-                        child: CircularProgressIndicator(),
-                      ),
+                      child: Center(child: CircularProgressIndicator()),
                     )
                   else ...[
                     Text(
@@ -264,10 +248,7 @@ class _HomeScreenState extends State<HomeScreen> {
         const Spacer(),
         const Text(
           'GeoSaurio',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         const Spacer(),
         const SizedBox(width: 48),
@@ -296,10 +277,7 @@ class _HomeScreenState extends State<HomeScreen> {
           const Text(
             'Select a continent to explore',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
           searchBox(
@@ -317,31 +295,30 @@ class _HomeScreenState extends State<HomeScreen> {
               decoration: cardDecoration(),
               child: selectedContinent == null
                   ? emptyMessage(
-                icon: Icons.public,
-                text: 'Select a continent\nto see countries',
-              )
+                      icon: Icons.public,
+                      text: 'Select a continent\nto see countries',
+                    )
                   : visibleCountries.isEmpty
                   ? emptyMessage(
-                icon: Icons.search_off,
-                text: 'No countries found',
-              )
+                      icon: Icons.search_off,
+                      text: 'No countries found',
+                    )
                   : Scrollbar(
-                thumbVisibility: true,
-                child: ListView.separated(
-                  itemCount: visibleCountries.length,
-                  separatorBuilder: (_, __) =>
-                  const SizedBox(height: 10),
-                  itemBuilder: (context, index) {
-                    final country = visibleCountries[index];
+                      thumbVisibility: true,
+                      child: ListView.separated(
+                        itemCount: visibleCountries.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 10),
+                        itemBuilder: (context, index) {
+                          final country = visibleCountries[index];
 
-                    return niceListTile(
-                      title: country,
-                      icon: Icons.flag,
-                      onTap: () => selectCountry(country),
-                    );
-                  },
-                ),
-              ),
+                          return niceListTile(
+                            title: country,
+                            icon: Icons.flag,
+                            onTap: () => selectCountry(country),
+                          );
+                        },
+                      ),
+                    ),
             ),
           ),
           const SizedBox(height: 16),
@@ -350,9 +327,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget buildRegionSelector(
-      Map<String, List<String>> regions,
-      ) {
+  Widget buildRegionSelector(Map<String, List<String>> regions) {
     final visibleRegions = filteredRegions(regions);
 
     return Expanded(
@@ -367,107 +342,108 @@ class _HomeScreenState extends State<HomeScreen> {
               decoration: cardDecoration(),
               child: visibleRegions.isEmpty
                   ? emptyMessage(
-                icon: Icons.map_outlined,
-                text: 'No regions available\nfor this country yet',
-              )
+                      icon: Icons.map_outlined,
+                      text: 'No regions available\nfor this country yet',
+                    )
                   : Scrollbar(
-                thumbVisibility: true,
-                child: ListView(
-                  children: visibleRegions.entries.map((entry) {
-                    final regionName = entry.key;
-                    final dinosaursInRegion = entry.value;
-                    final isExpanded = expandedRegion == regionName;
+                      thumbVisibility: true,
+                      child: ListView(
+                        children: visibleRegions.entries.map((entry) {
+                          final regionName = entry.key;
+                          final dinosaursInRegion = entry.value;
+                          final isExpanded = expandedRegion == regionName;
 
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 10),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.black12),
-                      ),
-                      child: Column(
-                        children: [
-                          ListTile(
-                            leading: const Icon(Icons.place),
-                            title: Text(
-                              regionName,
-                              style: const TextStyle(
-                                fontSize: 19,
-                                fontWeight: FontWeight.w600,
-                              ),
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 10),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: Colors.black12),
                             ),
-                            trailing: Icon(
-                              isExpanded
-                                  ? Icons.keyboard_arrow_up
-                                  : Icons.keyboard_arrow_down,
-                            ),
-                            onTap: () {
-                              setState(() {
-                                expandedRegion =
-                                isExpanded ? null : regionName;
-                                selectedDinosaur = null;
-                              });
-                            },
-                          ),
-                          if (isExpanded)
-                            ...dinosaursInRegion.map((dinosaur) {
-                              final isSelected =
-                                  selectedDinosaur == dinosaur;
-
-                              return Column(
-                                children: [
-                                  ListTile(
-                                    title: Text(
-                                      dinosaur,
-                                      textAlign: TextAlign.center,
-                                      style: const TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.w500,
-                                      ),
+                            child: Column(
+                              children: [
+                                ListTile(
+                                  leading: const Icon(Icons.place),
+                                  title: Text(
+                                    regionName,
+                                    style: const TextStyle(
+                                      fontSize: 19,
+                                      fontWeight: FontWeight.w600,
                                     ),
-                                    onTap: () {
-                                      setState(() {
-                                        selectedDinosaur = dinosaur;
-                                      });
-                                    },
                                   ),
-                                  if (isSelected)
-                                    Padding(
-                                      padding: const EdgeInsets.only(
-                                        bottom: 14,
-                                      ),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                        MainAxisAlignment.center,
-                                        children: [
-                                          lgActionButton(
-                                            icon: Icons.rotate_right,
-                                            text: 'Rotate',
-                                            onTap: () {
-                                              showLgMessage();
-                                            },
+                                  trailing: Icon(
+                                    isExpanded
+                                        ? Icons.keyboard_arrow_up
+                                        : Icons.keyboard_arrow_down,
+                                  ),
+                                  onTap: () {
+                                    setState(() {
+                                      expandedRegion = isExpanded
+                                          ? null
+                                          : regionName;
+                                      selectedDinosaur = null;
+                                    });
+                                  },
+                                ),
+                                if (isExpanded)
+                                  ...dinosaursInRegion.map((dinosaur) {
+                                    final isSelected =
+                                        selectedDinosaur == dinosaur;
+
+                                    return Column(
+                                      children: [
+                                        ListTile(
+                                          title: Text(
+                                            dinosaur,
+                                            textAlign: TextAlign.center,
+                                            style: const TextStyle(
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.w500,
+                                            ),
                                           ),
-                                          const SizedBox(width: 12),
-                                          lgActionButton(
-                                            icon: Icons.info,
-                                            text: 'About',
-                                            onTap: () =>
-                                                openDinosaurAbout(
-                                                  dinosaur,
+                                          onTap: () {
+                                            setState(() {
+                                              selectedDinosaur = dinosaur;
+                                            });
+                                          },
+                                        ),
+                                        if (isSelected)
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                              bottom: 14,
+                                            ),
+                                            child: Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                lgActionButton(
+                                                  icon: Icons.rotate_right,
+                                                  text: 'Rotate',
+                                                  onTap: () {
+                                                    showLgMessage();
+                                                  },
                                                 ),
+                                                const SizedBox(width: 12),
+                                                lgActionButton(
+                                                  icon: Icons.info,
+                                                  text: 'About',
+                                                  onTap: () =>
+                                                      openDinosaurAbout(
+                                                        dinosaur,
+                                                      ),
+                                                ),
+                                              ],
+                                            ),
                                           ),
-                                        ],
-                                      ),
-                                    ),
-                                ],
-                              );
-                            }),
-                        ],
+                                      ],
+                                    );
+                                  }),
+                              ],
+                            ),
+                          );
+                        }).toList(),
                       ),
-                    );
-                  }).toList(),
-                ),
-              ),
+                    ),
             ),
           ),
           const SizedBox(height: 12),
@@ -500,13 +476,13 @@ class _HomeScreenState extends State<HomeScreen> {
           suffixIcon: searchController.text.isEmpty
               ? null
               : IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () {
-              setState(() {
-                searchController.clear();
-              });
-            },
-          ),
+                  icon: const Icon(Icons.close),
+                  onPressed: () {
+                    setState(() {
+                      searchController.clear();
+                    });
+                  },
+                ),
         ),
       ),
     );
@@ -527,17 +503,11 @@ class _HomeScreenState extends State<HomeScreen> {
           isExpanded: true,
           hint: const Text(
             'Select Continent',
-            style: TextStyle(
-              fontSize: 17,
-              color: Colors.black,
-            ),
+            style: TextStyle(fontSize: 17, color: Colors.black),
           ),
           icon: const Icon(Icons.keyboard_arrow_down),
           items: continents.map((continent) {
-            return DropdownMenuItem(
-              value: continent,
-              child: Text(continent),
-            );
+            return DropdownMenuItem(value: continent, child: Text(continent));
           }).toList(),
           onChanged: (value) {
             setState(() {
@@ -565,10 +535,7 @@ class _HomeScreenState extends State<HomeScreen> {
         leading: Icon(icon, color: Colors.brown),
         title: Text(
           title,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w500,
-          ),
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
         ),
         trailing: const Icon(Icons.chevron_right),
         onTap: onTap,
@@ -576,10 +543,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget emptyMessage({
-    required IconData icon,
-    required String text,
-  }) {
+  Widget emptyMessage({required IconData icon, required String text}) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -589,10 +553,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Text(
             text,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 19,
-              color: Colors.black54,
-            ),
+            style: const TextStyle(fontSize: 19, color: Colors.black54),
           ),
         ],
       ),
@@ -666,19 +627,12 @@ class _HomeScreenState extends State<HomeScreen> {
             const CircleAvatar(
               radius: 38,
               backgroundColor: Color(0xFF3E2A1F),
-              child: Icon(
-                Icons.public,
-                size: 42,
-                color: Colors.white,
-              ),
+              child: Icon(Icons.public, size: 42, color: Colors.white),
             ),
             const SizedBox(height: 12),
             const Text(
               'GeoSaurio',
-              style: TextStyle(
-                fontSize: 25,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
             ),
             const Text(
               'For Liquid Galaxy',
@@ -697,9 +651,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => const AboutScreen(),
-                  ),
+                  MaterialPageRoute(builder: (context) => const AboutScreen()),
                 );
               },
             ),
@@ -733,17 +685,11 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               child: const Row(
                 children: [
-                  Icon(
-                    Icons.circle,
-                    color: Colors.red,
-                    size: 14,
-                  ),
+                  Icon(Icons.circle, color: Colors.red, size: 14),
                   SizedBox(width: 10),
                   Text(
                     'LG disconnected',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.w500),
                   ),
                 ],
               ),
@@ -760,10 +706,7 @@ class _HomeScreenState extends State<HomeScreen> {
     required VoidCallback onTap,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 14,
-        vertical: 4,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
       child: Material(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
@@ -771,14 +714,9 @@ class _HomeScreenState extends State<HomeScreen> {
           leading: Icon(icon, color: Colors.brown),
           title: Text(
             title,
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.w600),
           ),
-          trailing: const Icon(
-            Icons.chevron_right,
-            size: 20,
-          ),
+          trailing: const Icon(Icons.chevron_right, size: 20),
           onTap: onTap,
         ),
       ),

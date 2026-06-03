@@ -20,7 +20,6 @@ class SplashScreen extends StatefulWidget {
 
 // State class for SplashScreen.
 class _SplashScreenState extends State<SplashScreen> {
-
   // Method executed once when the screen is created.
   @override
   void initState() {
@@ -28,12 +27,9 @@ class _SplashScreenState extends State<SplashScreen> {
 
     // Waits 2 seconds and automatically navigates to HomeScreen.
     Timer(const Duration(seconds: 2), () {
-
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (context) => const HomeScreen(),
-        ),
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
       );
     });
   }
@@ -41,19 +37,16 @@ class _SplashScreenState extends State<SplashScreen> {
   // Builds the visual interface of the splash screen.
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       backgroundColor: Colors.white,
 
       body: SafeArea(
         child: Center(
-
           child: Image.asset(
             'assets/images/logos.png',
             width: 340,
             fit: BoxFit.contain,
           ),
-
         ),
       ),
     );

@@ -202,10 +202,7 @@ class LgService extends ChangeNotifier {
   Future<bool> flyTo(String kmlViewTag) async {
     final command = "echo 'flytoview=$kmlViewTag' > /tmp/query.txt";
 
-    final result = await execute(
-      command,
-      'FlyTo command sent',
-    );
+    final result = await execute(command, 'FlyTo command sent');
 
     return result != null;
   }
@@ -265,10 +262,7 @@ class LgService extends ChangeNotifier {
 </kml>
 ''';
 
-      await execute(
-        '> /var/www/html/kmls.txt',
-        'KMLs cleaned',
-      );
+      await execute('> /var/www/html/kmls.txt', 'KMLs cleaned');
 
       for (int i = 1; i <= _lgConnectionModel.screens; i++) {
         await execute(
@@ -285,8 +279,7 @@ class LgService extends ChangeNotifier {
   }
 
   Future<void> cleanLogos() async {
-    final leftMostScreen =
-    calculateLeftMostScreen(_lgConnectionModel.screens);
+    final leftMostScreen = calculateLeftMostScreen(_lgConnectionModel.screens);
 
     const emptyKml = '''
 <?xml version="1.0" encoding="UTF-8"?>
@@ -304,42 +297,38 @@ class LgService extends ChangeNotifier {
 
   Future<bool> sendLogo() async {
     try {
-      final leftMostScreen =
-      calculateLeftMostScreen(_lgConnectionModel.screens);
+      final leftMostScreen = calculateLeftMostScreen(
+        _lgConnectionModel.screens,
+      );
 
       // Load image from Flutter assets
-      final bytes = await rootBundle.load(
-        'assets/images/logos.png',
-      );
+      final bytes = await rootBundle.load('assets/images/logos.png');
 
       // Create temporary file
       final tempDir = await getTemporaryDirectory();
 
-      final file = File(
-        '${tempDir.path}/logos.png',
-      );
+      final file = File('${tempDir.path}/logos.png');
 
       // Write image bytes
-      await file.writeAsBytes(
-        bytes.buffer.asUint8List(),
-      );
+      await file.writeAsBytes(bytes.buffer.asUint8List());
 
       // Upload image to LG web server
       final sftp = await _client!.sftp();
 
-      await sftp.open(
-        '/var/www/html/logos.png',
-        mode: SftpFileOpenMode.create |
-        SftpFileOpenMode.write,
-      ).then((remoteFile) async {
-        final imageBytes = await file.readAsBytes();
+      await sftp
+          .open(
+            '/var/www/html/logos.png',
+            mode: SftpFileOpenMode.create | SftpFileOpenMode.write,
+          )
+          .then((remoteFile) async {
+            final imageBytes = await file.readAsBytes();
 
-        await remoteFile.write(
-          Stream.value(Uint8List.fromList(imageBytes)),
-        );
+            await remoteFile.write(
+              Stream.value(Uint8List.fromList(imageBytes)),
+            );
 
-        await remoteFile.close();
-      });
+            await remoteFile.close();
+          });
 
       // Create KML overlay
       const String kmlContent = '''
@@ -392,29 +381,21 @@ class LgService extends ChangeNotifier {
 
   Future<bool> reboot() async {
     try {
-
       for (int i = _lgConnectionModel.screens; i >= 1; i--) {
-
         final command =
             'sshpass -p ${_lgConnectionModel.password} '
             'ssh -t lg$i '
             '"echo ${_lgConnectionModel.password} | sudo -S reboot"';
 
-        await execute(
-          command,
-          'Screen $i rebooted',
-        );
+        await execute(command, 'Screen $i rebooted');
 
         // Wait 2 seconds before next screen
-        await Future.delayed(
-          const Duration(seconds: 2),
-        );
+        await Future.delayed(const Duration(seconds: 2));
       }
 
       disconnect();
 
       return true;
-
     } catch (e) {
       debugPrint('Error rebooting LG: $e');
       return false;
@@ -422,7 +403,8 @@ class LgService extends ChangeNotifier {
   }
 
   Future<bool> relaunchLG() async {
-    final relaunchCmd = '''
+    final relaunchCmd =
+        '''
 RELAUNCH_CMD="\\
 if [ -f /etc/init/lxdm.conf ];
 then
@@ -442,39 +424,28 @@ fi
 " && sshpass -p ${_lgConnectionModel.password} ssh -x -t lg@lg1 "\$RELAUNCH_CMD"
 ''';
 
-    final result = await execute(
-      relaunchCmd,
-      'Liquid Galaxy relaunched',
-    );
+    final result = await execute(relaunchCmd, 'Liquid Galaxy relaunched');
 
     return result != null;
   }
 
   Future<bool> shutdown() async {
     try {
-
       for (int i = _lgConnectionModel.screens; i >= 1; i--) {
-
         final command =
             'sshpass -p ${_lgConnectionModel.password} '
             'ssh -t lg$i '
             '"echo ${_lgConnectionModel.password} | sudo -S shutdown now"';
 
-        await execute(
-          command,
-          'Screen $i shutdown',
-        );
+        await execute(command, 'Screen $i shutdown');
 
         // Wait 2 seconds before next screen
-        await Future.delayed(
-          const Duration(seconds: 2),
-        );
+        await Future.delayed(const Duration(seconds: 2));
       }
 
       disconnect();
 
       return true;
-
     } catch (e) {
       debugPrint('Error shutting down LG: $e');
       return false;
@@ -484,13 +455,13 @@ fi
   Future<bool> showPyramidDemo() async {
     return await flyTo(
       '<LookAt>'
-          '<longitude>0.6224</longitude>'
-          '<latitude>41.6170</latitude>'
-          '<range>8000</range>'
-          '<tilt>45</tilt>'
-          '<heading>0</heading>'
-          '<altitudeMode>relativeToGround</altitudeMode>'
-          '</LookAt>',
+      '<longitude>0.6224</longitude>'
+      '<latitude>41.6170</latitude>'
+      '<range>8000</range>'
+      '<tilt>45</tilt>'
+      '<heading>0</heading>'
+      '<altitudeMode>relativeToGround</altitudeMode>'
+      '</LookAt>',
     );
   }
 

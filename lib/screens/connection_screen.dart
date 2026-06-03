@@ -12,12 +12,18 @@ class ConnectionScreen extends StatefulWidget {
 
 class _ConnectionScreenState extends State<ConnectionScreen> {
   final TextEditingController ipController = TextEditingController();
-  final TextEditingController userController = TextEditingController(text: 'lg');
-  final TextEditingController passwordController =
-  TextEditingController(text: 'lqgalaxy');
-  final TextEditingController portController = TextEditingController(text: '22');
-  final TextEditingController screensController =
-  TextEditingController(text: '5');
+  final TextEditingController userController = TextEditingController(
+    text: 'lg',
+  );
+  final TextEditingController passwordController = TextEditingController(
+    text: 'lqgalaxy',
+  );
+  final TextEditingController portController = TextEditingController(
+    text: '22',
+  );
+  final TextEditingController screensController = TextEditingController(
+    text: '5',
+  );
 
   bool isConnecting = false;
 
@@ -263,8 +269,9 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
           style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
         ),
         style: ElevatedButton.styleFrom(
-          backgroundColor:
-          isSecondary ? Colors.grey.shade300 : const Color(0xFF3E2A1F),
+          backgroundColor: isSecondary
+              ? Colors.grey.shade300
+              : const Color(0xFF3E2A1F),
           foregroundColor: isSecondary ? Colors.grey.shade700 : Colors.white,
           elevation: isSecondary ? 0 : 6,
           shape: RoundedRectangleBorder(

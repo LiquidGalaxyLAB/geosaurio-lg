@@ -18,18 +18,14 @@ class LgSettingsScreen extends StatelessWidget {
   }
 
   Future<void> runAction(
-      BuildContext context,
-      String actionName,
-      Future<bool> Function(LgService lgService) action,
-      ) async {
+    BuildContext context,
+    String actionName,
+    Future<bool> Function(LgService lgService) action,
+  ) async {
     final lgService = context.read<LgService>();
 
     if (!lgService.isConnected) {
-      showSnack(
-        context,
-        'Connect to Liquid Galaxy first.',
-        success: false,
-      );
+      showSnack(context, 'Connect to Liquid Galaxy first.', success: false);
       return;
     }
 
@@ -72,7 +68,11 @@ class LgSettingsScreen extends StatelessWidget {
 
     if (result == true) {
       final ok = await lgService.sendLogo();
-      showSnack(context, ok ? 'Logo shown.' : 'Error showing logo.', success: ok);
+      showSnack(
+        context,
+        ok ? 'Logo shown.' : 'Error showing logo.',
+        success: ok,
+      );
     } else if (result == false) {
       await lgService.cleanLogos();
       showSnack(context, 'Logo hidden.');
@@ -149,46 +149,40 @@ class LgSettingsScreen extends StatelessWidget {
                       icon: Icons.restart_alt,
                       text: 'Reboot',
                       color: Colors.green,
-                      onTap: () => runAction(
-                        context,
-                        'Reboot',
-                            (lg) async {
-
-                          final confirm = await showDialog<bool>(
-                            context: context,
-                            builder: (context) {
-                              return AlertDialog(
-                                title: const Text('Reboot Liquid Galaxy'),
-                                content: const Text(
-                                  'Are you sure you want to reboot all screens?',
+                      onTap: () => runAction(context, 'Reboot', (lg) async {
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (context) {
+                            return AlertDialog(
+                              title: const Text('Reboot Liquid Galaxy'),
+                              content: const Text(
+                                'Are you sure you want to reboot all screens?',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pop(context, false);
+                                  },
+                                  child: const Text('Cancel'),
                                 ),
-                                actions: [
 
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.pop(context, false);
-                                    },
-                                    child: const Text('Cancel'),
-                                  ),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    Navigator.pop(context, true);
+                                  },
+                                  child: const Text('Reboot'),
+                                ),
+                              ],
+                            );
+                          },
+                        );
 
-                                  ElevatedButton(
-                                    onPressed: () {
-                                      Navigator.pop(context, true);
-                                    },
-                                    child: const Text('Reboot'),
-                                  ),
-                                ],
-                              );
-                            },
-                          );
+                        if (confirm == true) {
+                          return await lg.reboot();
+                        }
 
-                          if (confirm == true) {
-                            return await lg.reboot();
-                          }
-
-                          return false;
-                        },
-                      ),
+                        return false;
+                      }),
                     ),
                     lgButton(
                       icon: Icons.refresh,
@@ -197,53 +191,47 @@ class LgSettingsScreen extends StatelessWidget {
                       onTap: () => runAction(
                         context,
                         'Relaunch',
-                            (lg) => lg.relaunchLG(),
+                        (lg) => lg.relaunchLG(),
                       ),
                     ),
                     lgButton(
                       icon: Icons.power_settings_new,
                       text: 'Shutdown',
                       color: Colors.red,
-                      onTap: () => runAction(
-                        context,
-                        'Shutdown',
-                            (lg) async {
-
-                          final confirm = await showDialog<bool>(
-                            context: context,
-                            builder: (context) {
-                              return AlertDialog(
-                                title: const Text('Shutdown Liquid Galaxy'),
-                                content: const Text(
-                                  'Are you sure you want to shutdown all screens?',
+                      onTap: () => runAction(context, 'Shutdown', (lg) async {
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (context) {
+                            return AlertDialog(
+                              title: const Text('Shutdown Liquid Galaxy'),
+                              content: const Text(
+                                'Are you sure you want to shutdown all screens?',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pop(context, false);
+                                  },
+                                  child: const Text('Cancel'),
                                 ),
-                                actions: [
 
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.pop(context, false);
-                                    },
-                                    child: const Text('Cancel'),
-                                  ),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    Navigator.pop(context, true);
+                                  },
+                                  child: const Text('Shutdown'),
+                                ),
+                              ],
+                            );
+                          },
+                        );
 
-                                  ElevatedButton(
-                                    onPressed: () {
-                                      Navigator.pop(context, true);
-                                    },
-                                    child: const Text('Shutdown'),
-                                  ),
-                                ],
-                              );
-                            },
-                          );
+                        if (confirm == true) {
+                          return await lg.shutdown();
+                        }
 
-                          if (confirm == true) {
-                            return await lg.shutdown();
-                          }
-
-                          return false;
-                        },
-                      ),
+                        return false;
+                      }),
                     ),
                     lgButton(
                       icon: Icons.visibility,
@@ -258,7 +246,7 @@ class LgSettingsScreen extends StatelessWidget {
                       onTap: () => runAction(
                         context,
                         "Clean KML's",
-                            (lg) => lg.cleanAll(),
+                        (lg) => lg.cleanAll(),
                       ),
                     ),
                     lgButton(

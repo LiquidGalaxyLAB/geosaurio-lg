@@ -20,9 +20,7 @@ class GeoSaurioApp extends StatelessWidget {
     return MaterialApp(
       title: 'GeoSaurio',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-      ),
+      theme: ThemeData(useMaterial3: true),
       home: const SplashScreen(),
     );
   }
