@@ -155,7 +155,7 @@ class LgSettingsScreen extends StatelessWidget {
                       icon: Icons.restart_alt,
                       text: 'Reboot',
                       color: Colors.green,
-                      onTap: () => runAction(context, 'Reboot', (lg) async {
+                      onTap: () => runAction(context, 'Reboot', (LgService lg) async {
                         final confirm = await showDialog<bool>(
                           context: context,
                           builder: (context) {
@@ -171,7 +171,6 @@ class LgSettingsScreen extends StatelessWidget {
                                   },
                                   child: const Text('Cancel'),
                                 ),
-
                                 ElevatedButton(
                                   onPressed: () {
                                     Navigator.pop(context, true);
@@ -197,14 +196,14 @@ class LgSettingsScreen extends StatelessWidget {
                       onTap: () => runAction(
                         context,
                         'Relaunch',
-                        (lg) => lg.relaunchLG(),
+                        (LgService lg) => lg.relaunchLG(),
                       ),
                     ),
                     lgButton(
                       icon: Icons.power_settings_new,
                       text: 'Shutdown',
                       color: Colors.red,
-                      onTap: () => runAction(context, 'Shutdown', (lg) async {
+                      onTap: () => runAction(context, 'Shutdown', (LgService lg) async {
                         final confirm = await showDialog<bool>(
                           context: context,
                           builder: (context) {
@@ -220,7 +219,6 @@ class LgSettingsScreen extends StatelessWidget {
                                   },
                                   child: const Text('Cancel'),
                                 ),
-
                                 ElevatedButton(
                                   onPressed: () {
                                     Navigator.pop(context, true);
@@ -252,7 +250,7 @@ class LgSettingsScreen extends StatelessWidget {
                       onTap: () => runAction(
                         context,
                         "Clean KML's",
-                        (lg) => lg.cleanAll(),
+                        (LgService lg) => lg.cleanAll(),
                       ),
                     ),
                     lgButton(

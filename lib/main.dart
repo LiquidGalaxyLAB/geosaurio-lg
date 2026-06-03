@@ -11,14 +11,16 @@ void main() async {
 
   runApp(
     MultiProvider(
-      providers: [ChangeNotifierProvider.value(value: lgService)],
-      child: const MyApp(),
+      providers: [
+        ChangeNotifierProvider.value(value: lgService),
+      ],
+      child: const GeoSaurioApp(),
     ),
   );
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class GeoSaurioApp extends StatelessWidget {
+  const GeoSaurioApp({super.key});
 
   @override
   Widget build(BuildContext context) {
