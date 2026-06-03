@@ -307,7 +307,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       thumbVisibility: true,
                       child: ListView.separated(
                         itemCount: visibleCountries.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 10),
+                        separatorBuilder: (_, _) => const SizedBox(height: 10),
                         itemBuilder: (context, index) {
                           final country = visibleCountries[index];
 
