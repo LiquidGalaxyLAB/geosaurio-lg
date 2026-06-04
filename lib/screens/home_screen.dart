@@ -153,18 +153,22 @@ class _HomeScreenState extends State<HomeScreen> {
     final lgService = context.read<LgService>();
 
     if (lgService.isConnected) {
-      final ok = await lgService.flyToDinosaur(selectedDino);
+      final flyOk = await lgService.flyToDinosaur(selectedDino);
+
+      if (flyOk) {
+        await lgService.showDinosaurNormalOverlay(selectedDino);
+      }
 
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            ok
-                ? 'Flying to ${selectedDino.name}'
-                : 'Could not move Liquid Galaxy',
+            flyOk
+                ? 'About order sent to Liquid Galaxy'
+                : 'Could not send About order',
           ),
-          backgroundColor: ok ? Colors.green : Colors.red,
+          backgroundColor: flyOk ? Colors.green : Colors.red,
           behavior: SnackBarBehavior.floating,
         ),
       );

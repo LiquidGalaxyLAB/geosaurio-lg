@@ -3,9 +3,10 @@ import 'dart:io';
 
 import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter/services.dart';
+
 import '../models/dinosaur.dart';
 
 class LgConnectionModel {
@@ -145,12 +146,9 @@ class LgService extends ChangeNotifier {
       _currentConnectionAttempts = 0;
       notifyListeners();
 
-      Future.delayed(
-        const Duration(seconds: 2),
-            () async {
-          await sendLogo();
-        },
-      );
+      Future.delayed(const Duration(seconds: 2), () async {
+        await sendLogo();
+      });
 
       return true;
     } on TimeoutException {
@@ -251,6 +249,68 @@ class LgService extends ChangeNotifier {
     return (screenCount / 2).ceil();
   }
 
+  String cleanDinosaurImageName(String name) {
+    return name
+        .replaceAll(' ', '_')
+        .replaceAll('.', '')
+        .replaceAll('?', '')
+        .replaceAll('(', '')
+        .replaceAll(')', '')
+        .replaceAll('-', '_')
+        .trim();
+  }
+
+  Future<String?> getExistingImagePath(String basePath) async {
+    final pngPath = '$basePath.png';
+    final jpgPath = '$basePath.jpg';
+
+    try {
+      await rootBundle.load(pngPath);
+      return pngPath;
+    } catch (_) {}
+
+    try {
+      await rootBundle.load(jpgPath);
+      return jpgPath;
+    } catch (_) {}
+
+    return null;
+  }
+
+  Future<bool> uploadAssetToLG({
+    required String assetPath,
+    required String fileName,
+  }) async {
+    try {
+      final bytes = await rootBundle.load(assetPath);
+
+      final tempDir = await getTemporaryDirectory();
+      final file = File('${tempDir.path}/$fileName');
+
+      await file.writeAsBytes(bytes.buffer.asUint8List());
+
+      final sftp = await _client!.sftp();
+
+      await sftp
+          .open(
+            '/var/www/html/$fileName',
+            mode: SftpFileOpenMode.create | SftpFileOpenMode.write,
+          )
+          .then((remoteFile) async {
+            final fileBytes = await file.readAsBytes();
+
+            await remoteFile.write(Stream.value(Uint8List.fromList(fileBytes)));
+
+            await remoteFile.close();
+          });
+
+      return true;
+    } catch (e) {
+      debugPrint('Error uploading asset to LG: $e');
+      return false;
+    }
+  }
+
   Future<bool> cleanAll() async {
     try {
       const emptyKml = '''
@@ -300,36 +360,13 @@ class LgService extends ChangeNotifier {
         _lgConnectionModel.screens,
       );
 
-      // Load image from Flutter assets
-      final bytes = await rootBundle.load('assets/images/logos.png');
+      final uploaded = await uploadAssetToLG(
+        assetPath: 'assets/images/logos.png',
+        fileName: 'logos.png',
+      );
 
-      // Create temporary file
-      final tempDir = await getTemporaryDirectory();
+      if (!uploaded) return false;
 
-      final file = File('${tempDir.path}/logos.png');
-
-      // Write image bytes
-      await file.writeAsBytes(bytes.buffer.asUint8List());
-
-      // Upload image to LG web server
-      final sftp = await _client!.sftp();
-
-      await sftp
-          .open(
-            '/var/www/html/logos.png',
-            mode: SftpFileOpenMode.create | SftpFileOpenMode.write,
-          )
-          .then((remoteFile) async {
-            final imageBytes = await file.readAsBytes();
-
-            await remoteFile.write(
-              Stream.value(Uint8List.fromList(imageBytes)),
-            );
-
-            await remoteFile.close();
-          });
-
-      // Create KML overlay
       const String kmlContent = '''
 <?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
@@ -378,6 +415,243 @@ class LgService extends ChangeNotifier {
     }
   }
 
+  Future<bool> showLeftScreenImage({
+    required String assetPath,
+    required String fileName,
+  }) async {
+    try {
+      final leftScreen = calculateLeftMostScreen(_lgConnectionModel.screens);
+
+      final uploaded = await uploadAssetToLG(
+        assetPath: assetPath,
+        fileName: fileName,
+      );
+
+      if (!uploaded) return false;
+
+      final kml =
+          '''
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document>
+
+<ScreenOverlay>
+  <name>Dinosaur Image</name>
+
+  <Icon>
+    <href>http://lg1:81/$fileName</href>
+  </Icon>
+
+  <overlayXY
+      x="0"
+      y="0.5"
+      xunits="fraction"
+      yunits="fraction"/>
+
+  <screenXY
+      x="0.02"
+      y="0.5"
+      xunits="fraction"
+      yunits="fraction"/>
+
+  <size
+      x="600"
+      y="0"
+      xunits="pixels"
+      yunits="pixels"/>
+
+</ScreenOverlay>
+
+</Document>
+</kml>
+''';
+
+      final result = await execute(
+        "echo '$kml' > /var/www/html/kml/slave_$leftScreen.kml",
+        'Left image overlay sent',
+      );
+
+      return result != null;
+    } catch (e) {
+      debugPrint('Error showing left image: $e');
+      return false;
+    }
+  }
+
+  Future<bool> showRightScreenImage({
+    required String assetPath,
+    required String fileName,
+  }) async {
+    try {
+      final rightScreen = calculateRightMostScreen(
+        _lgConnectionModel.screens,
+      );
+
+      final uploaded = await uploadAssetToLG(
+        assetPath: assetPath,
+        fileName: fileName,
+      );
+
+      if (!uploaded) return false;
+
+      final kml = '''
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document>
+
+<ScreenOverlay>
+  <name>Dinosaur Image</name>
+
+  <Icon>
+    <href>http://lg1:81/$fileName</href>
+  </Icon>
+
+  <overlayXY
+      x="1"
+      y="0.5"
+      xunits="fraction"
+      yunits="fraction"/>
+
+  <screenXY
+      x="0.98"
+      y="0.5"
+      xunits="fraction"
+      yunits="fraction"/>
+
+  <size
+      x="600"
+      y="0"
+      xunits="pixels"
+      yunits="pixels"/>
+
+</ScreenOverlay>
+
+</Document>
+</kml>
+''';
+
+      final result = await execute(
+        "echo '$kml' > /var/www/html/kml/slave_$rightScreen.kml",
+        'Right image overlay sent',
+      );
+
+      return result != null;
+    } catch (e) {
+      debugPrint('Error showing right image: $e');
+      return false;
+    }
+  }
+
+  Future<bool> showImageInChromium({
+    required String assetPath,
+    required String fileName,
+  }) async {
+    try {
+      final uploaded = await uploadAssetToLG(
+        assetPath: assetPath,
+        fileName: fileName,
+      );
+
+      if (!uploaded) return false;
+
+      final url = 'http://lg1:81/$fileName';
+
+      final command =
+          'DISPLAY=:0 chromium-browser '
+          '--noerrdialogs '
+          '--disable-infobars '
+          '--disable-session-crashed-bubble '
+          '--no-sandbox '
+          '--kiosk '
+          '"$url"';
+
+      final result = await execute(command, 'Chromium image opened');
+
+      return result != null;
+    } catch (e) {
+      debugPrint('Error showing image in Chromium: $e');
+      return false;
+    }
+  }
+
+  Future<bool> closeChromiumAndRestoreLG() async {
+    try {
+      await execute(
+        'killall chromium-browser || killall chromium || true',
+        'Chromium closed',
+      );
+
+      await Future.delayed(const Duration(seconds: 1));
+
+      await sendLogo();
+
+      return true;
+    } catch (e) {
+      debugPrint('Error closing Chromium: $e');
+      return false;
+    }
+  }
+
+  Future<bool> showDinosaurNormalOverlay(Dinosaur dinosaur) async {
+    final cleanName = cleanDinosaurImageName(dinosaur.name);
+
+    final assetPath = await getExistingImagePath(
+      'assets/images/dinosaurs/${cleanName}_normal',
+    );
+
+    if (assetPath == null) {
+      debugPrint('Normal image not found for ${dinosaur.name}');
+      return false;
+    }
+
+    final extension = assetPath.split('.').last;
+
+    return await showRightScreenImage(
+      assetPath: assetPath,
+      fileName: '${cleanName}_normal.$extension',
+    );
+  }
+
+  Future<bool> showDinosaurSkeletonImage(Dinosaur dinosaur) async {
+    final cleanName = cleanDinosaurImageName(dinosaur.name);
+
+    final assetPath = await getExistingImagePath(
+      'assets/images/dinosaurs/${cleanName}_skeleton',
+    );
+
+    if (assetPath == null) {
+      debugPrint('Skeleton image not found for ${dinosaur.name}');
+      return false;
+    }
+
+    final extension = assetPath.split('.').last;
+
+    return await showImageInChromium(
+      assetPath: assetPath,
+      fileName: '${cleanName}_skeleton.$extension',
+    );
+  }
+
+  Future<bool> showDinosaurComparisonImage(Dinosaur dinosaur) async {
+    final cleanName = cleanDinosaurImageName(dinosaur.name);
+
+    final assetPath = await getExistingImagePath(
+      'assets/images/dinosaurs/${cleanName}_comparison',
+    );
+
+    if (assetPath == null) {
+      debugPrint('Comparison image not found for ${dinosaur.name}');
+      return false;
+    }
+
+    final extension = assetPath.split('.').last;
+
+    return await showImageInChromium(
+      assetPath: assetPath,
+      fileName: '${cleanName}_comparison.$extension',
+    );
+  }
+
   Future<bool> reboot() async {
     try {
       for (int i = _lgConnectionModel.screens; i >= 1; i--) {
@@ -388,7 +662,6 @@ class LgService extends ChangeNotifier {
 
         await execute(command, 'Screen $i rebooted');
 
-        // Wait 2 seconds before next screen
         await Future.delayed(const Duration(seconds: 2));
       }
 
@@ -438,7 +711,6 @@ fi
 
         await execute(command, 'Screen $i shutdown');
 
-        // Wait 2 seconds before next screen
         await Future.delayed(const Duration(seconds: 2));
       }
 

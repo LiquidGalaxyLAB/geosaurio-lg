@@ -30,16 +30,15 @@ class DinosaurDetailScreen extends StatelessWidget {
       return;
     }
 
-    final ok = await lgService.flyTo(
-      '<LookAt>'
-      '<longitude>0.6224</longitude>'
-      '<latitude>41.6170</latitude>'
-      '<range>8000</range>'
-      '<tilt>45</tilt>'
-      '<heading>0</heading>'
-      '<altitudeMode>relativeToGround</altitudeMode>'
-      '</LookAt>',
-    );
+    bool ok = false;
+
+    // Fly to dinosaur
+    ok = await lgService.flyToDinosaur(dinosaur);
+
+    // Show normal image on right screen
+    if (ok) {
+      await lgService.showDinosaurNormalOverlay(dinosaur);
+    }
 
     if (!context.mounted) return;
 
@@ -97,10 +96,22 @@ class DinosaurDetailScreen extends StatelessWidget {
                             color: const Color(0xFFE8E1D8),
                             borderRadius: BorderRadius.circular(18),
                           ),
-                          child: const Icon(
-                            Icons.pets,
-                            size: 90,
-                            color: Color(0xFF3E2A1F),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(18),
+                            child: Image.asset(
+                              'assets/images/dinosaurs/'
+                              '${dinosaur.name.toLowerCase().replaceAll(' ', '_')}_normal.png',
+
+                              fit: BoxFit.cover,
+
+                              errorBuilder: (context, error, stackTrace) {
+                                return const Icon(
+                                  Icons.pets,
+                                  size: 90,
+                                  color: Color(0xFF3E2A1F),
+                                );
+                              },
+                            ),
                           ),
                         ),
                         const SizedBox(height: 18),
@@ -220,12 +231,44 @@ class DinosaurDetailScreen extends StatelessWidget {
                       optionButton(
                         icon: Icons.groups,
                         text: 'Comparison',
-                        onTap: () => sendToLg(context, 'Comparison'),
+                        onTap: () async {
+                          final lg = context.read<LgService>();
+
+                          final ok = await lg.showDinosaurComparisonImage(
+                            dinosaur,
+                          );
+
+                          if (!context.mounted) return;
+
+                          showSnack(
+                            context,
+                            ok
+                                ? 'Comparison order sent to Liquid Galaxy'
+                                : 'Error sending comparison',
+                            success: ok,
+                          );
+                        },
                       ),
                       optionButton(
-                        icon: Icons.sync,
-                        text: 'Transformation',
-                        onTap: () => sendToLg(context, 'Transformation'),
+                        icon: Icons.view_in_ar,
+                        text: 'Skeleton',
+                        onTap: () async {
+                          final lg = context.read<LgService>();
+
+                          final ok = await lg.showDinosaurSkeletonImage(
+                            dinosaur,
+                          );
+
+                          if (!context.mounted) return;
+
+                          showSnack(
+                            context,
+                            ok
+                                ? 'Skeleton order sent to Liquid Galaxy'
+                                : 'Error sending skeleton',
+                            success: ok,
+                          );
+                        },
                       ),
                       optionButton(
                         icon: Icons.view_in_ar,

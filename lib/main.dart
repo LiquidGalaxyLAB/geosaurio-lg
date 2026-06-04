@@ -12,9 +12,7 @@ void main() async {
 
   runApp(
     MultiProvider(
-      providers: [
-        ChangeNotifierProvider.value(value: lgService),
-      ],
+      providers: [ChangeNotifierProvider.value(value: lgService)],
       child: const GeoSaurioApp(),
     ),
   );
