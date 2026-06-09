@@ -32,19 +32,23 @@ class DinosaurDetailScreen extends StatelessWidget {
 
     bool ok = false;
 
-    // Fly to dinosaur
-    ok = await lgService.flyToDinosaur(dinosaur);
+    // First fly to the dinosaur location
+    await lgService.flyToDinosaur(dinosaur);
 
-    // Show normal image on right screen
-    if (ok) {
-      await lgService.showDinosaurNormalOverlay(dinosaur);
+    // Then show the specific image based on the action
+    if (action == 'About') {
+      ok = await lgService.showDinosaurNormalOverlay(dinosaur);
+    } else if (action == 'Comparison') {
+      ok = await lgService.showDinosaurComparisonImage(dinosaur);
+    } else if (action == 'Skeleton') {
+      ok = await lgService.showDinosaurSkeletonImage(dinosaur);
     }
 
     if (!context.mounted) return;
 
     showSnack(
       context,
-      ok ? '$action sent to Liquid Galaxy' : 'Error sending $action',
+      ok ? '$action image sent to Liquid Galaxy' : 'Image for $action not found',
       success: ok,
     );
   }
@@ -52,6 +56,8 @@ class DinosaurDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isLgConnected = context.watch<LgService>().isConnected;
+    final lgService = context.read<LgService>();
+    final cleanName = lgService.cleanDinosaurImageName(dinosaur.name);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F4EF),
@@ -98,13 +104,18 @@ class DinosaurDetailScreen extends StatelessWidget {
                           ),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(18),
-                            child: Image.asset(
-                              'assets/images/dinosaurs/'
-                              '${dinosaur.name.toLowerCase().replaceAll(' ', '_')}_normal.png',
-
-                              fit: BoxFit.cover,
-
-                              errorBuilder: (context, error, stackTrace) {
+                            child: FutureBuilder<String?>(
+                              future: lgService.getExistingImagePath(
+                                'assets/images/dinosaurs/${cleanName}_normal',
+                              ),
+                              builder: (context, snapshot) {
+                                if (snapshot.hasData && snapshot.data != null) {
+                                  return Image.asset(
+                                    snapshot.data!,
+                                    fit: BoxFit.cover,
+                                    width: double.infinity,
+                                  );
+                                }
                                 return const Icon(
                                   Icons.pets,
                                   size: 90,
@@ -224,51 +235,19 @@ class DinosaurDetailScreen extends StatelessWidget {
                     childAspectRatio: 1.45,
                     children: [
                       optionButton(
-                        icon: Icons.menu_book,
-                        text: 'AI Narration',
-                        onTap: () => sendToLg(context, 'AI Narration'),
+                        icon: Icons.info_outline,
+                        text: 'About',
+                        onTap: () => sendToLg(context, 'About'),
                       ),
                       optionButton(
                         icon: Icons.groups,
-                        text: 'Comparison',
-                        onTap: () async {
-                          final lg = context.read<LgService>();
-
-                          final ok = await lg.showDinosaurComparisonImage(
-                            dinosaur,
-                          );
-
-                          if (!context.mounted) return;
-
-                          showSnack(
-                            context,
-                            ok
-                                ? 'Comparison order sent to Liquid Galaxy'
-                                : 'Error sending comparison',
-                            success: ok,
-                          );
-                        },
+                        text: 'See Comparison',
+                        onTap: () => sendToLg(context, 'Comparison'),
                       ),
                       optionButton(
                         icon: Icons.view_in_ar,
                         text: 'Skeleton',
-                        onTap: () async {
-                          final lg = context.read<LgService>();
-
-                          final ok = await lg.showDinosaurSkeletonImage(
-                            dinosaur,
-                          );
-
-                          if (!context.mounted) return;
-
-                          showSnack(
-                            context,
-                            ok
-                                ? 'Skeleton order sent to Liquid Galaxy'
-                                : 'Error sending skeleton',
-                            success: ok,
-                          );
-                        },
+                        onTap: () => sendToLg(context, 'Skeleton'),
                       ),
                       optionButton(
                         icon: Icons.view_in_ar,

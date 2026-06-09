@@ -31,4 +31,5 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/images/dinosaurs/
     - assets/data/
