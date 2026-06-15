@@ -195,11 +195,34 @@ class LgSettingsScreen extends StatelessWidget {
                       icon: Icons.refresh,
                       text: 'Relaunch',
                       color: Colors.blue,
-                      onTap: () => runAction(
-                        context,
-                        'Relaunch',
-                        (LgService lg) => lg.relaunchLG(),
-                      ),
+                      onTap: () async {
+                        final lgService = context.read<LgService>();
+
+                        if (!lgService.isConnected) {
+                          showSnack(
+                            context,
+                            'Connect to Liquid Galaxy first.',
+                            success: false,
+                          );
+                          return;
+                        }
+
+                        showSnack(
+                          context,
+                          'Relaunch command sent...',
+                          success: true,
+                        );
+
+                        final ok = await lgService.relaunchLG();
+
+                        if (!context.mounted) return;
+
+                        showSnack(
+                          context,
+                          ok ? 'Relaunch completed.' : 'Relaunch failed.',
+                          success: ok,
+                        );
+                      },
                     ),
                     lgButton(
                       icon: Icons.power_settings_new,

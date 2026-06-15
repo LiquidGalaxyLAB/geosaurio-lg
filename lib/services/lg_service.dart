@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter/foundation.dart';
@@ -55,6 +57,7 @@ class LgConnectionModel {
 
   static Future<LgConnectionModel> loadFromPreferences() async {
     final prefs = await SharedPreferences.getInstance();
+
     return LgConnectionModel(
       username: prefs.getString(_keyUsername) ?? 'lg',
       ip: prefs.getString(_keyIp) ?? '',
@@ -71,6 +74,7 @@ class LgService extends ChangeNotifier {
   factory LgService() => _singleton;
 
   final LgConnectionModel _lgConnectionModel = LgConnectionModel();
+
   SSHClient? _client;
   bool _isConnected = false;
   int _currentConnectionAttempts = 0;
@@ -100,6 +104,7 @@ class LgService extends ChangeNotifier {
   Future<void> initializeConnection() async {
     try {
       final savedModel = await LgConnectionModel.loadFromPreferences();
+
       updateConnectionSettings(
         ip: savedModel.ip,
         port: savedModel.port,
@@ -107,6 +112,7 @@ class LgService extends ChangeNotifier {
         password: savedModel.password,
         screens: savedModel.screens,
       );
+
       await connectToLG();
     } catch (e) {
       debugPrint('Initialization error: $e');
@@ -159,11 +165,253 @@ class LgService extends ChangeNotifier {
   }
 
   Future<dynamic> execute(String command, String successMessage) async {
-    if (_client == null) return null;
+    if (_client == null) {
+      debugPrint('SSH client not connected');
+      return null;
+    }
+
     try {
       final result = await _client!.execute(command);
+      debugPrint(successMessage);
       return result;
     } catch (e) {
+      debugPrint('Command error: $e');
+      return null;
+    }
+  }
+
+  int calculateLeftMostScreen(int screenCount) {
+    return screenCount == 1 ? 1 : (screenCount / 2).floor() + 2;
+  }
+
+  int calculateRightMostScreen(int screenCount) {
+    return screenCount == 1 ? 1 : (screenCount / 2).floor() + 1;
+  }
+
+  String cleanDinosaurImageName(String name) {
+    return name
+        .trim()
+        .replaceAll(RegExp(r'[ \s\u00A0]+'), '_')
+        .replaceAll('.', '')
+        .replaceAll('?', '')
+        .replaceAll('(', '')
+        .replaceAll(')', '')
+        .replaceAll('-', '_')
+        .replaceAll('__', '_');
+  }
+
+  Future<String?> getExistingImagePath(String basePath) async {
+    final extensions = ['.png', '.jpg', '.jpeg'];
+
+    final variants = <String>{
+      basePath,
+      basePath.toLowerCase(),
+    };
+
+    if (basePath.contains('_')) {
+      final lastUnderscore = basePath.lastIndexOf('_');
+      final prefix = basePath.substring(0, lastUnderscore);
+      final suffix = basePath.substring(lastUnderscore);
+
+      variants.add('$prefix $suffix');
+      variants.add('${prefix.toLowerCase()} $suffix');
+
+      if (suffix.contains('comparis')) {
+        final otherSuffix = suffix.contains('comparison')
+            ? suffix.replaceFirst('comparison', 'comparision')
+            : suffix.replaceFirst('comparision', 'comparison');
+
+        variants.add('$prefix$otherSuffix');
+        variants.add('${prefix.toLowerCase()}$otherSuffix');
+        variants.add('$prefix $otherSuffix');
+        variants.add('${prefix.toLowerCase()} $otherSuffix');
+      }
+    }
+
+    for (final variant in variants) {
+      for (final ext in extensions) {
+        final path = '$variant$ext';
+
+        try {
+          await rootBundle.load(path);
+          debugPrint('Found: $path');
+          return path;
+        } catch (_) {}
+      }
+    }
+
+    debugPrint('Image not found: $basePath');
+    return null;
+  }
+
+  Future<bool> uploadAssetToLG({
+    required String assetPath,
+    required String fileName,
+  }) async {
+    try {
+      final bytes = await rootBundle.load(assetPath);
+      final tempDir = await getTemporaryDirectory();
+      final file = File('${tempDir.path}/$fileName');
+
+      await file.writeAsBytes(bytes.buffer.asUint8List());
+
+      final sftp = await _client!.sftp();
+
+      final remoteFile = await sftp.open(
+        '/var/www/html/$fileName',
+        mode: SftpFileOpenMode.create |
+        SftpFileOpenMode.truncate |
+        SftpFileOpenMode.write,
+      );
+
+      await remoteFile.write(
+        Stream.value(Uint8List.fromList(await file.readAsBytes())),
+      );
+
+      await remoteFile.close();
+
+      return true;
+    } catch (e) {
+      debugPrint('Error subiendo imagen: $e');
+      return false;
+    }
+  }
+
+  Future<bool> uploadBytesToLG({
+    required Uint8List bytes,
+    required String fileName,
+  }) async {
+    try {
+      final sftp = await _client!.sftp();
+
+      final remoteFile = await sftp.open(
+        '/var/www/html/$fileName',
+        mode: SftpFileOpenMode.create |
+        SftpFileOpenMode.truncate |
+        SftpFileOpenMode.write,
+      );
+
+      await remoteFile.write(
+        Stream.value(bytes),
+      );
+
+      await remoteFile.close();
+
+      return true;
+    } catch (e) {
+      debugPrint('Error uploading bytes: $e');
+      return false;
+    }
+  }
+
+  String _cleanText(String value) {
+    return value
+        .replaceAll('&', 'and')
+        .replaceAll('<', '')
+        .replaceAll('>', '')
+        .replaceAll("'", '')
+        .replaceAll('"', '')
+        .trim();
+  }
+
+  Future<Uint8List?> createDinosaurInfoImage(Dinosaur dinosaur) async {
+    try {
+      const double width = 900;
+      const double height = 620;
+
+      final recorder = ui.PictureRecorder();
+      final canvas = ui.Canvas(recorder);
+
+      final backgroundPaint = ui.Paint()
+        ..color = const ui.Color(0xEEFFFFFF);
+
+      canvas.drawRRect(
+        ui.RRect.fromRectAndRadius(
+          const ui.Rect.fromLTWH(0, 0, width, height),
+          const ui.Radius.circular(26),
+        ),
+        backgroundPaint,
+      );
+
+      final titleStyle = ui.TextStyle(
+        color: const ui.Color(0xFF111111),
+        fontSize: 42,
+        fontWeight: ui.FontWeight.bold,
+      );
+
+      final bodyStyle = ui.TextStyle(
+        color: const ui.Color(0xFF111111),
+        fontSize: 28,
+      );
+
+      final titleBuilder = ui.ParagraphBuilder(
+        ui.ParagraphStyle(
+          maxLines: 2,
+          textAlign: ui.TextAlign.left,
+        ),
+      )
+        ..pushStyle(titleStyle)
+        ..addText(_cleanText(dinosaur.name));
+
+      final titleParagraph = titleBuilder.build()
+        ..layout(
+          const ui.ParagraphConstraints(width: width - 60),
+        );
+
+      canvas.drawParagraph(
+        titleParagraph,
+        const ui.Offset(30, 28),
+      );
+
+      final info = '''
+Period: ${_cleanText(dinosaur.periodName)}
+Time: ${_cleanText(dinosaur.time1)} - ${_cleanText(dinosaur.time2)}
+Diet: ${_cleanText(dinosaur.diet)}
+Length: ${_cleanText(dinosaur.length)}
+Weight: ${_cleanText(dinosaur.weight)}
+Country: ${_cleanText(dinosaur.country)}
+Region: ${_cleanText(dinosaur.region)}
+Formation: ${_cleanText(dinosaur.formation)}
+Habitat: ${_cleanText(dinosaur.habitat)}
+
+${_cleanText(dinosaur.generalInfo)}
+''';
+
+      final bodyBuilder = ui.ParagraphBuilder(
+        ui.ParagraphStyle(
+          maxLines: 14,
+          textAlign: ui.TextAlign.left,
+        ),
+      )
+        ..pushStyle(bodyStyle)
+        ..addText(info);
+
+      final bodyParagraph = bodyBuilder.build()
+        ..layout(
+          const ui.ParagraphConstraints(width: width - 60),
+        );
+
+      canvas.drawParagraph(
+        bodyParagraph,
+        const ui.Offset(30, 125),
+      );
+
+      final picture = recorder.endRecording();
+
+      final image = await picture.toImage(
+        width.toInt(),
+        height.toInt(),
+      );
+
+      final byteData = await image.toByteData(
+        format: ui.ImageByteFormat.png,
+      );
+
+      if (byteData == null) return null;
+
+      return byteData.buffer.asUint8List();
+    } catch (e) {
+      debugPrint('Error creating dinosaur info image: $e');
       return null;
     }
   }
@@ -185,93 +433,10 @@ class LgService extends ChangeNotifier {
 
       final command = "echo 'flytoview=$lookAt' > /tmp/query.txt";
       final result = await execute(command, 'FlyTo sent');
+
       return result != null;
     } catch (e) {
-      return false;
-    }
-  }
-
-  int calculateLeftMostScreen(int screenCount) => screenCount == 1 ? 1 : (screenCount / 2).floor() + 3;
-  int calculateRightMostScreen(int screenCount) => screenCount == 1 ? 1 : (screenCount / 2).floor() + 2;
-
-  String cleanDinosaurImageName(String name) {
-    // Elimina espacios extra, espacios especiales NBSP y normaliza para nombres de archivos
-    return name
-        .trim()
-        .replaceAll(RegExp(r'[ \s\u00A0]+'), '_')
-        .replaceAll('.', '')
-        .replaceAll('?', '')
-        .replaceAll('(', '')
-        .replaceAll(')', '')
-        .replaceAll('-', '_')
-        .replaceAll('__', '_');
-  }
-
-  Future<String?> getExistingImagePath(String basePath) async {
-    final extensions = ['.png', '.jpg', '.jpeg'];
-    
-    // Generamos variantes para ser flexibles con mayúsculas y espacios accidentales
-    // Por ejemplo, para "Agustinia_ligabuei_normal" probará también con "Agustinia_ligabuei _normal"
-    Set<String> variants = {
-      basePath,
-      basePath.toLowerCase(),
-    };
-
-    if (basePath.contains('_')) {
-      final lastUnderscore = basePath.lastIndexOf('_');
-      final prefix = basePath.substring(0, lastUnderscore);
-      final suffix = basePath.substring(lastUnderscore);
-      
-      // Variante con espacio antes del guion: "Nombre _tipo"
-      variants.add('$prefix $suffix');
-      variants.add('${prefix.toLowerCase()} $suffix');
-      
-      // Caso de errata común: "comparison" vs "comparision"
-      if (suffix.contains('comparis')) {
-        final otherSuffix = suffix.contains('comparison') 
-            ? suffix.replaceFirst('comparison', 'comparision')
-            : suffix.replaceFirst('comparision', 'comparison');
-        
-        variants.add('$prefix$otherSuffix');
-        variants.add('${prefix.toLowerCase()}$otherSuffix');
-        variants.add('$prefix $otherSuffix');
-        variants.add('${prefix.toLowerCase()} $otherSuffix');
-      }
-    }
-
-    for (final variant in variants) {
-      for (final ext in extensions) {
-        final path = '$variant$ext';
-        try {
-          // Intentamos cargar el asset para verificar si existe
-          await rootBundle.load(path);
-          debugPrint('✅ Encontrado: $path');
-          return path;
-        } catch (_) {
-          // No existe, seguimos buscando
-        }
-      }
-    }
-    debugPrint('❌ No se encontró ninguna imagen para: $basePath');
-    return null;
-  }
-
-  Future<bool> uploadAssetToLG({required String assetPath, required String fileName}) async {
-    try {
-      final bytes = await rootBundle.load(assetPath);
-      final tempDir = await getTemporaryDirectory();
-      final file = File('${tempDir.path}/$fileName');
-      await file.writeAsBytes(bytes.buffer.asUint8List());
-
-      final sftp = await _client!.sftp();
-      final remoteFile = await sftp.open('/var/www/html/$fileName', 
-          mode: SftpFileOpenMode.create | SftpFileOpenMode.write);
-      
-      await remoteFile.write(Stream.value(Uint8List.fromList(await file.readAsBytes())));
-      await remoteFile.close();
-      return true;
-    } catch (e) {
-      debugPrint('Error subiendo imagen: $e');
+      debugPrint('Error flying to dinosaur: $e');
       return false;
     }
   }
@@ -279,58 +444,431 @@ class LgService extends ChangeNotifier {
   Future<bool> sendLogo() async {
     try {
       final screen = calculateLeftMostScreen(_lgConnectionModel.screens);
-      final uploaded = await uploadAssetToLG(assetPath: 'assets/images/logos.png', fileName: 'logos.png');
+
+      final uploaded = await uploadAssetToLG(
+        assetPath: 'assets/images/logos.png',
+        fileName: 'logos.png',
+      );
+
       if (!uploaded) return false;
 
       final kml = '''<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2"><Document><ScreenOverlay><name>Logo</name><Icon><href>http://lg1:81/logos.png</href></Icon><overlayXY x="0" y="1" xunits="fraction" yunits="fraction"/><screenXY x="0.02" y="0.98" xunits="fraction" yunits="fraction"/><size x="700" y="0" xunits="pixels" yunits="pixels"/></ScreenOverlay></Document></kml>''';
-      
-      return (await execute("echo '$kml' > /var/www/html/kml/slave_$screen.kml", 'Logo sent')) != null;
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <ScreenOverlay>
+      <name>Logo</name>
+      <Icon>
+        <href>http://lg1:81/logos.png</href>
+      </Icon>
+      <overlayXY x="0" y="1" xunits="fraction" yunits="fraction"/>
+      <screenXY x="0.02" y="0.98" xunits="fraction" yunits="fraction"/>
+      <size x="700" y="0" xunits="pixels" yunits="pixels"/>
+    </ScreenOverlay>
+  </Document>
+</kml>''';
+
+      final result = await execute(
+        "echo '$kml' > /var/www/html/kml/slave_$screen.kml",
+        'Logo sent',
+      );
+
+      return result != null;
     } catch (e) {
+      debugPrint('Error sending logo: $e');
       return false;
     }
   }
 
-  Future<bool> showRightScreenImage({required String assetPath, required String fileName}) async {
+  Future<bool> showRightScreenImage({
+    required String assetPath,
+    required String fileName,
+  }) async {
     try {
       final screen = calculateRightMostScreen(_lgConnectionModel.screens);
-      final uploaded = await uploadAssetToLG(assetPath: assetPath, fileName: fileName);
+
+      final uploaded = await uploadAssetToLG(
+        assetPath: assetPath,
+        fileName: fileName,
+      );
+
       if (!uploaded) return false;
 
       final kml = '''<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2"><Document><ScreenOverlay><name>Dino Image</name><Icon><href>http://lg1:81/$fileName</href></Icon><overlayXY x="1" y="0.5" xunits="fraction" yunits="fraction"/><screenXY x="0.98" y="0.5" xunits="fraction" yunits="fraction"/><size x="600" y="0" xunits="pixels" yunits="pixels"/></ScreenOverlay></Document></kml>''';
-      
-      return (await execute("echo '$kml' > /var/www/html/kml/slave_$screen.kml", 'Image sent')) != null;
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <ScreenOverlay>
+      <name>Dino Image</name>
+      <Icon>
+        <href>http://lg1:81/$fileName</href>
+      </Icon>
+      <overlayXY x="0.5" y="0.5" xunits="fraction" yunits="fraction"/>
+      <screenXY x="0.5" y="0.5" xunits="fraction" yunits="fraction"/>
+      <rotationXY x="0.5" y="0.5" xunits="fraction" yunits="fraction"/>
+      <size x="1000" y="0" xunits="pixels" yunits="pixels"/>
+    </ScreenOverlay>
+  </Document>
+</kml>''';
+
+      final result = await execute(
+        "echo '$kml' > /var/www/html/kml/slave_$screen.kml",
+        'Image sent',
+      );
+
+      return result != null;
     } catch (e) {
+      debugPrint('Error uploading image: $e');
       return false;
     }
+  }
+
+  Future<bool> showDinosaurAboutKml(Dinosaur dinosaur) async {
+    try {
+      final screen = calculateRightMostScreen(_lgConnectionModel.screens);
+      final cleanName = cleanDinosaurImageName(dinosaur.name);
+
+      final assetPath = await getExistingImagePath(
+        'assets/images/dinosaurs/${cleanName}_normal',
+      );
+
+      String? imageFileName;
+
+      if (assetPath != null) {
+        final extension = assetPath.split('.').last;
+        imageFileName = '${cleanName}_normal.$extension';
+
+        await uploadAssetToLG(
+          assetPath: assetPath,
+          fileName: imageFileName,
+        );
+      }
+
+      final infoBytes = await createDinosaurInfoImage(dinosaur);
+      if (infoBytes == null) return false;
+
+      final infoFileName = '${cleanName}_info.png';
+
+      final uploadedInfo = await uploadBytesToLG(
+        bytes: infoBytes,
+        fileName: infoFileName,
+      );
+
+      if (!uploadedInfo) return false;
+
+      final imageOverlay = imageFileName == null
+          ? ''
+          : '''
+    <ScreenOverlay>
+      <name>Dinosaur Image</name>
+      <Icon>
+        <href>http://lg1:81/$imageFileName</href>
+      </Icon>
+      <overlayXY x="0.5" y="0.5" xunits="fraction" yunits="fraction"/>
+      <screenXY x="0.5" y="0.72" xunits="fraction" yunits="fraction"/>
+      <size x="620" y="0" xunits="pixels" yunits="pixels"/>
+    </ScreenOverlay>
+''';
+
+      final textY = imageFileName == null ? '0.50' : '0.30';
+      final textSize = imageFileName == null ? '900' : '760';
+
+      final kml = '''<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+$imageOverlay
+    <ScreenOverlay>
+      <name>Dinosaur Info</name>
+      <Icon>
+        <href>http://lg1:81/$infoFileName</href>
+      </Icon>
+      <overlayXY x="0.5" y="0.5" xunits="fraction" yunits="fraction"/>
+      <screenXY x="0.5" y="$textY" xunits="fraction" yunits="fraction"/>
+      <size x="$textSize" y="0" xunits="pixels" yunits="pixels"/>
+    </ScreenOverlay>
+  </Document>
+</kml>''';
+
+      await cleanRightScreenKml();
+
+      final result = await execute(
+        "echo '$kml' > /var/www/html/kml/slave_$screen.kml",
+        'Dinosaur about KML sent',
+      );
+
+      return result != null;
+    } catch (e) {
+      debugPrint('Error showing dinosaur about KML: $e');
+      return false;
+    }
+  }
+
+  Future<bool> cleanRightScreenKml() async {
+    try {
+      final screen = calculateRightMostScreen(_lgConnectionModel.screens);
+
+      const blankKml = '''<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Empty Right Screen</name>
+  </Document>
+</kml>''';
+
+      final result = await execute(
+        "echo '$blankKml' > /var/www/html/kml/slave_$screen.kml",
+        'Right screen cleaned',
+      );
+
+      return result != null;
+    } catch (e) {
+      debugPrint('Error cleaning right screen: $e');
+      return false;
+    }
+  }
+
+  Future<bool> showDinosaurAboutBalloon(Dinosaur dinosaur) async {
+    return await showDinosaurAboutKml(dinosaur);
   }
 
   Future<bool> showDinosaurNormalOverlay(Dinosaur dinosaur) async {
     final cleanName = cleanDinosaurImageName(dinosaur.name);
-    final assetPath = await getExistingImagePath('assets/images/dinosaurs/${cleanName}_normal');
+
+    final assetPath = await getExistingImagePath(
+      'assets/images/dinosaurs/${cleanName}_normal',
+    );
+
     if (assetPath == null) return false;
-    return await showRightScreenImage(assetPath: assetPath, fileName: '${cleanName}_normal.${assetPath.split('.').last}');
+
+    final extension = assetPath.split('.').last;
+
+    return await showRightScreenImage(
+      assetPath: assetPath,
+      fileName: '${cleanName}_normal.$extension',
+    );
   }
 
   Future<bool> showDinosaurSkeletonImage(Dinosaur dinosaur) async {
     final cleanName = cleanDinosaurImageName(dinosaur.name);
-    final assetPath = await getExistingImagePath('assets/images/dinosaurs/${cleanName}_skeleton');
+
+    final assetPath = await getExistingImagePath(
+      'assets/images/dinosaurs/${cleanName}_skeleton',
+    );
+
     if (assetPath == null) return false;
-    return await showRightScreenImage(assetPath: assetPath, fileName: '${cleanName}_skeleton.${assetPath.split('.').last}');
+
+    final extension = assetPath.split('.').last;
+    final imageFileName = '${cleanName}_skeleton.$extension';
+
+    final uploadedImage = await uploadAssetToLG(
+      assetPath: assetPath,
+      fileName: imageFileName,
+    );
+
+    if (!uploadedImage) return false;
+
+    final uploadedHtml = await uploadHtmlToLG(
+      htmlFileName: 'skeleton.html',
+      imageFileName: imageFileName,
+      title: '${dinosaur.name} Skeleton',
+    );
+
+    if (!uploadedHtml) return false;
+
+    return await openChromiumOnAllScreens(
+      'http://lg1:81/skeleton.html',
+    );
   }
 
   Future<bool> showDinosaurComparisonImage(Dinosaur dinosaur) async {
     final cleanName = cleanDinosaurImageName(dinosaur.name);
-    final assetPath = await getExistingImagePath('assets/images/dinosaurs/${cleanName}_comparison');
+
+    final assetPath = await getExistingImagePath(
+      'assets/images/dinosaurs/${cleanName}_comparison',
+    );
+
     if (assetPath == null) return false;
-    return await showRightScreenImage(assetPath: assetPath, fileName: '${cleanName}_comparison.${assetPath.split('.').last}');
+
+    final extension = assetPath.split('.').last;
+    final imageFileName = '${cleanName}_comparison.$extension';
+
+    final uploadedImage = await uploadAssetToLG(
+      assetPath: assetPath,
+      fileName: imageFileName,
+    );
+
+    if (!uploadedImage) return false;
+
+    final uploadedHtml = await uploadHtmlToLG(
+      htmlFileName: 'comparison.html',
+      imageFileName: imageFileName,
+      title: '${dinosaur.name} Comparison',
+    );
+
+    if (!uploadedHtml) return false;
+
+    return await openChromiumOnAllScreens(
+      'http://lg1:81/comparison.html',
+    );
+  }
+
+  Future<bool> openChromiumOnAllScreens(String url) async {
+    try {
+      for (var i = 1; i <= _lgConnectionModel.screens; i++) {
+        final fullUrl = '$url?screen=$i&total=${_lgConnectionModel.screens}';
+
+        final command = '''
+sshpass -p ${_lgConnectionModel.password} ssh -t lg$i "DISPLAY=:0 chromium-browser --kiosk --no-first-run --disable-infobars '$fullUrl' > /dev/null 2>&1 &"
+''';
+
+        await execute(command, 'Chromium opened on lg$i');
+
+        await Future.delayed(const Duration(milliseconds: 500));
+      }
+
+      return true;
+    } catch (e) {
+      debugPrint('Error opening Chromium: $e');
+      return false;
+    }
+  }
+
+  Future<bool> closeChromiumOnAllScreens() async {
+    try {
+      for (var i = 1; i <= _lgConnectionModel.screens; i++) {
+        final command = '''
+sshpass -p ${_lgConnectionModel.password} ssh -t lg$i "
+pkill chromium-browser || pkill chromium || pkill chrome || true
+sleep 1
+DISPLAY=:0 wmctrl -a 'Google Earth' || true
+DISPLAY=:0 xdotool search --name 'Google Earth' windowactivate || true
+"
+''';
+
+        await execute(command, 'Chromium closed on lg$i');
+
+        await Future.delayed(const Duration(milliseconds: 400));
+      }
+
+      return true;
+    } catch (e) {
+      debugPrint('Error closing Chromium: $e');
+      return false;
+    }
+  }
+
+  Future<bool> uploadHtmlToLG({
+    required String htmlFileName,
+    required String imageFileName,
+    required String title,
+  }) async {
+    try {
+      final html = '''
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>$title</title>
+
+<style>
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: black;
+}
+
+#container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+#dino {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+
+  height: 80vh;
+  image-rendering: auto;
+}
+</style>
+</head>
+
+<body>
+
+<div id="container">
+  <img id="dino" src="$imageFileName">
+</div>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+
+const screen = parseInt(params.get("screen") || "1");
+const total = parseInt(params.get("total") || "1");
+
+const img = document.getElementById("dino");
+
+img.onload = () => {
+  const screenWidth = window.innerWidth;
+  const totalWallWidth = screenWidth * total;
+  const imgWidth = img.offsetWidth;
+
+  const startX =
+      ((totalWallWidth - imgWidth) / 2)
+      - (screenWidth * 1.15);
+
+  const currentScreenOffset =
+      (screen - 1) * screenWidth;
+
+  img.style.left =
+      (startX - currentScreenOffset) + "px";
+};
+</script>
+
+</body>
+</html>
+''';
+
+      final sftp = await _client!.sftp();
+
+      final remoteFile = await sftp.open(
+        '/var/www/html/$htmlFileName',
+        mode: SftpFileOpenMode.create |
+        SftpFileOpenMode.truncate |
+        SftpFileOpenMode.write,
+      );
+
+      await remoteFile.write(
+        Stream.value(
+          Uint8List.fromList(html.codeUnits),
+        ),
+      );
+
+      await remoteFile.close();
+
+      return true;
+    } catch (e) {
+      debugPrint('Error uploading HTML: $e');
+      return false;
+    }
   }
 
   Future<void> cleanLogos() async {
     try {
       final screen = calculateLeftMostScreen(_lgConnectionModel.screens);
-      await execute("echo '' > /var/www/html/kml/slave_$screen.kml", 'Logo cleaned');
+
+      const blankKml = '''<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Empty Logo</name>
+  </Document>
+</kml>''';
+
+      await execute(
+        "echo '$blankKml' > /var/www/html/kml/slave_$screen.kml",
+        'Logo cleaned',
+      );
     } catch (e) {
       debugPrint('Error cleaning logos: $e');
     }
@@ -338,13 +876,50 @@ class LgService extends ChangeNotifier {
 
   Future<bool> cleanAll() async {
     try {
+      await closeChromiumOnAllScreens();
+
+      const blankKml = '''<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Empty</name>
+  </Document>
+</kml>''';
+
+      final logoScreen = calculateLeftMostScreen(
+        _lgConnectionModel.screens,
+      );
+
       for (var i = 1; i <= _lgConnectionModel.screens; i++) {
-        await execute("echo '' > /var/www/html/kml/slave_$i.kml", 'Cleaned screen $i');
+        if (i == logoScreen) {
+          continue;
+        }
+
+        await execute(
+          "echo '$blankKml' > /var/www/html/kml/slave_$i.kml",
+          'Cleaned screen $i',
+        );
       }
-      await execute("echo 'exittour=true' > /tmp/query.txt", 'Stop tour');
-      await execute("echo '' > /tmp/query.txt", 'Clean query');
+
+      await execute(
+        "echo 'exittour=true' > /tmp/query.txt",
+        'Stop tour',
+      );
+
+      await execute(
+        "echo '' > /tmp/query.txt",
+        'Clean query',
+      );
+
+      await execute(
+        "rm -f /var/www/html/skeleton.html /var/www/html/comparison.html",
+        'Chromium HTML cleaned',
+      );
+
+      await sendLogo();
+
       return true;
     } catch (e) {
+      debugPrint('Error cleaning all: $e');
       return false;
     }
   }
@@ -353,11 +928,14 @@ class LgService extends ChangeNotifier {
     try {
       for (var i = _lgConnectionModel.screens; i >= 1; i--) {
         await execute(
-            'sshpass -p ${_lgConnectionModel.password} ssh -t lg$i "echo ${_lgConnectionModel.password} | sudo -S reboot"',
-            'Reboot sent to lg$i');
+          'sshpass -p ${_lgConnectionModel.password} ssh -t lg$i "echo ${_lgConnectionModel.password} | sudo -S reboot"',
+          'Reboot sent to lg$i',
+        );
       }
+
       return true;
     } catch (e) {
+      debugPrint('Error rebooting LG: $e');
       return false;
     }
   }
@@ -366,26 +944,44 @@ class LgService extends ChangeNotifier {
     try {
       for (var i = _lgConnectionModel.screens; i >= 1; i--) {
         await execute(
-            'sshpass -p ${_lgConnectionModel.password} ssh -t lg$i "echo ${_lgConnectionModel.password} | sudo -S poweroff"',
-            'Shutdown sent to lg$i');
+          'sshpass -p ${_lgConnectionModel.password} ssh -t lg$i "echo ${_lgConnectionModel.password} | sudo -S poweroff"',
+          'Shutdown sent to lg$i',
+        );
       }
+
       return true;
     } catch (e) {
+      debugPrint('Error shutting down LG: $e');
       return false;
     }
   }
 
   Future<bool> relaunchLG() async {
-    try {
-      for (var i = _lgConnectionModel.screens; i >= 1; i--) {
-        final command = """
-          sshpass -p ${_lgConnectionModel.password} ssh -t lg$i "DISPLAY=:0 ./bin/lg-relaunch > /dev/null 2>&1 &"
-        """;
-        await execute(command, 'Relaunch sent to lg$i');
-      }
-      return true;
-    } catch (e) {
-      return false;
-    }
+    final relaunchCmd = '''
+RELAUNCH_CMD="\\
+if [ -f /etc/init/lxdm.conf ];
+then
+  export SERVICE=lxdm
+elif [ -f /etc/init/lightdm.conf ];
+then
+  export SERVICE=lightdm
+else
+  exit 1
+fi
+if [[ \\\$(service \\\$SERVICE status) =~ 'stop' ]];
+then
+  echo ${_lgConnectionModel.password} | sudo -S service \\\${SERVICE} start
+else
+  echo ${_lgConnectionModel.password} | sudo -S service \\\${SERVICE} restart
+fi
+" && sshpass -p ${_lgConnectionModel.password} ssh -x -t lg@lg1 "\$RELAUNCH_CMD"
+''';
+
+    final result = await execute(
+      relaunchCmd,
+      'Liquid Galaxy relaunched',
+    );
+
+    return result != null;
   }
 }

@@ -3,14 +3,27 @@ import 'package:provider/provider.dart';
 
 import '../models/dinosaur.dart';
 import '../services/lg_service.dart';
+import '../services/audio_service.dart';
 
 import 'lg_settings_screen.dart';
 import 'about_screen.dart';
 
-class DinosaurDetailScreen extends StatelessWidget {
+class DinosaurDetailScreen extends StatefulWidget {
   final Dinosaur dinosaur;
 
-  const DinosaurDetailScreen({super.key, required this.dinosaur});
+  const DinosaurDetailScreen({
+    super.key,
+    required this.dinosaur,
+  });
+
+  @override
+  State<DinosaurDetailScreen> createState() => _DinosaurDetailScreenState();
+}
+
+class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
+  bool isNarrationPlaying = false;
+
+  Dinosaur get dinosaur => widget.dinosaur;
 
   void showSnack(BuildContext context, String message, {bool success = true}) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -32,12 +45,10 @@ class DinosaurDetailScreen extends StatelessWidget {
 
     bool ok = false;
 
-    // First fly to the dinosaur location
     await lgService.flyToDinosaur(dinosaur);
 
-    // Then show the specific image based on the action
     if (action == 'About') {
-      ok = await lgService.showDinosaurNormalOverlay(dinosaur);
+      ok = await lgService.showDinosaurAboutKml(dinosaur);
     } else if (action == 'Comparison') {
       ok = await lgService.showDinosaurComparisonImage(dinosaur);
     } else if (action == 'Skeleton') {
@@ -48,9 +59,33 @@ class DinosaurDetailScreen extends StatelessWidget {
 
     showSnack(
       context,
-      ok ? '$action image sent to Liquid Galaxy' : 'Image for $action not found',
+      ok
+          ? '$action sent to Liquid Galaxy'
+          : 'Could not send $action to Liquid Galaxy',
       success: ok,
     );
+  }
+
+  Future<void> stopNarration() async {
+    await AudioService().stop();
+
+    if (!mounted) return;
+
+    setState(() {
+      isNarrationPlaying = false;
+    });
+
+    showSnack(
+      context,
+      'Narration stopped',
+      success: true,
+    );
+  }
+
+  @override
+  void dispose() {
+    AudioService().stop();
+    super.dispose();
   }
 
   @override
@@ -88,7 +123,9 @@ class DinosaurDetailScreen extends StatelessWidget {
                       const SizedBox(width: 48),
                     ],
                   ),
+
                   const SizedBox(height: 20),
+
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
@@ -116,6 +153,7 @@ class DinosaurDetailScreen extends StatelessWidget {
                                     width: double.infinity,
                                   );
                                 }
+
                                 return const Icon(
                                   Icons.pets,
                                   size: 90,
@@ -125,7 +163,9 @@ class DinosaurDetailScreen extends StatelessWidget {
                             ),
                           ),
                         ),
+
                         const SizedBox(height: 18),
+
                         Text(
                           dinosaur.name,
                           textAlign: TextAlign.center,
@@ -134,7 +174,9 @@ class DinosaurDetailScreen extends StatelessWidget {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
+
                         const SizedBox(height: 10),
+
                         Text(
                           dinosaur.periodName,
                           style: const TextStyle(
@@ -145,7 +187,9 @@ class DinosaurDetailScreen extends StatelessWidget {
                       ],
                     ),
                   ),
+
                   const SizedBox(height: 20),
+
                   Row(
                     children: [
                       Expanded(
@@ -165,7 +209,9 @@ class DinosaurDetailScreen extends StatelessWidget {
                       ),
                     ],
                   ),
+
                   const SizedBox(height: 12),
+
                   Row(
                     children: [
                       Expanded(
@@ -189,7 +235,9 @@ class DinosaurDetailScreen extends StatelessWidget {
                       ),
                     ],
                   ),
+
                   const SizedBox(height: 12),
+
                   Row(
                     children: [
                       Expanded(
@@ -211,21 +259,27 @@ class DinosaurDetailScreen extends StatelessWidget {
                       ),
                     ],
                   ),
+
                   const SizedBox(height: 22),
+
                   sectionCard(
                     title: 'Scientific Information',
                     text:
-                        'Status: ${emptyText(dinosaur.status)}\n'
+                    'Status: ${emptyText(dinosaur.status)}\n'
                         'Author: ${emptyText(dinosaur.author)}\n'
                         'Formation: ${emptyText(dinosaur.formation)}\n'
                         'Time: ${emptyText(dinosaur.time1)} - ${emptyText(dinosaur.time2)}',
                   ),
+
                   const SizedBox(height: 16),
+
                   sectionCard(
                     title: 'Fossil Material',
                     text: emptyText(dinosaur.material),
                   ),
+
                   const SizedBox(height: 24),
+
                   GridView.count(
                     crossAxisCount: 2,
                     shrinkWrap: true,
@@ -250,12 +304,86 @@ class DinosaurDetailScreen extends StatelessWidget {
                         onTap: () => sendToLg(context, 'Skeleton'),
                       ),
                       optionButton(
-                        icon: Icons.view_in_ar,
-                        text: '3D Model',
-                        onTap: () => sendToLg(context, '3D Model'),
+                        icon: Icons.volume_up,
+                        text: 'Narration',
+                        onTap: () async {
+                          await AudioService().playDinosaurAudio(dinosaur.name);
+
+                          if (!context.mounted) return;
+
+                          setState(() {
+                            isNarrationPlaying = true;
+                          });
+
+                          showSnack(
+                            context,
+                            'Narration started',
+                            success: true,
+                          );
+                        },
                       ),
                     ],
                   ),
+
+                  if (isNarrationPlaying) ...[
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: stopNarration,
+                        icon: const Icon(Icons.stop),
+                        label: const Text('Stop Narration'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+
+                  const SizedBox(height: 16),
+
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        final lgService = context.read<LgService>();
+
+                        final ok = await lgService.closeChromiumOnAllScreens();
+
+                        await AudioService().stop();
+
+                        if (!context.mounted) return;
+
+                        setState(() {
+                          isNarrationPlaying = false;
+                        });
+
+                        showSnack(
+                          context,
+                          ok
+                              ? 'Returned to Liquid Galaxy'
+                              : 'Could not close Chromium',
+                          success: ok,
+                        );
+                      },
+                      icon: const Icon(Icons.arrow_back),
+                      label: const Text('Return Back'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                      ),
+                    ),
+                  ),
+
                   const SizedBox(height: 30),
                 ],
               ),
@@ -270,7 +398,10 @@ class DinosaurDetailScreen extends StatelessWidget {
     return value.trim().isEmpty ? 'Unknown' : value;
   }
 
-  Widget sectionCard({required String title, required String text}) {
+  Widget sectionCard({
+    required String title,
+    required String text,
+  }) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
@@ -280,10 +411,19 @@ class DinosaurDetailScreen extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 12),
-          Text(text, style: const TextStyle(fontSize: 16, height: 1.35)),
+          Text(
+            text,
+            style: const TextStyle(
+              fontSize: 16,
+              height: 1.35,
+            ),
+          ),
         ],
       ),
     );
@@ -331,7 +471,9 @@ class DinosaurDetailScreen extends StatelessWidget {
         foregroundColor: Colors.white,
         elevation: 5,
         padding: const EdgeInsets.all(12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+        ),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -377,7 +519,10 @@ class DinosaurDetailScreen extends StatelessWidget {
             const SizedBox(height: 12),
             const Text(
               'GeoSaurio',
-              style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 25,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const Text(
               'For Liquid Galaxy',
@@ -399,7 +544,9 @@ class DinosaurDetailScreen extends StatelessWidget {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const AboutScreen()),
+                  MaterialPageRoute(
+                    builder: (context) => const AboutScreen(),
+                  ),
                 );
               },
             ),
@@ -451,7 +598,10 @@ class DinosaurDetailScreen extends StatelessWidget {
     required VoidCallback onTap,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 14,
+        vertical: 4,
+      ),
       child: Material(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
