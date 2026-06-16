@@ -39,6 +39,12 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> loadDinosaurData() async {
     final data = await DinosaurService.loadDinosaurs();
 
+    final lgService = context.read<LgService>();
+
+    if (lgService.isConnected) {
+      await lgService.showAllDinosaurMarkers(data);
+    }
+
     if (!mounted) return;
 
     setState(() {

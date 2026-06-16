@@ -70,7 +70,9 @@ class LgConnectionModel {
 
 class LgService extends ChangeNotifier {
   LgService._internal();
+
   static final LgService _singleton = LgService._internal();
+
   factory LgService() => _singleton;
 
   final LgConnectionModel _lgConnectionModel = LgConnectionModel();
@@ -83,6 +85,7 @@ class LgService extends ChangeNotifier {
   static const Duration _connectionTimeout = Duration(seconds: 10);
 
   LgConnectionModel get connectionModel => _lgConnectionModel;
+
   bool get isConnected => _isConnected;
 
   void updateConnectionSettings({
@@ -533,7 +536,9 @@ ${_cleanText(dinosaur.generalInfo)}
       String? imageFileName;
 
       if (assetPath != null) {
-        final extension = assetPath.split('.').last;
+        final extension = assetPath
+            .split('.')
+            .last;
         imageFileName = '${cleanName}_normal.$extension';
 
         await uploadAssetToLG(
@@ -637,7 +642,9 @@ $imageOverlay
 
     if (assetPath == null) return false;
 
-    final extension = assetPath.split('.').last;
+    final extension = assetPath
+        .split('.')
+        .last;
 
     return await showRightScreenImage(
       assetPath: assetPath,
@@ -654,7 +661,9 @@ $imageOverlay
 
     if (assetPath == null) return false;
 
-    final extension = assetPath.split('.').last;
+    final extension = assetPath
+        .split('.')
+        .last;
     final imageFileName = '${cleanName}_skeleton.$extension';
 
     final uploadedImage = await uploadAssetToLG(
@@ -687,7 +696,9 @@ $imageOverlay
 
     if (assetPath == null) return false;
 
-    final extension = assetPath.split('.').last;
+    final extension = assetPath
+        .split('.')
+        .last;
     final imageFileName = '${cleanName}_comparison.$extension';
 
     final uploadedImage = await uploadAssetToLG(
@@ -717,7 +728,8 @@ $imageOverlay
         final fullUrl = '$url?screen=$i&total=${_lgConnectionModel.screens}';
 
         final command = '''
-sshpass -p ${_lgConnectionModel.password} ssh -t lg$i "DISPLAY=:0 chromium-browser --kiosk --no-first-run --disable-infobars '$fullUrl' > /dev/null 2>&1 &"
+sshpass -p ${_lgConnectionModel
+            .password} ssh -t lg$i "DISPLAY=:0 chromium-browser --kiosk --no-first-run --disable-infobars '$fullUrl' > /dev/null 2>&1 &"
 ''';
 
         await execute(command, 'Chromium opened on lg$i');
@@ -982,7 +994,9 @@ img.onload = () => {
     try {
       for (var i = _lgConnectionModel.screens; i >= 1; i--) {
         await execute(
-          'sshpass -p ${_lgConnectionModel.password} ssh -t lg$i "echo ${_lgConnectionModel.password} | sudo -S reboot"',
+          'sshpass -p ${_lgConnectionModel
+              .password} ssh -t lg$i "echo ${_lgConnectionModel
+              .password} | sudo -S reboot"',
           'Reboot sent to lg$i',
         );
       }
@@ -998,7 +1012,9 @@ img.onload = () => {
     try {
       for (var i = _lgConnectionModel.screens; i >= 1; i--) {
         await execute(
-          'sshpass -p ${_lgConnectionModel.password} ssh -t lg$i "echo ${_lgConnectionModel.password} | sudo -S poweroff"',
+          'sshpass -p ${_lgConnectionModel
+              .password} ssh -t lg$i "echo ${_lgConnectionModel
+              .password} | sudo -S poweroff"',
           'Shutdown sent to lg$i',
         );
       }
@@ -1037,5 +1053,83 @@ fi
     );
 
     return result != null;
+  }
+
+  Future<bool> showAllDinosaurMarkers(
+      List<Dinosaur> dinosaurs,
+      ) async {
+    try {
+      final iconUploaded = await uploadAssetToLG(
+        assetPath: 'assets/images/dino_marker.png',
+        fileName: 'dino_marker.png',
+      );
+
+      if (!iconUploaded) return false;
+
+      final placemarks = dinosaurs
+          .where(
+            (d) =>
+        d.latitude != 0 &&
+            d.longitude != 0,
+      )
+          .map(
+            (d) => '''
+    <Placemark>
+      <name>${d.name}</name>
+      <styleUrl>#dinoMarkerStyle</styleUrl>
+      <Point>
+        <coordinates>
+          ${d.longitude},
+          ${d.latitude},
+          0
+        </coordinates>
+      </Point>
+    </Placemark>
+''',
+      )
+          .join('\n');
+
+      final kml = '''<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document>
+
+  <name>GeoSaurio Markers</name>
+
+  <Style id="dinoMarkerStyle">
+    <IconStyle>
+      <scale>2.0</scale>
+      <Icon>
+        <href>http://lg1:81/dino_marker.png</href>
+      </Icon>
+    </IconStyle>
+
+    <LabelStyle>
+      <scale>0.7</scale>
+    </LabelStyle>
+  </Style>
+
+$placemarks
+
+</Document>
+</kml>
+''';
+
+      final createResult = await execute(
+        "echo '$kml' > /var/www/html/geosaurio_markers.kml",
+        'All dinosaur markers KML created',
+      );
+
+      if (createResult == null) return false;
+
+      final loadResult = await execute(
+        "echo 'http://lg1:81/geosaurio_markers.kml' > /var/www/html/kmls.txt",
+        'All dinosaur markers loaded',
+      );
+
+      return loadResult != null;
+    } catch (e) {
+      debugPrint('Error showing all dinosaur markers: $e');
+      return false;
+    }
   }
 }

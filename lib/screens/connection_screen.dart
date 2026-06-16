@@ -120,14 +120,27 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
 
     if (!mounted) return;
 
-    final connected = await context.read<LgService>().connectToLG() ?? false;
+    final lgService = context.read<LgService>();
+    final connected = await lgService.connectToLG() ?? false;
+
+    if (connected) {
+      await lgService.sendLogo();
+
+      // This prepares the dinosaur marker icon when the app connects to LG.
+      await lgService.uploadAssetToLG(
+        assetPath: 'assets/images/dino_marker.png',
+        fileName: 'dino_marker.png',
+      );
+    }
 
     if (!mounted) return;
 
     setState(() => isConnecting = false);
 
     snack(
-      connected ? 'Connected to Liquid Galaxy' : 'Could not connect to LG',
+      connected
+          ? 'Connected to Liquid Galaxy and markers prepared'
+          : 'Could not connect to LG',
       success: connected,
     );
   }
