@@ -668,7 +668,7 @@ $imageOverlay
       htmlFileName: 'skeleton.html',
       imageFileName: imageFileName,
       title: '${dinosaur.name} Skeleton',
-      imageHeight: 50,
+      imageHeight: 67,
     );
 
     if (!uploadedHtml) return false;
@@ -857,15 +857,8 @@ const screenOrder = [...leftSide, 1, ...rightSide];
  * Usamos las 3 pantallas centrales visuales.
  * Con 5 pantallas será: [5, 1, 2]
  */
-const imageScreens = Math.min(3, total);
-const startIndex = Math.floor(
-  (screenOrder.length - imageScreens) / 2
-);
-
-const activeScreens = screenOrder.slice(
-  startIndex,
-  startIndex + imageScreens
-);
+const imageScreens = total;
+const activeScreens = screenOrder;
 
 const localIndex = activeScreens.indexOf(screen);
 
