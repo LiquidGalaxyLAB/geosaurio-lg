@@ -668,6 +668,7 @@ $imageOverlay
       htmlFileName: 'skeleton.html',
       imageFileName: imageFileName,
       title: '${dinosaur.name} Skeleton',
+      imageHeight: 50,
     );
 
     if (!uploadedHtml) return false;
@@ -700,6 +701,7 @@ $imageOverlay
       htmlFileName: 'comparison.html',
       imageFileName: imageFileName,
       title: '${dinosaur.name} Comparison',
+      imageHeight: 95,
     );
 
     if (!uploadedHtml) return false;
@@ -735,17 +737,31 @@ sshpass -p ${_lgConnectionModel.password} ssh -t lg$i "DISPLAY=:0 chromium-brows
       for (var i = 1; i <= _lgConnectionModel.screens; i++) {
         final command = '''
 sshpass -p ${_lgConnectionModel.password} ssh -t lg$i "
-pkill chromium-browser || pkill chromium || pkill chrome || true
-sleep 1
+pkill -f chromium-browser || true
+pkill -f chromium || true
+pkill -f chrome || true
+sleep 2
+
 DISPLAY=:0 wmctrl -a 'Google Earth' || true
 DISPLAY=:0 xdotool search --name 'Google Earth' windowactivate || true
+DISPLAY=:0 xdotool key F11 || true
 "
 ''';
 
         await execute(command, 'Chromium closed on lg$i');
 
-        await Future.delayed(const Duration(milliseconds: 400));
+        await Future.delayed(const Duration(milliseconds: 700));
       }
+
+      await execute(
+        "echo 'exittour=true' > /tmp/query.txt",
+        'Tour stopped after Chromium close',
+      );
+
+      await execute(
+        "echo '' > /tmp/query.txt",
+        'Query cleaned after Chromium close',
+      );
 
       return true;
     } catch (e) {
@@ -758,6 +774,7 @@ DISPLAY=:0 xdotool search --name 'Google Earth' windowactivate || true
     required String htmlFileName,
     required String imageFileName,
     required String title,
+    double imageHeight = 95,
   }) async {
     try {
       final html = '''
@@ -789,7 +806,11 @@ html, body {
   top: 50%;
   transform: translateY(-50%);
 
-  height: 80vh;
+  height: ${imageHeight}vh;
+  width: auto;
+
+  max-width: none;
+  object-fit: contain;
   image-rendering: auto;
 }
 </style>
@@ -809,20 +830,60 @@ const total = parseInt(params.get("total") || "1");
 
 const img = document.getElementById("dino");
 
+/*
+ * Orden visual del Liquid Galaxy.
+ *
+ * Para 5 pantallas:
+ * posición visual:  1  2  3  4  5
+ * LG lógico:        4  5  1  2  3
+ *
+ * Para otros tamaños intenta mantener lg1 en el centro
+ * y reparte las demás pantallas alrededor.
+ */
+const leftSide = [];
+const rightSide = [];
+
+for (let i = 2; i <= total; i++) {
+  if (i <= Math.ceil(total / 2)) {
+    rightSide.push(i);
+  } else {
+    leftSide.push(i);
+  }
+}
+
+const screenOrder = [...leftSide, 1, ...rightSide];
+
+/*
+ * Usamos las 3 pantallas centrales visuales.
+ * Con 5 pantallas será: [5, 1, 2]
+ */
+const imageScreens = Math.min(3, total);
+const startIndex = Math.floor(
+  (screenOrder.length - imageScreens) / 2
+);
+
+const activeScreens = screenOrder.slice(
+  startIndex,
+  startIndex + imageScreens
+);
+
+const localIndex = activeScreens.indexOf(screen);
+
+if (localIndex === -1) {
+  img.style.display = "none";
+}
+
 img.onload = () => {
+  if (localIndex === -1) return;
+
   const screenWidth = window.innerWidth;
-  const totalWallWidth = screenWidth * total;
+  const wallWidth = screenWidth * imageScreens;
   const imgWidth = img.offsetWidth;
 
-  const startX =
-      ((totalWallWidth - imgWidth) / 2)
-      - (screenWidth * 1.15);
-
-  const currentScreenOffset =
-      (screen - 1) * screenWidth;
+  const startX = (wallWidth - imgWidth) / 2;
 
   img.style.left =
-      (startX - currentScreenOffset) + "px";
+      (startX - (localIndex * screenWidth)) + "px";
 };
 </script>
 
