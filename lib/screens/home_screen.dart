@@ -39,12 +39,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> loadDinosaurData() async {
     final data = await DinosaurService.loadDinosaurs();
 
-    final lgService = context.read<LgService>();
-
-    if (lgService.isConnected) {
-      await lgService.showAllDinosaurMarkers(data);
-    }
-
     if (!mounted) return;
 
     setState(() {
@@ -162,7 +156,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final flyOk = await lgService.flyToDinosaur(selectedDino);
 
       if (flyOk) {
-          await lgService.showDinosaurAboutBalloon(selectedDino);
+        await lgService.showDinosaurAboutBalloon(selectedDino);
       }
 
       if (!mounted) return;
@@ -305,30 +299,31 @@ class _HomeScreenState extends State<HomeScreen> {
               decoration: cardDecoration(),
               child: selectedContinent == null
                   ? emptyMessage(
-                      icon: Icons.public,
-                      text: 'Select a continent\nto see countries',
-                    )
+                icon: Icons.public,
+                text: 'Select a continent\nto see countries',
+              )
                   : visibleCountries.isEmpty
                   ? emptyMessage(
-                      icon: Icons.search_off,
-                      text: 'No countries found',
-                    )
+                icon: Icons.search_off,
+                text: 'No countries found',
+              )
                   : Scrollbar(
-                      thumbVisibility: true,
-                      child: ListView.separated(
-                        itemCount: visibleCountries.length,
-                        separatorBuilder: (_, _) => const SizedBox(height: 10),
-                        itemBuilder: (context, index) {
-                          final country = visibleCountries[index];
+                thumbVisibility: true,
+                child: ListView.separated(
+                  itemCount: visibleCountries.length,
+                  separatorBuilder: (_, _) =>
+                  const SizedBox(height: 10),
+                  itemBuilder: (context, index) {
+                    final country = visibleCountries[index];
 
-                          return niceListTile(
-                            title: country,
-                            icon: Icons.flag,
-                            onTap: () => selectCountry(country),
-                          );
-                        },
-                      ),
-                    ),
+                    return niceListTile(
+                      title: country,
+                      icon: Icons.flag,
+                      onTap: () => selectCountry(country),
+                    );
+                  },
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -352,108 +347,108 @@ class _HomeScreenState extends State<HomeScreen> {
               decoration: cardDecoration(),
               child: visibleRegions.isEmpty
                   ? emptyMessage(
-                      icon: Icons.map_outlined,
-                      text: 'No regions available\nfor this country yet',
-                    )
+                icon: Icons.map_outlined,
+                text: 'No regions available\nfor this country yet',
+              )
                   : Scrollbar(
-                      thumbVisibility: true,
-                      child: ListView(
-                        children: visibleRegions.entries.map((entry) {
-                          final regionName = entry.key;
-                          final dinosaursInRegion = entry.value;
-                          final isExpanded = expandedRegion == regionName;
+                thumbVisibility: true,
+                child: ListView(
+                  children: visibleRegions.entries.map((entry) {
+                    final regionName = entry.key;
+                    final dinosaursInRegion = entry.value;
+                    final isExpanded = expandedRegion == regionName;
 
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 10),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: Colors.black12),
-                            ),
-                            child: Column(
-                              children: [
-                                ListTile(
-                                  leading: const Icon(Icons.place),
-                                  title: Text(
-                                    regionName,
-                                    style: const TextStyle(
-                                      fontSize: 19,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  trailing: Icon(
-                                    isExpanded
-                                        ? Icons.keyboard_arrow_up
-                                        : Icons.keyboard_arrow_down,
-                                  ),
-                                  onTap: () {
-                                    setState(() {
-                                      expandedRegion = isExpanded
-                                          ? null
-                                          : regionName;
-                                      selectedDinosaur = null;
-                                    });
-                                  },
-                                ),
-                                if (isExpanded)
-                                  ...dinosaursInRegion.map((dinosaur) {
-                                    final isSelected =
-                                        selectedDinosaur == dinosaur;
-
-                                    return Column(
-                                      children: [
-                                        ListTile(
-                                          title: Text(
-                                            dinosaur,
-                                            textAlign: TextAlign.center,
-                                            style: const TextStyle(
-                                              fontSize: 20,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                          onTap: () {
-                                            setState(() {
-                                              selectedDinosaur = dinosaur;
-                                            });
-                                          },
-                                        ),
-                                        if (isSelected)
-                                          Padding(
-                                            padding: const EdgeInsets.only(
-                                              bottom: 14,
-                                            ),
-                                            child: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              children: [
-                                                lgActionButton(
-                                                  icon: Icons.rotate_right,
-                                                  text: 'Rotate',
-                                                  onTap: () {
-                                                    showLgMessage();
-                                                  },
-                                                ),
-                                                const SizedBox(width: 12),
-                                                lgActionButton(
-                                                  icon: Icons.info,
-                                                  text: 'About',
-                                                  onTap: () =>
-                                                      openDinosaurAbout(
-                                                        dinosaur,
-                                                      ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                      ],
-                                    );
-                                  }),
-                              ],
-                            ),
-                          );
-                        }).toList(),
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.black12),
                       ),
-                    ),
+                      child: Column(
+                        children: [
+                          ListTile(
+                            leading: const Icon(Icons.place),
+                            title: Text(
+                              regionName,
+                              style: const TextStyle(
+                                fontSize: 19,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            trailing: Icon(
+                              isExpanded
+                                  ? Icons.keyboard_arrow_up
+                                  : Icons.keyboard_arrow_down,
+                            ),
+                            onTap: () {
+                              setState(() {
+                                expandedRegion = isExpanded
+                                    ? null
+                                    : regionName;
+                                selectedDinosaur = null;
+                              });
+                            },
+                          ),
+                          if (isExpanded)
+                            ...dinosaursInRegion.map((dinosaur) {
+                              final isSelected =
+                                  selectedDinosaur == dinosaur;
+
+                              return Column(
+                                children: [
+                                  ListTile(
+                                    title: Text(
+                                      dinosaur,
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    onTap: () {
+                                      setState(() {
+                                        selectedDinosaur = dinosaur;
+                                      });
+                                    },
+                                  ),
+                                  if (isSelected)
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                        bottom: 14,
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                        MainAxisAlignment.center,
+                                        children: [
+                                          lgActionButton(
+                                            icon: Icons.rotate_right,
+                                            text: 'Rotate',
+                                            onTap: () {
+                                              showLgMessage();
+                                            },
+                                          ),
+                                          const SizedBox(width: 12),
+                                          lgActionButton(
+                                            icon: Icons.info,
+                                            text: 'About',
+                                            onTap: () =>
+                                                openDinosaurAbout(
+                                                  dinosaur,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                ],
+                              );
+                            }),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 12),
@@ -486,13 +481,13 @@ class _HomeScreenState extends State<HomeScreen> {
           suffixIcon: searchController.text.isEmpty
               ? null
               : IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () {
-                    setState(() {
-                      searchController.clear();
-                    });
-                  },
-                ),
+            icon: const Icon(Icons.close),
+            onPressed: () {
+              setState(() {
+                searchController.clear();
+              });
+            },
+          ),
         ),
       ),
     );
@@ -553,7 +548,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget emptyMessage({required IconData icon, required String text}) {
+  Widget emptyMessage({
+    required IconData icon,
+    required String text,
+  }) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
