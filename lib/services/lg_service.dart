@@ -606,10 +606,7 @@ ${_cleanText(dinosaur.generalInfo)}
     }
   }
 
-  Future<bool> showDinosaurAboutKml(
-      Dinosaur dinosaur, {
-        List<Dinosaur> allDinosaurs = const [],
-      }) async {
+  Future<bool> showDinosaurAboutKml(Dinosaur dinosaur) async {
     try {
       final screen = calculateRightMostScreen(_lgConnectionModel.screens);
       final cleanName = cleanDinosaurImageName(dinosaur.name);
@@ -621,7 +618,9 @@ ${_cleanText(dinosaur.generalInfo)}
       String? imageFileName;
 
       if (assetPath != null) {
-        final extension = assetPath.split('.').last;
+        final extension = assetPath
+            .split('.')
+            .last;
         imageFileName = '${cleanName}_normal.$extension';
 
         await uploadAssetToLG(
@@ -642,21 +641,6 @@ ${_cleanText(dinosaur.generalInfo)}
 
       if (!uploadedInfo) return false;
 
-      String? statsFileName;
-
-      if (allDinosaurs.isNotEmpty) {
-        final statsBytes = await createDinosaurStatsImage(allDinosaurs);
-
-        if (statsBytes != null) {
-          statsFileName = '${cleanName}_stats.png';
-
-          await uploadBytesToLG(
-            bytes: statsBytes,
-            fileName: statsFileName,
-          );
-        }
-      }
-
       final imageOverlay = imageFileName == null
           ? ''
           : '''
@@ -666,27 +650,13 @@ ${_cleanText(dinosaur.generalInfo)}
         <href>http://lg1:81/$imageFileName</href>
       </Icon>
       <overlayXY x="0.5" y="0.5" xunits="fraction" yunits="fraction"/>
-      <screenXY x="0.5" y="0.76" xunits="fraction" yunits="fraction"/>
-      <size x="560" y="0" xunits="pixels" yunits="pixels"/>
+      <screenXY x="0.5" y="0.72" xunits="fraction" yunits="fraction"/>
+      <size x="620" y="0" xunits="pixels" yunits="pixels"/>
     </ScreenOverlay>
 ''';
 
-      final textY = imageFileName == null ? '0.55' : '0.40';
-      final textSize = imageFileName == null ? '850' : '720';
-
-      final statsOverlay = statsFileName == null
-          ? ''
-          : '''
-    <ScreenOverlay>
-      <name>GeoSaurio Statistics</name>
-      <Icon>
-        <href>http://lg1:81/$statsFileName</href>
-      </Icon>
-      <overlayXY x="0.5" y="0.5" xunits="fraction" yunits="fraction"/>
-      <screenXY x="0.5" y="0.10" xunits="fraction" yunits="fraction"/>
-      <size x="720" y="0" xunits="pixels" yunits="pixels"/>
-    </ScreenOverlay>
-''';
+      final textY = imageFileName == null ? '0.50' : '0.30';
+      final textSize = imageFileName == null ? '900' : '760';
 
       final kml = '''<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
@@ -701,7 +671,6 @@ $imageOverlay
       <screenXY x="0.5" y="$textY" xunits="fraction" yunits="fraction"/>
       <size x="$textSize" y="0" xunits="pixels" yunits="pixels"/>
     </ScreenOverlay>
-$statsOverlay
   </Document>
 </kml>''';
 
@@ -1167,6 +1136,7 @@ fi
 
     return result != null;
   }
+<<<<<<< HEAD
 
   Future<Uint8List?> createDinosaurStatsImage(List<Dinosaur> dinosaurs) async {
     try {
@@ -1284,4 +1254,6 @@ Triassic: $triassic  |  Jurassic: $jurassic  |  Cretaceous: $cretaceous
       return null;
     }
   }
+=======
+>>>>>>> parent of 1a89c85 (stadistics kml)
 }

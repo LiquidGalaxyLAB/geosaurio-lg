@@ -162,10 +162,14 @@ class _HomeScreenState extends State<HomeScreen> {
       final flyOk = await lgService.flyToDinosaur(dinosaur);
 
       if (flyOk) {
+<<<<<<< HEAD
         await lgService.showDinosaurAboutKml(
           dinosaur,
           allDinosaurs: dinosaurs,
         );
+=======
+        await lgService.showDinosaurAboutBalloon(selectedDino);
+>>>>>>> parent of 1a89c85 (stadistics kml)
       }
 
       if (!mounted) return;
