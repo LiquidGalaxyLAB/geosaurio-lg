@@ -419,88 +419,6 @@ ${_cleanText(dinosaur.generalInfo)}
     }
   }
 
-  Future<bool> flyToContinent(String continent) async {
-    try {
-      final normalized = continent.trim().toLowerCase();
-
-      double longitude;
-      double latitude;
-      double range;
-
-      switch (normalized) {
-        case 'africa':
-          longitude = 20.0;
-          latitude = 2.0;
-          range = 5500000;
-          break;
-
-        case 'asia':
-          longitude = 90.0;
-          latitude = 35.0;
-          range = 6500000;
-          break;
-
-        case 'europe':
-          longitude = 15.0;
-          latitude = 50.0;
-          range = 3200000;
-          break;
-
-        case 'north america':
-          longitude = -100.0;
-          latitude = 45.0;
-          range = 5500000;
-          break;
-
-        case 'south america':
-          longitude = -60.0;
-          latitude = -15.0;
-          range = 5000000;
-          break;
-
-        case 'oceania':
-        case 'australia':
-          longitude = 135.0;
-          latitude = -25.0;
-          range = 3500000;
-          break;
-
-        case 'antarctica':
-          longitude = 0.0;
-          latitude = -82.0;
-          range = 3500000;
-          break;
-
-        default:
-          longitude = 0.0;
-          latitude = 20.0;
-          range = 7000000;
-          break;
-      }
-
-      final lookAt =
-          '<LookAt>'
-          '<longitude>$longitude</longitude>'
-          '<latitude>$latitude</latitude>'
-          '<altitude>0</altitude>'
-          '<heading>0</heading>'
-          '<tilt>0</tilt>'
-          '<range>$range</range>'
-          '<altitudeMode>relativeToGround</altitudeMode>'
-          '</LookAt>';
-
-      final result = await execute(
-        "echo 'flytoview=$lookAt' > /tmp/query.txt",
-        'FlyTo continent sent',
-      );
-
-      return result != null;
-    } catch (e) {
-      debugPrint('Error flying to continent: $e');
-      return false;
-    }
-  }
-
   Future<bool> flyToDinosaur(Dinosaur dinosaur) async {
     try {
       if (dinosaur.longitude == 0 || dinosaur.latitude == 0) return false;
@@ -606,7 +524,10 @@ ${_cleanText(dinosaur.generalInfo)}
     }
   }
 
-  Future<bool> showDinosaurAboutKml(Dinosaur dinosaur) async {
+  Future<bool> showDinosaurAboutKml(
+      Dinosaur dinosaur, {
+        List<Dinosaur> allDinosaurs = const [],
+      }) async {
     try {
       final screen = calculateRightMostScreen(_lgConnectionModel.screens);
       final cleanName = cleanDinosaurImageName(dinosaur.name);
@@ -618,9 +539,7 @@ ${_cleanText(dinosaur.generalInfo)}
       String? imageFileName;
 
       if (assetPath != null) {
-        final extension = assetPath
-            .split('.')
-            .last;
+        final extension = assetPath.split('.').last;
         imageFileName = '${cleanName}_normal.$extension';
 
         await uploadAssetToLG(
@@ -641,6 +560,21 @@ ${_cleanText(dinosaur.generalInfo)}
 
       if (!uploadedInfo) return false;
 
+      String? statsFileName;
+
+      if (allDinosaurs.isNotEmpty) {
+        final statsBytes = await createDinosaurStatsImage(allDinosaurs);
+
+        if (statsBytes != null) {
+          statsFileName = '${cleanName}_stats.png';
+
+          await uploadBytesToLG(
+            bytes: statsBytes,
+            fileName: statsFileName,
+          );
+        }
+      }
+
       final imageOverlay = imageFileName == null
           ? ''
           : '''
@@ -650,13 +584,27 @@ ${_cleanText(dinosaur.generalInfo)}
         <href>http://lg1:81/$imageFileName</href>
       </Icon>
       <overlayXY x="0.5" y="0.5" xunits="fraction" yunits="fraction"/>
-      <screenXY x="0.5" y="0.72" xunits="fraction" yunits="fraction"/>
-      <size x="620" y="0" xunits="pixels" yunits="pixels"/>
+      <screenXY x="0.5" y="0.76" xunits="fraction" yunits="fraction"/>
+      <size x="560" y="0" xunits="pixels" yunits="pixels"/>
     </ScreenOverlay>
 ''';
 
-      final textY = imageFileName == null ? '0.50' : '0.30';
-      final textSize = imageFileName == null ? '900' : '760';
+      final textY = imageFileName == null ? '0.55' : '0.40';
+      final textSize = imageFileName == null ? '850' : '720';
+
+      final statsOverlay = statsFileName == null
+          ? ''
+          : '''
+    <ScreenOverlay>
+      <name>GeoSaurio Statistics</name>
+      <Icon>
+        <href>http://lg1:81/$statsFileName</href>
+      </Icon>
+      <overlayXY x="0.5" y="0.5" xunits="fraction" yunits="fraction"/>
+      <screenXY x="0.5" y="0.10" xunits="fraction" yunits="fraction"/>
+      <size x="720" y="0" xunits="pixels" yunits="pixels"/>
+    </ScreenOverlay>
+''';
 
       final kml = '''<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
@@ -671,6 +619,7 @@ $imageOverlay
       <screenXY x="0.5" y="$textY" xunits="fraction" yunits="fraction"/>
       <size x="$textSize" y="0" xunits="pixels" yunits="pixels"/>
     </ScreenOverlay>
+$statsOverlay
   </Document>
 </kml>''';
 
@@ -1136,7 +1085,6 @@ fi
 
     return result != null;
   }
-<<<<<<< HEAD
 
   Future<Uint8List?> createDinosaurStatsImage(List<Dinosaur> dinosaurs) async {
     try {
@@ -1232,7 +1180,7 @@ Triassic: $triassic  |  Jurassic: $jurassic  |  Cretaceous: $cretaceous
 
       canvas.drawParagraph(
         bodyParagraph,
-        const ui.Offset(30, 85),
+        const ui.Offgggset(30, 85),
       );
 
       final picture = recorder.endRecording();
@@ -1254,6 +1202,4 @@ Triassic: $triassic  |  Jurassic: $jurassic  |  Cretaceous: $cretaceous
       return null;
     }
   }
-=======
->>>>>>> parent of 1a89c85 (stadistics kml)
 }
