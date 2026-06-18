@@ -419,6 +419,88 @@ ${_cleanText(dinosaur.generalInfo)}
     }
   }
 
+  Future<bool> flyToContinent(String continent) async {
+    try {
+      final normalized = continent.trim().toLowerCase();
+
+      double longitude;
+      double latitude;
+      double range;
+
+      switch (normalized) {
+        case 'africa':
+          longitude = 20.0;
+          latitude = 2.0;
+          range = 5500000;
+          break;
+
+        case 'asia':
+          longitude = 90.0;
+          latitude = 35.0;
+          range = 6500000;
+          break;
+
+        case 'europe':
+          longitude = 15.0;
+          latitude = 50.0;
+          range = 3200000;
+          break;
+
+        case 'north america':
+          longitude = -100.0;
+          latitude = 45.0;
+          range = 5500000;
+          break;
+
+        case 'south america':
+          longitude = -60.0;
+          latitude = -15.0;
+          range = 5000000;
+          break;
+
+        case 'oceania':
+        case 'australia':
+          longitude = 135.0;
+          latitude = -25.0;
+          range = 3500000;
+          break;
+
+        case 'antarctica':
+          longitude = 0.0;
+          latitude = -82.0;
+          range = 3500000;
+          break;
+
+        default:
+          longitude = 0.0;
+          latitude = 20.0;
+          range = 7000000;
+          break;
+      }
+
+      final lookAt =
+          '<LookAt>'
+          '<longitude>$longitude</longitude>'
+          '<latitude>$latitude</latitude>'
+          '<altitude>0</altitude>'
+          '<heading>0</heading>'
+          '<tilt>0</tilt>'
+          '<range>$range</range>'
+          '<altitudeMode>relativeToGround</altitudeMode>'
+          '</LookAt>';
+
+      final result = await execute(
+        "echo 'flytoview=$lookAt' > /tmp/query.txt",
+        'FlyTo continent sent',
+      );
+
+      return result != null;
+    } catch (e) {
+      debugPrint('Error flying to continent: $e');
+      return false;
+    }
+  }
+
   Future<bool> flyToDinosaur(Dinosaur dinosaur) async {
     try {
       if (dinosaur.longitude == 0 || dinosaur.latitude == 0) return false;
@@ -1180,7 +1262,7 @@ Triassic: $triassic  |  Jurassic: $jurassic  |  Cretaceous: $cretaceous
 
       canvas.drawParagraph(
         bodyParagraph,
-        const ui.Offgggset(30, 85),
+        const ui.Offset(30, 85),
       );
 
       final picture = recorder.endRecording();
