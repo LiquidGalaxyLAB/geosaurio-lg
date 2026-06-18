@@ -524,10 +524,7 @@ ${_cleanText(dinosaur.generalInfo)}
     }
   }
 
-  Future<bool> showDinosaurAboutKml(
-      Dinosaur dinosaur, {
-        List<Dinosaur> allDinosaurs = const [],
-      }) async {
+  Future<bool> showDinosaurAboutKml(Dinosaur dinosaur) async {
     try {
       final screen = calculateRightMostScreen(_lgConnectionModel.screens);
       final cleanName = cleanDinosaurImageName(dinosaur.name);
@@ -539,7 +536,9 @@ ${_cleanText(dinosaur.generalInfo)}
       String? imageFileName;
 
       if (assetPath != null) {
-        final extension = assetPath.split('.').last;
+        final extension = assetPath
+            .split('.')
+            .last;
         imageFileName = '${cleanName}_normal.$extension';
 
         await uploadAssetToLG(
@@ -560,21 +559,6 @@ ${_cleanText(dinosaur.generalInfo)}
 
       if (!uploadedInfo) return false;
 
-      String? statsFileName;
-
-      if (allDinosaurs.isNotEmpty) {
-        final statsBytes = await createDinosaurStatsImage(allDinosaurs);
-
-        if (statsBytes != null) {
-          statsFileName = '${cleanName}_stats.png';
-
-          await uploadBytesToLG(
-            bytes: statsBytes,
-            fileName: statsFileName,
-          );
-        }
-      }
-
       final imageOverlay = imageFileName == null
           ? ''
           : '''
@@ -584,27 +568,13 @@ ${_cleanText(dinosaur.generalInfo)}
         <href>http://lg1:81/$imageFileName</href>
       </Icon>
       <overlayXY x="0.5" y="0.5" xunits="fraction" yunits="fraction"/>
-      <screenXY x="0.5" y="0.76" xunits="fraction" yunits="fraction"/>
-      <size x="560" y="0" xunits="pixels" yunits="pixels"/>
+      <screenXY x="0.5" y="0.72" xunits="fraction" yunits="fraction"/>
+      <size x="620" y="0" xunits="pixels" yunits="pixels"/>
     </ScreenOverlay>
 ''';
 
-      final textY = imageFileName == null ? '0.55' : '0.40';
-      final textSize = imageFileName == null ? '850' : '720';
-
-      final statsOverlay = statsFileName == null
-          ? ''
-          : '''
-    <ScreenOverlay>
-      <name>GeoSaurio Statistics</name>
-      <Icon>
-        <href>http://lg1:81/$statsFileName</href>
-      </Icon>
-      <overlayXY x="0.5" y="0.5" xunits="fraction" yunits="fraction"/>
-      <screenXY x="0.5" y="0.10" xunits="fraction" yunits="fraction"/>
-      <size x="720" y="0" xunits="pixels" yunits="pixels"/>
-    </ScreenOverlay>
-''';
+      final textY = imageFileName == null ? '0.50' : '0.30';
+      final textSize = imageFileName == null ? '900' : '760';
 
       final kml = '''<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
@@ -619,7 +589,6 @@ $imageOverlay
       <screenXY x="0.5" y="$textY" xunits="fraction" yunits="fraction"/>
       <size x="$textSize" y="0" xunits="pixels" yunits="pixels"/>
     </ScreenOverlay>
-$statsOverlay
   </Document>
 </kml>''';
 
@@ -1084,122 +1053,5 @@ fi
     );
 
     return result != null;
-  }
-
-  Future<Uint8List?> createDinosaurStatsImage(List<Dinosaur> dinosaurs) async {
-    try {
-      const double width = 900;
-      const double height = 260;
-
-      final validDinosaurs = dinosaurs.where((d) => d.name.isNotEmpty).toList();
-
-      final countries = validDinosaurs
-          .map((d) => d.country)
-          .where((value) => value.isNotEmpty)
-          .toSet();
-
-      final continents = validDinosaurs
-          .map((d) => d.area)
-          .where((value) => value.isNotEmpty)
-          .toSet();
-
-      final regions = validDinosaurs
-          .map((d) => d.region)
-          .where((value) => value.isNotEmpty)
-          .toSet();
-
-      final triassic = validDinosaurs
-          .where((d) => d.period == DinosaurPeriod.triassic)
-          .length;
-
-      final jurassic = validDinosaurs
-          .where((d) => d.period == DinosaurPeriod.jurassic)
-          .length;
-
-      final cretaceous = validDinosaurs
-          .where((d) => d.period == DinosaurPeriod.cretaceous)
-          .length;
-
-      final recorder = ui.PictureRecorder();
-      final canvas = ui.Canvas(recorder);
-
-      final backgroundPaint = ui.Paint()
-        ..color = const ui.Color(0xEEFFFFFF);
-
-      canvas.drawRRect(
-        ui.RRect.fromRectAndRadius(
-          const ui.Rect.fromLTWH(0, 0, width, height),
-          const ui.Radius.circular(24),
-        ),
-        backgroundPaint,
-      );
-
-      final titleStyle = ui.TextStyle(
-        color: const ui.Color(0xFF111111),
-        fontSize: 34,
-        fontWeight: ui.FontWeight.bold,
-      );
-
-      final bodyStyle = ui.TextStyle(
-        color: const ui.Color(0xFF111111),
-        fontSize: 25,
-      );
-
-      final titleBuilder = ui.ParagraphBuilder(
-        ui.ParagraphStyle(maxLines: 1),
-      )
-        ..pushStyle(titleStyle)
-        ..addText('GeoSaurio Statistics');
-
-      final titleParagraph = titleBuilder.build()
-        ..layout(
-          const ui.ParagraphConstraints(width: width - 60),
-        );
-
-      canvas.drawParagraph(
-        titleParagraph,
-        const ui.Offset(30, 22),
-      );
-
-      final stats = '''
-Dinosaurs: ${validDinosaurs.length}
-Countries: ${countries.length}  |  Continents: ${continents.length}  |  Regions: ${regions.length}
-Triassic: $triassic  |  Jurassic: $jurassic  |  Cretaceous: $cretaceous
-''';
-
-      final bodyBuilder = ui.ParagraphBuilder(
-        ui.ParagraphStyle(maxLines: 4),
-      )
-        ..pushStyle(bodyStyle)
-        ..addText(stats);
-
-      final bodyParagraph = bodyBuilder.build()
-        ..layout(
-          const ui.ParagraphConstraints(width: width - 60),
-        );
-
-      canvas.drawParagraph(
-        bodyParagraph,
-        const ui.Offgggset(30, 85),
-      );
-
-      final picture = recorder.endRecording();
-
-      final image = await picture.toImage(
-        width.toInt(),
-        height.toInt(),
-      );
-
-      final byteData = await image.toByteData(
-        format: ui.ImageByteFormat.png,
-      );
-
-      if (byteData == null) return null;
-
-      return byteData.buffer.asUint8List();
-    } catch (e) {
-      debugPrint('Error creating dinosaur stats image: $e');
-      return null;
-    }
   }
 }
