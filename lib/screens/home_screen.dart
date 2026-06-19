@@ -20,6 +20,7 @@ class _HomeScreenState extends State<HomeScreen> {
   DinosaurPeriod selectedPeriod = DinosaurPeriod.jurassic;
 
   String? selectedContinent;
+  String? selectedCountry;
   String? selectedDinosaur;
 
   bool isLoadingDinosaurs = true;
@@ -45,7 +46,13 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  List<String> get continents {
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
+  }
+
+  List<String> get availableContinents {
     final list = dinosaurs
         .where((dinosaur) => dinosaur.period == selectedPeriod)
         .map((dinosaur) => dinosaur.area)
@@ -57,22 +64,44 @@ class _HomeScreenState extends State<HomeScreen> {
     return list;
   }
 
-  List<Dinosaur> get dinosaursBySelectedContinent {
+  List<String> get availableCountries {
     if (selectedContinent == null) return [];
 
-    final filtered = dinosaurs.where((dinosaur) {
+    final list = dinosaurs
+        .where(
+          (dinosaur) =>
+      dinosaur.period == selectedPeriod &&
+          dinosaur.area == selectedContinent,
+    )
+        .map((dinosaur) => dinosaur.country)
+        .where((country) => country.isNotEmpty)
+        .toSet()
+        .toList();
+
+    list.sort();
+    return list;
+  }
+
+  List<Dinosaur> get availableDinosaurs {
+    if (selectedContinent == null || selectedCountry == null) return [];
+
+    final list = dinosaurs.where((dinosaur) {
+      return dinosaur.period == selectedPeriod &&
+          dinosaur.area == selectedContinent &&
+          dinosaur.country == selectedCountry;
+    }).toList();
+
+    list.sort((a, b) => a.name.compareTo(b.name));
+    return list;
+  }
+
+  List<Dinosaur> get dinosaursInSelectedContinent {
+    if (selectedContinent == null) return [];
+
+    return dinosaurs.where((dinosaur) {
       return dinosaur.period == selectedPeriod &&
           dinosaur.area == selectedContinent;
     }).toList();
-
-    filtered.sort((a, b) => a.name.compareTo(b.name));
-    return filtered;
-  }
-
-  @override
-  void dispose() {
-    searchController.dispose();
-    super.dispose();
   }
 
   String getPeriodName(DinosaurPeriod period) {
@@ -88,74 +117,52 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  List<String> filteredContinents() {
-    final query = searchController.text.toLowerCase();
-
-    if (query.isEmpty) return continents;
-
-    return continents.where((continent) {
-      return continent.toLowerCase().contains(query);
-    }).toList();
-  }
-
-  List<Dinosaur> filteredDinosaurs() {
-    final query = searchController.text.toLowerCase();
-
-    if (query.isEmpty) return dinosaursBySelectedContinent;
-
-    return dinosaursBySelectedContinent.where((dinosaur) {
-      return dinosaur.name.toLowerCase().contains(query) ||
-          dinosaur.country.toLowerCase().contains(query) ||
-          dinosaur.region.toLowerCase().contains(query);
-    }).toList();
+  Future<void> selectPeriod(DinosaurPeriod period) async {
+    setState(() {
+      selectedPeriod = period;
+      selectedContinent = null;
+      selectedCountry = null;
+      selectedDinosaur = null;
+      searchController.clear();
+    });
   }
 
   Future<void> selectContinent(String continent) async {
-    final lgService = context.read<LgService>();
-
-    if (lgService.isConnected) {
-      await lgService.flyToContinent(continent);
-    }
-
-    if (!mounted) return;
-
     setState(() {
       selectedContinent = continent;
+      selectedCountry = null;
       selectedDinosaur = null;
       searchController.clear();
     });
+
+    final lgService = context.read<LgService>();
+
+    if (!lgService.isConnected) return;
+
+    await lgService.flyToContinent(continent);
+    await lgService.showCountryMarkers(dinosaursInSelectedContinent);
   }
 
-  void goBackToContinents() {
+  Future<void> selectCountry(String country) async {
     setState(() {
-      selectedContinent = null;
+      selectedCountry = country;
       selectedDinosaur = null;
       searchController.clear();
     });
+
+    final lgService = context.read<LgService>();
+
+    if (!lgService.isConnected) return;
+
+    await lgService.flyToCountry(country, availableDinosaurs);
+    await lgService.showDinosaurMarkers(availableDinosaurs);
   }
 
-  void showLgMessage() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Row(
-          children: [
-            Icon(Icons.check_circle, color: Colors.white),
-            SizedBox(width: 10),
-            Expanded(child: Text('Sent correctly to Liquid Galaxy')),
-          ],
-        ),
-        backgroundColor: Colors.green,
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.all(16),
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(16)),
-        ),
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
+  Future<void> selectDinosaur(Dinosaur dinosaur) async {
+    setState(() {
+      selectedDinosaur = dinosaur.name;
+    });
 
-  Future<void> openDinosaurAbout(Dinosaur dinosaur) async {
     final lgService = context.read<LgService>();
 
     if (lgService.isConnected) {
@@ -167,20 +174,6 @@ class _HomeScreenState extends State<HomeScreen> {
           allDinosaurs: dinosaurs,
         );
       }
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            flyOk
-                ? 'About order sent to Liquid Galaxy'
-                : 'Could not send About order',
-          ),
-          backgroundColor: flyOk ? Colors.green : Colors.red,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
     }
 
     if (!mounted) return;
@@ -191,6 +184,65 @@ class _HomeScreenState extends State<HomeScreen> {
         builder: (context) => DinosaurDetailScreen(dinosaur: dinosaur),
       ),
     );
+  }
+
+  void goBackToContinents() {
+    setState(() {
+      selectedContinent = null;
+      selectedCountry = null;
+      selectedDinosaur = null;
+      searchController.clear();
+    });
+  }
+
+  void goBackToCountries() {
+    setState(() {
+      selectedCountry = null;
+      selectedDinosaur = null;
+      searchController.clear();
+    });
+  }
+
+  List<String> filteredContinents() {
+    final query = searchController.text.toLowerCase();
+
+    if (query.isEmpty) return availableContinents;
+
+    return availableContinents.where((continent) {
+      return continent.toLowerCase().contains(query);
+    }).toList();
+  }
+
+  List<String> filteredCountries() {
+    final query = searchController.text.toLowerCase();
+
+    if (query.isEmpty) return availableCountries;
+
+    return availableCountries.where((country) {
+      return country.toLowerCase().contains(query);
+    }).toList();
+  }
+
+  List<Dinosaur> filteredDinosaurs() {
+    final query = searchController.text.toLowerCase();
+
+    if (query.isEmpty) return availableDinosaurs;
+
+    return availableDinosaurs.where((dinosaur) {
+      return dinosaur.name.toLowerCase().contains(query) ||
+          dinosaur.region.toLowerCase().contains(query);
+    }).toList();
+  }
+
+  String get breadcrumbTitle {
+    final parts = [
+      getPeriodName(selectedPeriod),
+      if (selectedContinent != null) selectedContinent!,
+      if (selectedCountry != null) selectedCountry!,
+      if (selectedDinosaur != null) selectedDinosaur!,
+    ];
+
+    return parts.join(' ↓ ');
   }
 
   @override
@@ -213,9 +265,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     )
                   else ...[
                     Text(
-                      selectedContinent ?? 'Select geological period',
+                      breadcrumbTitle,
                       style: const TextStyle(
-                        fontSize: 24,
+                        fontSize: 22,
                         fontWeight: FontWeight.w600,
                       ),
                       textAlign: TextAlign.center,
@@ -225,6 +277,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 24),
                     if (selectedContinent == null)
                       buildContinentSelector()
+                    else if (selectedCountry == null)
+                      buildCountrySelector()
                     else
                       buildDinosaurSelector(),
                   ],
@@ -280,7 +334,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         children: [
           const Text(
-            'Select a continent to explore',
+            'Select a continent',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
           ),
@@ -301,14 +355,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 thumbVisibility: true,
                 child: ListView.separated(
                   itemCount: visibleContinents.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 10),
+                  separatorBuilder: (_, _) =>
+                  const SizedBox(height: 10),
                   itemBuilder: (context, index) {
                     final continent = visibleContinents[index];
 
+                    final count = dinosaurs.where((dinosaur) {
+                      return dinosaur.period == selectedPeriod &&
+                          dinosaur.area == continent;
+                    }).length;
+
                     return niceListTile(
                       title: continent,
-                      subtitle:
-                      '${dinosaurs.where((d) => d.period == selectedPeriod && d.area == continent).length} dinosaurs',
+                      subtitle: '$count dinosaurs',
                       icon: Icons.public,
                       onTap: () => selectContinent(continent),
                     );
@@ -323,97 +382,50 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget buildDinosaurSelector() {
-    final visibleDinosaurs = filteredDinosaurs();
+  Widget buildCountrySelector() {
+    final visibleCountries = filteredCountries();
 
     return Expanded(
       child: Column(
         children: [
-          searchBox(hintText: 'Search dinosaurs, countries or regions...'),
+          const Text(
+            'Select a country',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          searchBox(hintText: 'Search country...'),
           const SizedBox(height: 18),
           Expanded(
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: cardDecoration(),
-              child: visibleDinosaurs.isEmpty
+              child: visibleCountries.isEmpty
                   ? emptyMessage(
-                icon: Icons.search_off,
-                text: 'No dinosaurs found\nfor this continent',
+                icon: Icons.flag,
+                text: 'No countries available\nfor this continent',
               )
                   : Scrollbar(
                 thumbVisibility: true,
                 child: ListView.separated(
-                  itemCount: visibleDinosaurs.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 10),
+                  itemCount: visibleCountries.length,
+                  separatorBuilder: (_, _) =>
+                  const SizedBox(height: 10),
                   itemBuilder: (context, index) {
-                    final dinosaur = visibleDinosaurs[index];
-                    final isSelected =
-                        selectedDinosaur == dinosaur.name;
+                    final country = visibleCountries[index];
 
-                    return Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.black12),
-                      ),
-                      child: Column(
-                        children: [
-                          ListTile(
-                            leading: const Icon(
-                              Icons.pets,
-                              color: Colors.brown,
-                            ),
-                            title: Text(
-                              dinosaur.name,
-                              style: const TextStyle(
-                                fontSize: 19,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            subtitle: Text(
-                              '${dinosaur.country} • ${dinosaur.region}',
-                            ),
-                            trailing: Icon(
-                              isSelected
-                                  ? Icons.keyboard_arrow_up
-                                  : Icons.keyboard_arrow_down,
-                            ),
-                            onTap: () {
-                              setState(() {
-                                selectedDinosaur =
-                                isSelected ? null : dinosaur.name;
-                              });
-                            },
-                          ),
-                          if (isSelected)
-                            Padding(
-                              padding: const EdgeInsets.only(
-                                bottom: 14,
-                                left: 12,
-                                right: 12,
-                              ),
-                              child: Row(
-                                mainAxisAlignment:
-                                MainAxisAlignment.center,
-                                children: [
-                                  lgActionButton(
-                                    icon: Icons.rotate_right,
-                                    text: 'Rotate',
-                                    onTap: showLgMessage,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  lgActionButton(
-                                    icon: Icons.info,
-                                    text: 'About',
-                                    onTap: () =>
-                                        openDinosaurAbout(dinosaur),
-                                  ),
-                                ],
-                              ),
-                            ),
-                        ],
-                      ),
+                    final count = dinosaurs.where((dinosaur) {
+                      return dinosaur.period == selectedPeriod &&
+                          dinosaur.area == selectedContinent &&
+                          dinosaur.country == country;
+                    }).length;
+
+                    return niceListTile(
+                      title: country,
+                      subtitle: '$count dinosaurs',
+                      icon: Icons.flag,
+                      onTap: () => selectCountry(country),
                     );
                   },
                 ),
@@ -425,6 +437,62 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: goBackToContinents,
             icon: const Icon(Icons.arrow_back),
             label: const Text('Back to continents'),
+          ),
+          const SizedBox(height: 12),
+        ],
+      ),
+    );
+  }
+
+  Widget buildDinosaurSelector() {
+    final visibleDinosaurs = filteredDinosaurs();
+
+    return Expanded(
+      child: Column(
+        children: [
+          const Text(
+            'Select a dinosaur',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          searchBox(hintText: 'Search dinosaur...'),
+          const SizedBox(height: 18),
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: cardDecoration(),
+              child: visibleDinosaurs.isEmpty
+                  ? emptyMessage(
+                icon: Icons.search_off,
+                text: 'No dinosaurs found\nfor this country',
+              )
+                  : Scrollbar(
+                thumbVisibility: true,
+                child: ListView.separated(
+                  itemCount: visibleDinosaurs.length,
+                  separatorBuilder: (_, _) =>
+                  const SizedBox(height: 10),
+                  itemBuilder: (context, index) {
+                    final dinosaur = visibleDinosaurs[index];
+
+                    return niceListTile(
+                      title: dinosaur.name,
+                      subtitle: dinosaur.region,
+                      icon: Icons.pets,
+                      onTap: () => selectDinosaur(dinosaur),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          ElevatedButton.icon(
+            onPressed: goBackToCountries,
+            icon: const Icon(Icons.arrow_back),
+            label: const Text('Back to countries'),
           ),
           const SizedBox(height: 12),
         ],
@@ -477,7 +545,7 @@ class _HomeScreenState extends State<HomeScreen> {
           title,
           style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
         ),
-        subtitle: subtitle == null ? null : Text(subtitle),
+        subtitle: subtitle == null || subtitle.isEmpty ? null : Text(subtitle),
         trailing: const Icon(Icons.chevron_right),
         onTap: onTap,
       ),
@@ -511,34 +579,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget lgActionButton({
-    required IconData icon,
-    required String text,
-    required VoidCallback onTap,
-  }) {
-    return ElevatedButton.icon(
-      onPressed: onTap,
-      icon: Icon(icon, size: 20),
-      label: Text(text),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFF3E2A1F),
-        foregroundColor: Colors.white,
-      ),
-    );
-  }
-
   Widget periodButton(DinosaurPeriod period) {
     final bool isSelected = selectedPeriod == period;
 
     return GestureDetector(
-      onTap: () {
-        setState(() {
-          selectedPeriod = period;
-          selectedContinent = null;
-          selectedDinosaur = null;
-          searchController.clear();
-        });
-      },
+      onTap: () => selectPeriod(period),
       child: Container(
         height: 45,
         alignment: Alignment.center,
@@ -560,6 +605,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget buildDrawer() {
+    final lgService = context.watch<LgService>();
+
     return Drawer(
       backgroundColor: const Color(0xFFF7F4EF),
       child: SafeArea(
@@ -625,13 +672,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(Icons.circle, color: Colors.red, size: 14),
-                  SizedBox(width: 10),
+                  Icon(
+                    Icons.circle,
+                    color: lgService.isConnected ? Colors.green : Colors.red,
+                    size: 14,
+                  ),
+                  const SizedBox(width: 10),
                   Text(
-                    'LG disconnected',
-                    style: TextStyle(fontWeight: FontWeight.w500),
+                    lgService.isConnected ? 'LG connected' : 'LG disconnected',
+                    style: const TextStyle(fontWeight: FontWeight.w500),
                   ),
                 ],
               ),

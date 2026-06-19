@@ -444,6 +444,205 @@ ${_cleanText(dinosaur.generalInfo)}
     }
   }
 
+  final Map<String, List<double>> _continentViews = {
+    'Africa': [20.0, 0.0, 7000000],
+    'Asia': [95.0, 35.0, 8000000],
+    'Europe': [15.0, 50.0, 5000000],
+    'North America': [-100.0, 45.0, 7000000],
+    'South America': [-60.0, -15.0, 7000000],
+    'Oceania': [135.0, -25.0, 6000000],
+    'Antarctica': [0.0, -82.0, 6000000],
+  };
+
+  Future<bool> flyToContinent(String continent) async {
+    try {
+      final view = _continentViews[continent];
+
+      if (view == null) return false;
+
+      final lookAt =
+          '<LookAt>'
+          '<longitude>${view[0]}</longitude>'
+          '<latitude>${view[1]}</latitude>'
+          '<altitude>0</altitude>'
+          '<heading>0</heading>'
+          '<tilt>0</tilt>'
+          '<range>${view[2]}</range>'
+          '<altitudeMode>relativeToGround</altitudeMode>'
+          '</LookAt>';
+
+      final result = await execute(
+        "echo 'flytoview=$lookAt' > /tmp/query.txt",
+        'FlyTo continent sent',
+      );
+
+      return result != null;
+    } catch (e) {
+      debugPrint('Error flying to continent: $e');
+      return false;
+    }
+  }
+
+  Future<bool> flyToCountry(String country, List<Dinosaur> dinosaurs) async {
+    try {
+      final validDinosaurs = dinosaurs.where((dinosaur) {
+        return dinosaur.latitude != 0 && dinosaur.longitude != 0;
+      }).toList();
+
+      if (validDinosaurs.isEmpty) return false;
+
+      final latitude = validDinosaurs
+          .map((dinosaur) => dinosaur.latitude)
+          .reduce((a, b) => a + b) /
+          validDinosaurs.length;
+
+      final longitude = validDinosaurs
+          .map((dinosaur) => dinosaur.longitude)
+          .reduce((a, b) => a + b) /
+          validDinosaurs.length;
+
+      final lookAt =
+          '<LookAt>'
+          '<longitude>$longitude</longitude>'
+          '<latitude>$latitude</latitude>'
+          '<altitude>0</altitude>'
+          '<heading>0</heading>'
+          '<tilt>0</tilt>'
+          '<range>1200000</range>'
+          '<altitudeMode>relativeToGround</altitudeMode>'
+          '</LookAt>';
+
+      final result = await execute(
+        "echo 'flytoview=$lookAt' > /tmp/query.txt",
+        'FlyTo country sent',
+      );
+
+      return result != null;
+    } catch (e) {
+      debugPrint('Error flying to country: $e');
+      return false;
+    }
+  }
+
+  Future<bool> showCountryMarkers(List<Dinosaur> dinosaurs) async {
+    try {
+      final Map<String, List<Dinosaur>> groupedByCountry = {};
+
+      for (final dinosaur in dinosaurs) {
+        if (dinosaur.latitude == 0 || dinosaur.longitude == 0) continue;
+
+        groupedByCountry.putIfAbsent(dinosaur.country, () => []);
+        groupedByCountry[dinosaur.country]!.add(dinosaur);
+      }
+
+      final placemarks = groupedByCountry.entries.map((entry) {
+        final country = _cleanText(entry.key);
+        final countryDinosaurs = entry.value;
+
+        final latitude = countryDinosaurs
+            .map((dinosaur) => dinosaur.latitude)
+            .reduce((a, b) => a + b) /
+            countryDinosaurs.length;
+
+        final longitude = countryDinosaurs
+            .map((dinosaur) => dinosaur.longitude)
+            .reduce((a, b) => a + b) /
+            countryDinosaurs.length;
+
+        return '''
+<Placemark>
+  <name>$country</name>
+  <description>${countryDinosaurs.length} dinosaurs found</description>
+  <Style>
+    <IconStyle>
+      <scale>1.4</scale>
+      <Icon>
+        <href>http://maps.google.com/mapfiles/kml/paddle/grn-circle.png</href>
+      </Icon>
+    </IconStyle>
+  </Style>
+  <Point>
+    <coordinates>$longitude,$latitude,0</coordinates>
+  </Point>
+</Placemark>
+''';
+      }).join('\n');
+
+      final kml = '''<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Country Markers</name>
+    $placemarks
+  </Document>
+</kml>''';
+
+      final result = await execute(
+        "echo '$kml' > /var/www/html/kml/slave_1.kml",
+        'Country markers sent',
+      );
+
+      return result != null;
+    } catch (e) {
+      debugPrint('Error showing country markers: $e');
+      return false;
+    }
+  }
+
+  Future<bool> showDinosaurMarkers(List<Dinosaur> dinosaurs) async {
+    try {
+      final validDinosaurs = dinosaurs.where((dinosaur) {
+        return dinosaur.latitude != 0 && dinosaur.longitude != 0;
+      }).toList();
+
+      final placemarks = validDinosaurs.map((dinosaur) {
+        final name = _cleanText(dinosaur.name);
+        final description = _cleanText(
+          '${dinosaur.periodName}\\n'
+              '${dinosaur.country}, ${dinosaur.region}\\n'
+              'Diet: ${dinosaur.diet}\\n'
+              'Length: ${dinosaur.length}\\n'
+              'Weight: ${dinosaur.weight}',
+        );
+
+        return '''
+<Placemark>
+  <name>$name</name>
+  <description>$description</description>
+  <Style>
+    <IconStyle>
+      <scale>1.3</scale>
+      <Icon>
+        <href>http://maps.google.com/mapfiles/kml/paddle/red-circle.png</href>
+      </Icon>
+    </IconStyle>
+  </Style>
+  <Point>
+    <coordinates>${dinosaur.longitude},${dinosaur.latitude},0</coordinates>
+  </Point>
+</Placemark>
+''';
+      }).join('\n');
+
+      final kml = '''<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Dinosaur Markers</name>
+    $placemarks
+  </Document>
+</kml>''';
+
+      final result = await execute(
+        "echo '$kml' > /var/www/html/kml/slave_1.kml",
+        'Dinosaur markers sent',
+      );
+
+      return result != null;
+    } catch (e) {
+      debugPrint('Error showing dinosaur markers: $e');
+      return false;
+    }
+  }
+
   Future<bool> sendLogo() async {
     try {
       final screen = calculateLeftMostScreen(_lgConnectionModel.screens);
@@ -1180,7 +1379,7 @@ Triassic: $triassic  |  Jurassic: $jurassic  |  Cretaceous: $cretaceous
 
       canvas.drawParagraph(
         bodyParagraph,
-        const ui.Offgggset(30, 85),
+        const ui.Offset(30, 85),
       );
 
       final picture = recorder.endRecording();
