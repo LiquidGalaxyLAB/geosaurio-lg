@@ -45,23 +45,6 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-<<<<<<< Updated upstream
-=======
-  @override
-  void dispose() {
-    searchController.dispose();
-    super.dispose();
-  }
-
-  Map<String, List<String>> get countriesByContinent {
-    return DinosaurService.buildCountriesByContinent(dinosaurs, selectedPeriod);
-  }
-
-  Map<String, Map<String, List<String>>> get regionsByCountry {
-    return DinosaurService.buildRegionsByCountry(dinosaurs, selectedPeriod);
-  }
-
->>>>>>> Stashed changes
   List<String> get continents {
     final list = dinosaurs
         .where((dinosaur) => dinosaur.period == selectedPeriod)
@@ -74,7 +57,6 @@ class _HomeScreenState extends State<HomeScreen> {
     return list;
   }
 
-<<<<<<< Updated upstream
   List<Dinosaur> get dinosaursBySelectedContinent {
     if (selectedContinent == null) return [];
 
@@ -91,25 +73,6 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     searchController.dispose();
     super.dispose();
-=======
-  List<Dinosaur> get dinosaursInSelectedContinent {
-    if (selectedContinent == null) return [];
-
-    return dinosaurs.where((dinosaur) {
-      return dinosaur.period == selectedPeriod &&
-          dinosaur.area == selectedContinent;
-    }).toList();
-  }
-
-  List<Dinosaur> get dinosaursInSelectedCountry {
-    if (selectedContinent == null || selectedCountry == null) return [];
-
-    return dinosaurs.where((dinosaur) {
-      return dinosaur.period == selectedPeriod &&
-          dinosaur.area == selectedContinent &&
-          dinosaur.country == selectedCountry;
-    }).toList();
->>>>>>> Stashed changes
   }
 
   String getPeriodName(DinosaurPeriod period) {
@@ -147,7 +110,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }).toList();
   }
 
-<<<<<<< Updated upstream
   Future<void> selectContinent(String continent) async {
     final lgService = context.read<LgService>();
 
@@ -157,73 +119,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (!mounted) return;
 
-=======
-  Future<void> selectPeriod(DinosaurPeriod period) async {
-    setState(() {
-      selectedPeriod = period;
-      selectedContinent = null;
-      selectedCountry = null;
-      expandedRegion = null;
-      selectedDinosaur = null;
-      searchController.clear();
-    });
-  }
-
-  Future<void> selectContinent(String? continent) async {
-    if (continent == null) return;
-
-    setState(() {
-      selectedContinent = continent;
-      selectedCountry = null;
-      expandedRegion = null;
-      selectedDinosaur = null;
-      searchController.clear();
-    });
-
-    final lgService = context.read<LgService>();
-
-    if (!lgService.isConnected) return;
-
-    final continentDinosaurs = dinosaursInSelectedContinent;
-
-    final flyOk = await lgService.flyToContinent(continent);
-    await lgService.showCountryMarkers(continentDinosaurs);
-
-    if (!mounted) return;
-
-    showLgSnackBar(
-      flyOk
-          ? 'Flying to $continent and showing countries'
-          : 'Could not fly to $continent',
-      flyOk,
-    );
-  }
-
-  Future<void> selectCountry(String country) async {
->>>>>>> Stashed changes
     setState(() {
       selectedContinent = continent;
       selectedDinosaur = null;
       searchController.clear();
     });
-
-    final lgService = context.read<LgService>();
-
-    if (!lgService.isConnected) return;
-
-    final countryDinosaurs = dinosaursInSelectedCountry;
-
-    final flyOk = await lgService.flyToCountry(country, countryDinosaurs);
-    await lgService.showDinosaurMarkers(countryDinosaurs);
-
-    if (!mounted) return;
-
-    showLgSnackBar(
-      flyOk
-          ? 'Flying to $country and showing dinosaur markers'
-          : 'Could not fly to $country',
-      flyOk,
-    );
   }
 
   void goBackToContinents() {
@@ -234,20 +134,17 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  void showLgSnackBar(String message, bool success) {
+  void showLgMessage() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Row(
+        content: const Row(
           children: [
-            Icon(
-              success ? Icons.check_circle : Icons.error,
-              color: Colors.white,
-            ),
-            const SizedBox(width: 10),
-            Expanded(child: Text(message)),
+            Icon(Icons.check_circle, color: Colors.white),
+            SizedBox(width: 10),
+            Expanded(child: Text('Sent correctly to Liquid Galaxy')),
           ],
         ),
-        backgroundColor: success ? Colors.green : Colors.red,
+        backgroundColor: Colors.green,
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.all(16),
         shape: const RoundedRectangleBorder(
@@ -273,11 +170,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
       if (!mounted) return;
 
-      showLgSnackBar(
-        flyOk
-            ? 'Flying to ${selectedDino.name} and showing information'
-            : 'Could not fly to ${selectedDino.name}',
-        flyOk,
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            flyOk
+                ? 'About order sent to Liquid Galaxy'
+                : 'Could not send About order',
+          ),
+          backgroundColor: flyOk ? Colors.green : Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
       );
     }
 
@@ -311,11 +213,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     )
                   else ...[
                     Text(
-<<<<<<< Updated upstream
                       selectedContinent ?? 'Select geological period',
-=======
-                      buildHeaderTitle(),
->>>>>>> Stashed changes
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w600,
@@ -325,13 +223,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 18),
                     buildPeriodSelector(),
                     const SizedBox(height: 24),
-<<<<<<< Updated upstream
                     if (selectedContinent == null)
                       buildContinentSelector()
-=======
-                    if (selectedCountry == null)
-                      buildContinentAndCountrySelector(countries)
->>>>>>> Stashed changes
                     else
                       buildDinosaurSelector(),
                   ],
@@ -342,12 +235,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
-  }
-
-  String buildHeaderTitle() {
-    if (selectedCountry != null) return selectedCountry!;
-    if (selectedContinent != null) return selectedContinent!;
-    return 'Select geological period';
   }
 
   Widget buildTopBar(BuildContext context) {
@@ -386,19 +273,14 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-<<<<<<< Updated upstream
   Widget buildContinentSelector() {
     final visibleContinents = filteredContinents();
-=======
-  Widget buildContinentAndCountrySelector(List<String> countries) {
-    final visibleCountries = filteredCountries(countries);
->>>>>>> Stashed changes
 
     return Expanded(
       child: Column(
         children: [
           const Text(
-            'Explore by continent and country',
+            'Select a continent to explore',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
           ),
@@ -412,18 +294,8 @@ class _HomeScreenState extends State<HomeScreen> {
               decoration: cardDecoration(),
               child: visibleContinents.isEmpty
                   ? emptyMessage(
-<<<<<<< Updated upstream
                 icon: Icons.public_off,
                 text: 'No continents available\nfor this period',
-=======
-                icon: Icons.public,
-                text: 'Select a continent\nto see available countries',
-              )
-                  : visibleCountries.isEmpty
-                  ? emptyMessage(
-                icon: Icons.search_off,
-                text: 'No countries found',
->>>>>>> Stashed changes
               )
                   : Scrollbar(
                 thumbVisibility: true,
@@ -509,14 +381,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             onTap: () {
                               setState(() {
-<<<<<<< Updated upstream
                                 selectedDinosaur =
                                 isSelected ? null : dinosaur.name;
-=======
-                                expandedRegion =
-                                isExpanded ? null : regionName;
-                                selectedDinosaur = null;
->>>>>>> Stashed changes
                               });
                             },
                           ),
@@ -531,7 +397,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                 mainAxisAlignment:
                                 MainAxisAlignment.center,
                                 children: [
-<<<<<<< Updated upstream
                                   lgActionButton(
                                     icon: Icons.rotate_right,
                                     text: 'Rotate',
@@ -544,40 +409,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                     onTap: () =>
                                         openDinosaurAbout(dinosaur),
                                   ),
-=======
-                                  ListTile(
-                                    title: Text(
-                                      dinosaur,
-                                      textAlign: TextAlign.center,
-                                      style: const TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    trailing: const Icon(
-                                      Icons.chevron_right,
-                                    ),
-                                    onTap: () {
-                                      setState(() {
-                                        selectedDinosaur = dinosaur;
-                                      });
-
-                                      openDinosaurAbout(dinosaur);
-                                    },
-                                  ),
-                                  if (isSelected)
-                                    Padding(
-                                      padding: const EdgeInsets.only(
-                                        bottom: 14,
-                                      ),
-                                      child: lgActionButton(
-                                        icon: Icons.info,
-                                        text: 'About',
-                                        onTap: () =>
-                                            openDinosaurAbout(dinosaur),
-                                      ),
-                                    ),
->>>>>>> Stashed changes
                                 ],
                               ),
                             ),
@@ -631,39 +462,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-<<<<<<< Updated upstream
-=======
-  Widget continentDropdown() {
-    return Container(
-      height: 50,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.black12),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: selectedContinent,
-          isExpanded: true,
-          hint: const Text(
-            'Select Continent',
-            style: TextStyle(fontSize: 17, color: Colors.black),
-          ),
-          icon: const Icon(Icons.keyboard_arrow_down),
-          items: continents.map((continent) {
-            return DropdownMenuItem(
-              value: continent,
-              child: Text(continent),
-            );
-          }).toList(),
-          onChanged: selectContinent,
-        ),
-      ),
-    );
-  }
-
->>>>>>> Stashed changes
   Widget niceListTile({
     required String title,
     String? subtitle,
@@ -733,7 +531,6 @@ class _HomeScreenState extends State<HomeScreen> {
     final bool isSelected = selectedPeriod == period;
 
     return GestureDetector(
-<<<<<<< Updated upstream
       onTap: () {
         setState(() {
           selectedPeriod = period;
@@ -742,9 +539,6 @@ class _HomeScreenState extends State<HomeScreen> {
           searchController.clear();
         });
       },
-=======
-      onTap: () => selectPeriod(period),
->>>>>>> Stashed changes
       child: Container(
         height: 45,
         alignment: Alignment.center,
@@ -766,8 +560,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget buildDrawer() {
-    final lgService = context.watch<LgService>();
-
     return Drawer(
       backgroundColor: const Color(0xFFF7F4EF),
       child: SafeArea(
@@ -833,17 +625,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Row(
+              child: const Row(
                 children: [
-                  Icon(
-                    Icons.circle,
-                    color: lgService.isConnected ? Colors.green : Colors.red,
-                    size: 14,
-                  ),
-                  const SizedBox(width: 10),
+                  Icon(Icons.circle, color: Colors.red, size: 14),
+                  SizedBox(width: 10),
                   Text(
-                    lgService.isConnected ? 'LG connected' : 'LG disconnected',
-                    style: const TextStyle(fontWeight: FontWeight.w500),
+                    'LG disconnected',
+                    style: TextStyle(fontWeight: FontWeight.w500),
                   ),
                 ],
               ),
