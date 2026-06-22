@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:dartssh2/dartssh2.dart';
@@ -501,6 +500,8 @@ ${_cleanText(dinosaur.generalInfo)}
           .reduce((a, b) => a + b) /
           validDinosaurs.length;
 
+      final range = validDinosaurs.length <= 1 ? 250000 : 900000;
+
       final lookAt =
           '<LookAt>'
           '<longitude>$longitude</longitude>'
@@ -508,7 +509,7 @@ ${_cleanText(dinosaur.generalInfo)}
           '<altitude>0</altitude>'
           '<heading>0</heading>'
           '<tilt>0</tilt>'
-          '<range>1200000</range>'
+          '<range>$range</range>'
           '<altitudeMode>relativeToGround</altitudeMode>'
           '</LookAt>';
 
@@ -584,6 +585,31 @@ ${_cleanText(dinosaur.generalInfo)}
       return result != null;
     } catch (e) {
       debugPrint('Error showing country markers: $e');
+      return false;
+    }
+  }
+
+  Future<bool> flyToEarth() async {
+    try {
+      const lookAt =
+          '<LookAt>'
+          '<longitude>0</longitude>'
+          '<latitude>20</latitude>'
+          '<altitude>0</altitude>'
+          '<heading>0</heading>'
+          '<tilt>0</tilt>'
+          '<range>20000000</range>'
+          '<altitudeMode>relativeToGround</altitudeMode>'
+          '</LookAt>';
+
+      final result = await execute(
+        "echo 'flytoview=$lookAt' > /tmp/query.txt",
+        'FlyTo Earth sent',
+      );
+
+      return result != null;
+    } catch (e) {
+      debugPrint('Error flying to Earth: $e');
       return false;
     }
   }

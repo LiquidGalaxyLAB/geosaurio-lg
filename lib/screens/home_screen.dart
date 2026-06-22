@@ -8,6 +8,7 @@ import '../services/lg_service.dart';
 import 'dinosaur_detail_screen.dart';
 import 'lg_settings_screen.dart';
 import 'about_screen.dart';
+import '../widgets/dinosaur_mini_map.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -154,8 +155,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (!lgService.isConnected) return;
 
-    await lgService.flyToCountry(country, availableDinosaurs);
-    await lgService.showDinosaurMarkers(availableDinosaurs);
+    final countryDinosaurs = availableDinosaurs;
+
+    await lgService.flyToCountry(country, countryDinosaurs);
+    await lgService.showDinosaurMarkers(countryDinosaurs);
   }
 
   Future<void> selectDinosaur(Dinosaur dinosaur) async {
@@ -178,12 +181,19 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (!mounted) return;
 
-    Navigator.push(
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => DinosaurDetailScreen(dinosaur: dinosaur),
       ),
     );
+
+    if (!mounted) return;
+
+    if (lgService.isConnected && selectedContinent != null) {
+      await lgService.flyToContinent(selectedContinent!);
+      await lgService.showCountryMarkers(dinosaursInSelectedContinent);
+    }
   }
 
   void goBackToContinents() {
@@ -193,6 +203,12 @@ class _HomeScreenState extends State<HomeScreen> {
       selectedDinosaur = null;
       searchController.clear();
     });
+
+    final lgService = context.read<LgService>();
+
+    if (lgService.isConnected) {
+      lgService.flyToEarth();
+    }
   }
 
   void goBackToCountries() {
@@ -235,14 +251,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   String get breadcrumbTitle {
-    final parts = [
+    return [
       getPeriodName(selectedPeriod),
-      if (selectedContinent != null) selectedContinent!,
-      if (selectedCountry != null) selectedCountry!,
-      if (selectedDinosaur != null) selectedDinosaur!,
-    ];
-
-    return parts.join(' ↓ ');
+      selectedContinent,
+      selectedCountry,
+      selectedDinosaur,
+    ].whereType<String>().join(' ↓ ');
   }
 
   @override
@@ -457,6 +471,12 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 16),
           searchBox(hintText: 'Search dinosaur...'),
+          DinosaurMiniMap(
+            dinosaurs: visibleDinosaurs,
+            onDinosaurSelected: (dinosaur) {
+              selectDinosaur(dinosaur);
+            },
+          ),
           const SizedBox(height: 18),
           Expanded(
             child: Container(

@@ -1,4 +1,5 @@
 import 'package:just_audio/just_audio.dart';
+import 'package:flutter/foundation.dart';
 
 class AudioService {
   AudioService._internal();
@@ -28,7 +29,7 @@ class AudioService {
 
       await _player.play();
     } catch (e) {
-      print('Audio not found: $e');
+      debugPrint('Audio not found: $e');
     }
   }
 
