@@ -172,7 +172,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final flyOk = await lgService.flyToDinosaur(dinosaur);
 
       if (flyOk) {
-        await lgService.showDinosaurAboutKml(dinosaur, allDinosaurs: dinosaurs);
+        await lgService.showDinosaurAboutKml(dinosaur);
       }
     }
 
