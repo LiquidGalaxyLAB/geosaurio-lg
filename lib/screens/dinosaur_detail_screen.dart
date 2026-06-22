@@ -11,10 +11,7 @@ import 'about_screen.dart';
 class DinosaurDetailScreen extends StatefulWidget {
   final Dinosaur dinosaur;
 
-  const DinosaurDetailScreen({
-    super.key,
-    required this.dinosaur,
-  });
+  const DinosaurDetailScreen({super.key, required this.dinosaur});
 
   @override
   State<DinosaurDetailScreen> createState() => _DinosaurDetailScreenState();
@@ -75,11 +72,7 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
       isNarrationPlaying = false;
     });
 
-    showSnack(
-      context,
-      'Narration stopped',
-      success: true,
-    );
+    showSnack(context, 'Narration stopped', success: true);
   }
 
   @override
@@ -265,7 +258,7 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
                   sectionCard(
                     title: 'Scientific Information',
                     text:
-                    'Status: ${emptyText(dinosaur.status)}\n'
+                        'Status: ${emptyText(dinosaur.status)}\n'
                         'Author: ${emptyText(dinosaur.author)}\n'
                         'Formation: ${emptyText(dinosaur.formation)}\n'
                         'Time: ${emptyText(dinosaur.time1)} - ${emptyText(dinosaur.time2)}',
@@ -398,10 +391,7 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
     return value.trim().isEmpty ? 'Unknown' : value;
   }
 
-  Widget sectionCard({
-    required String title,
-    required String text,
-  }) {
+  Widget sectionCard({required String title, required String text}) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
@@ -411,19 +401,10 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
         children: [
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
-          Text(
-            text,
-            style: const TextStyle(
-              fontSize: 16,
-              height: 1.35,
-            ),
-          ),
+          Text(text, style: const TextStyle(fontSize: 16, height: 1.35)),
         ],
       ),
     );
@@ -471,9 +452,7 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
         foregroundColor: Colors.white,
         elevation: 5,
         padding: const EdgeInsets.all(12),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -519,10 +498,7 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
             const SizedBox(height: 12),
             const Text(
               'GeoSaurio',
-              style: TextStyle(
-                fontSize: 25,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
             ),
             const Text(
               'For Liquid Galaxy',
@@ -544,9 +520,7 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => const AboutScreen(),
-                  ),
+                  MaterialPageRoute(builder: (context) => const AboutScreen()),
                 );
               },
             ),
@@ -598,10 +572,7 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
     required VoidCallback onTap,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 14,
-        vertical: 4,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
       child: Material(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),

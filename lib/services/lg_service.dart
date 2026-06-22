@@ -205,10 +205,7 @@ class LgService extends ChangeNotifier {
   Future<String?> getExistingImagePath(String basePath) async {
     final extensions = ['.png', '.jpg', '.jpeg'];
 
-    final variants = <String>{
-      basePath,
-      basePath.toLowerCase(),
-    };
+    final variants = <String>{basePath, basePath.toLowerCase()};
 
     if (basePath.contains('_')) {
       final lastUnderscore = basePath.lastIndexOf('_');
@@ -261,9 +258,10 @@ class LgService extends ChangeNotifier {
 
       final remoteFile = await sftp.open(
         '/var/www/html/$fileName',
-        mode: SftpFileOpenMode.create |
-        SftpFileOpenMode.truncate |
-        SftpFileOpenMode.write,
+        mode:
+            SftpFileOpenMode.create |
+            SftpFileOpenMode.truncate |
+            SftpFileOpenMode.write,
       );
 
       await remoteFile.write(
@@ -288,14 +286,13 @@ class LgService extends ChangeNotifier {
 
       final remoteFile = await sftp.open(
         '/var/www/html/$fileName',
-        mode: SftpFileOpenMode.create |
-        SftpFileOpenMode.truncate |
-        SftpFileOpenMode.write,
+        mode:
+            SftpFileOpenMode.create |
+            SftpFileOpenMode.truncate |
+            SftpFileOpenMode.write,
       );
 
-      await remoteFile.write(
-        Stream.value(bytes),
-      );
+      await remoteFile.write(Stream.value(bytes));
 
       await remoteFile.close();
 
@@ -324,8 +321,7 @@ class LgService extends ChangeNotifier {
       final recorder = ui.PictureRecorder();
       final canvas = ui.Canvas(recorder);
 
-      final backgroundPaint = ui.Paint()
-        ..color = const ui.Color(0xEEFFFFFF);
+      final backgroundPaint = ui.Paint()..color = const ui.Color(0xEEFFFFFF);
 
       canvas.drawRRect(
         ui.RRect.fromRectAndRadius(
@@ -346,26 +342,20 @@ class LgService extends ChangeNotifier {
         fontSize: 28,
       );
 
-      final titleBuilder = ui.ParagraphBuilder(
-        ui.ParagraphStyle(
-          maxLines: 2,
-          textAlign: ui.TextAlign.left,
-        ),
-      )
-        ..pushStyle(titleStyle)
-        ..addText(_cleanText(dinosaur.name));
+      final titleBuilder =
+          ui.ParagraphBuilder(
+              ui.ParagraphStyle(maxLines: 2, textAlign: ui.TextAlign.left),
+            )
+            ..pushStyle(titleStyle)
+            ..addText(_cleanText(dinosaur.name));
 
       final titleParagraph = titleBuilder.build()
-        ..layout(
-          const ui.ParagraphConstraints(width: width - 60),
-        );
+        ..layout(const ui.ParagraphConstraints(width: width - 60));
 
-      canvas.drawParagraph(
-        titleParagraph,
-        const ui.Offset(30, 28),
-      );
+      canvas.drawParagraph(titleParagraph, const ui.Offset(30, 28));
 
-      final info = '''
+      final info =
+          '''
 Period: ${_cleanText(dinosaur.periodName)}
 Time: ${_cleanText(dinosaur.time1)} - ${_cleanText(dinosaur.time2)}
 Diet: ${_cleanText(dinosaur.diet)}
@@ -379,35 +369,23 @@ Habitat: ${_cleanText(dinosaur.habitat)}
 ${_cleanText(dinosaur.generalInfo)}
 ''';
 
-      final bodyBuilder = ui.ParagraphBuilder(
-        ui.ParagraphStyle(
-          maxLines: 14,
-          textAlign: ui.TextAlign.left,
-        ),
-      )
-        ..pushStyle(bodyStyle)
-        ..addText(info);
+      final bodyBuilder =
+          ui.ParagraphBuilder(
+              ui.ParagraphStyle(maxLines: 14, textAlign: ui.TextAlign.left),
+            )
+            ..pushStyle(bodyStyle)
+            ..addText(info);
 
       final bodyParagraph = bodyBuilder.build()
-        ..layout(
-          const ui.ParagraphConstraints(width: width - 60),
-        );
+        ..layout(const ui.ParagraphConstraints(width: width - 60));
 
-      canvas.drawParagraph(
-        bodyParagraph,
-        const ui.Offset(30, 125),
-      );
+      canvas.drawParagraph(bodyParagraph, const ui.Offset(30, 125));
 
       final picture = recorder.endRecording();
 
-      final image = await picture.toImage(
-        width.toInt(),
-        height.toInt(),
-      );
+      final image = await picture.toImage(width.toInt(), height.toInt());
 
-      final byteData = await image.toByteData(
-        format: ui.ImageByteFormat.png,
-      );
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
 
       if (byteData == null) return null;
 
@@ -490,14 +468,16 @@ ${_cleanText(dinosaur.generalInfo)}
 
       if (validDinosaurs.isEmpty) return false;
 
-      final latitude = validDinosaurs
-          .map((dinosaur) => dinosaur.latitude)
-          .reduce((a, b) => a + b) /
+      final latitude =
+          validDinosaurs
+              .map((dinosaur) => dinosaur.latitude)
+              .reduce((a, b) => a + b) /
           validDinosaurs.length;
 
-      final longitude = validDinosaurs
-          .map((dinosaur) => dinosaur.longitude)
-          .reduce((a, b) => a + b) /
+      final longitude =
+          validDinosaurs
+              .map((dinosaur) => dinosaur.longitude)
+              .reduce((a, b) => a + b) /
           validDinosaurs.length;
 
       final range = validDinosaurs.length <= 1 ? 250000 : 900000;
@@ -536,21 +516,24 @@ ${_cleanText(dinosaur.generalInfo)}
         groupedByCountry[dinosaur.country]!.add(dinosaur);
       }
 
-      final placemarks = groupedByCountry.entries.map((entry) {
-        final country = _cleanText(entry.key);
-        final countryDinosaurs = entry.value;
+      final placemarks = groupedByCountry.entries
+          .map((entry) {
+            final country = _cleanText(entry.key);
+            final countryDinosaurs = entry.value;
 
-        final latitude = countryDinosaurs
-            .map((dinosaur) => dinosaur.latitude)
-            .reduce((a, b) => a + b) /
-            countryDinosaurs.length;
+            final latitude =
+                countryDinosaurs
+                    .map((dinosaur) => dinosaur.latitude)
+                    .reduce((a, b) => a + b) /
+                countryDinosaurs.length;
 
-        final longitude = countryDinosaurs
-            .map((dinosaur) => dinosaur.longitude)
-            .reduce((a, b) => a + b) /
-            countryDinosaurs.length;
+            final longitude =
+                countryDinosaurs
+                    .map((dinosaur) => dinosaur.longitude)
+                    .reduce((a, b) => a + b) /
+                countryDinosaurs.length;
 
-        return '''
+            return '''
 <Placemark>
   <name>$country</name>
   <description>${countryDinosaurs.length} dinosaurs found</description>
@@ -567,9 +550,11 @@ ${_cleanText(dinosaur.generalInfo)}
   </Point>
 </Placemark>
 ''';
-      }).join('\n');
+          })
+          .join('\n');
 
-      final kml = '''<?xml version="1.0" encoding="UTF-8"?>
+      final kml =
+          '''<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
     <name>Country Markers</name>
@@ -620,17 +605,18 @@ ${_cleanText(dinosaur.generalInfo)}
         return dinosaur.latitude != 0 && dinosaur.longitude != 0;
       }).toList();
 
-      final placemarks = validDinosaurs.map((dinosaur) {
-        final name = _cleanText(dinosaur.name);
-        final description = _cleanText(
-          '${dinosaur.periodName}\\n'
+      final placemarks = validDinosaurs
+          .map((dinosaur) {
+            final name = _cleanText(dinosaur.name);
+            final description = _cleanText(
+              '${dinosaur.periodName}\\n'
               '${dinosaur.country}, ${dinosaur.region}\\n'
               'Diet: ${dinosaur.diet}\\n'
               'Length: ${dinosaur.length}\\n'
               'Weight: ${dinosaur.weight}',
-        );
+            );
 
-        return '''
+            return '''
 <Placemark>
   <name>$name</name>
   <description>$description</description>
@@ -647,9 +633,11 @@ ${_cleanText(dinosaur.generalInfo)}
   </Point>
 </Placemark>
 ''';
-      }).join('\n');
+          })
+          .join('\n');
 
-      final kml = '''<?xml version="1.0" encoding="UTF-8"?>
+      final kml =
+          '''<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
     <name>Dinosaur Markers</name>
@@ -721,7 +709,8 @@ ${_cleanText(dinosaur.generalInfo)}
 
       if (!uploaded) return false;
 
-      final kml = '''<?xml version="1.0" encoding="UTF-8"?>
+      final kml =
+          '''<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
     <ScreenOverlay>
@@ -761,15 +750,10 @@ ${_cleanText(dinosaur.generalInfo)}
       String? imageFileName;
 
       if (assetPath != null) {
-        final extension = assetPath
-            .split('.')
-            .last;
+        final extension = assetPath.split('.').last;
         imageFileName = '${cleanName}_normal.$extension';
 
-        await uploadAssetToLG(
-          assetPath: assetPath,
-          fileName: imageFileName,
-        );
+        await uploadAssetToLG(assetPath: assetPath, fileName: imageFileName);
       }
 
       final infoBytes = await createDinosaurInfoImage(dinosaur);
@@ -801,7 +785,8 @@ ${_cleanText(dinosaur.generalInfo)}
       final textY = imageFileName == null ? '0.50' : '0.30';
       final textSize = imageFileName == null ? '900' : '760';
 
-      final kml = '''<?xml version="1.0" encoding="UTF-8"?>
+      final kml =
+          '''<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
 $imageOverlay
@@ -867,9 +852,7 @@ $imageOverlay
 
     if (assetPath == null) return false;
 
-    final extension = assetPath
-        .split('.')
-        .last;
+    final extension = assetPath.split('.').last;
 
     return await showRightScreenImage(
       assetPath: assetPath,
@@ -886,9 +869,7 @@ $imageOverlay
 
     if (assetPath == null) return false;
 
-    final extension = assetPath
-        .split('.')
-        .last;
+    final extension = assetPath.split('.').last;
     final imageFileName = '${cleanName}_skeleton.$extension';
 
     final uploadedImage = await uploadAssetToLG(
@@ -907,9 +888,7 @@ $imageOverlay
 
     if (!uploadedHtml) return false;
 
-    return await openChromiumOnAllScreens(
-      'http://lg1:81/skeleton.html',
-    );
+    return await openChromiumOnAllScreens('http://lg1:81/skeleton.html');
   }
 
   Future<bool> showDinosaurComparisonImage(Dinosaur dinosaur) async {
@@ -921,9 +900,7 @@ $imageOverlay
 
     if (assetPath == null) return false;
 
-    final extension = assetPath
-        .split('.')
-        .last;
+    final extension = assetPath.split('.').last;
     final imageFileName = '${cleanName}_comparison.$extension';
 
     final uploadedImage = await uploadAssetToLG(
@@ -942,9 +919,7 @@ $imageOverlay
 
     if (!uploadedHtml) return false;
 
-    return await openChromiumOnAllScreens(
-      'http://lg1:81/comparison.html',
-    );
+    return await openChromiumOnAllScreens('http://lg1:81/comparison.html');
   }
 
   Future<bool> openChromiumOnAllScreens(String url) async {
@@ -952,9 +927,9 @@ $imageOverlay
       for (var i = 1; i <= _lgConnectionModel.screens; i++) {
         final fullUrl = '$url?screen=$i&total=${_lgConnectionModel.screens}';
 
-        final command = '''
-sshpass -p ${_lgConnectionModel
-            .password} ssh -t lg$i "DISPLAY=:0 chromium-browser --kiosk --no-first-run --disable-infobars '$fullUrl' > /dev/null 2>&1 &"
+        final command =
+            '''
+sshpass -p ${_lgConnectionModel.password} ssh -t lg$i "DISPLAY=:0 chromium-browser --kiosk --no-first-run --disable-infobars '$fullUrl' > /dev/null 2>&1 &"
 ''';
 
         await execute(command, 'Chromium opened on lg$i');
@@ -972,7 +947,8 @@ sshpass -p ${_lgConnectionModel
   Future<bool> closeChromiumOnAllScreens() async {
     try {
       for (var i = 1; i <= _lgConnectionModel.screens; i++) {
-        final command = '''
+        final command =
+            '''
 sshpass -p ${_lgConnectionModel.password} ssh -t lg$i "
 pkill -f chromium-browser || true
 pkill -f chromium || true
@@ -1014,7 +990,8 @@ DISPLAY=:0 xdotool key F11 || true
     double imageHeight = 95,
   }) async {
     try {
-      final html = '''
+      final html =
+          '''
 <!DOCTYPE html>
 <html>
 <head>
@@ -1125,16 +1102,13 @@ img.onload = () => {
 
       final remoteFile = await sftp.open(
         '/var/www/html/$htmlFileName',
-        mode: SftpFileOpenMode.create |
-        SftpFileOpenMode.truncate |
-        SftpFileOpenMode.write,
+        mode:
+            SftpFileOpenMode.create |
+            SftpFileOpenMode.truncate |
+            SftpFileOpenMode.write,
       );
 
-      await remoteFile.write(
-        Stream.value(
-          Uint8List.fromList(html.codeUnits),
-        ),
-      );
+      await remoteFile.write(Stream.value(Uint8List.fromList(html.codeUnits)));
 
       await remoteFile.close();
 
@@ -1176,9 +1150,7 @@ img.onload = () => {
   </Document>
 </kml>''';
 
-      final logoScreen = calculateLeftMostScreen(
-        _lgConnectionModel.screens,
-      );
+      final logoScreen = calculateLeftMostScreen(_lgConnectionModel.screens);
 
       for (var i = 1; i <= _lgConnectionModel.screens; i++) {
         if (i == logoScreen) {
@@ -1191,15 +1163,9 @@ img.onload = () => {
         );
       }
 
-      await execute(
-        "echo 'exittour=true' > /tmp/query.txt",
-        'Stop tour',
-      );
+      await execute("echo 'exittour=true' > /tmp/query.txt", 'Stop tour');
 
-      await execute(
-        "echo '' > /tmp/query.txt",
-        'Clean query',
-      );
+      await execute("echo '' > /tmp/query.txt", 'Clean query');
 
       await execute(
         "rm -f /var/www/html/skeleton.html /var/www/html/comparison.html",
@@ -1219,9 +1185,7 @@ img.onload = () => {
     try {
       for (var i = _lgConnectionModel.screens; i >= 1; i--) {
         await execute(
-          'sshpass -p ${_lgConnectionModel
-              .password} ssh -t lg$i "echo ${_lgConnectionModel
-              .password} | sudo -S reboot"',
+          'sshpass -p ${_lgConnectionModel.password} ssh -t lg$i "echo ${_lgConnectionModel.password} | sudo -S reboot"',
           'Reboot sent to lg$i',
         );
       }
@@ -1237,9 +1201,7 @@ img.onload = () => {
     try {
       for (var i = _lgConnectionModel.screens; i >= 1; i--) {
         await execute(
-          'sshpass -p ${_lgConnectionModel
-              .password} ssh -t lg$i "echo ${_lgConnectionModel
-              .password} | sudo -S poweroff"',
+          'sshpass -p ${_lgConnectionModel.password} ssh -t lg$i "echo ${_lgConnectionModel.password} | sudo -S poweroff"',
           'Shutdown sent to lg$i',
         );
       }
@@ -1252,7 +1214,8 @@ img.onload = () => {
   }
 
   Future<bool> relaunchLG() async {
-    final relaunchCmd = '''
+    final relaunchCmd =
+        '''
 RELAUNCH_CMD="\\
 if [ -f /etc/init/lxdm.conf ];
 then
@@ -1272,10 +1235,7 @@ fi
 " && sshpass -p ${_lgConnectionModel.password} ssh -x -t lg@lg1 "\$RELAUNCH_CMD"
 ''';
 
-    final result = await execute(
-      relaunchCmd,
-      'Liquid Galaxy relaunched',
-    );
+    final result = await execute(relaunchCmd, 'Liquid Galaxy relaunched');
 
     return result != null;
   }

@@ -71,9 +71,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final list = dinosaurs
         .where(
           (dinosaur) =>
-      dinosaur.period == selectedPeriod &&
-          dinosaur.area == selectedContinent,
-    )
+              dinosaur.period == selectedPeriod &&
+              dinosaur.area == selectedContinent,
+        )
         .map((dinosaur) => dinosaur.country)
         .where((country) => country.isNotEmpty)
         .toSet()
@@ -172,10 +172,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final flyOk = await lgService.flyToDinosaur(dinosaur);
 
       if (flyOk) {
-        await lgService.showDinosaurAboutKml(
-          dinosaur,
-          allDinosaurs: dinosaurs,
-        );
+        await lgService.showDinosaurAboutKml(dinosaur, allDinosaurs: dinosaurs);
       }
     }
 
@@ -362,32 +359,31 @@ class _HomeScreenState extends State<HomeScreen> {
               decoration: cardDecoration(),
               child: visibleContinents.isEmpty
                   ? emptyMessage(
-                icon: Icons.public_off,
-                text: 'No continents available\nfor this period',
-              )
+                      icon: Icons.public_off,
+                      text: 'No continents available\nfor this period',
+                    )
                   : Scrollbar(
-                thumbVisibility: true,
-                child: ListView.separated(
-                  itemCount: visibleContinents.length,
-                  separatorBuilder: (_, _) =>
-                  const SizedBox(height: 10),
-                  itemBuilder: (context, index) {
-                    final continent = visibleContinents[index];
+                      thumbVisibility: true,
+                      child: ListView.separated(
+                        itemCount: visibleContinents.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 10),
+                        itemBuilder: (context, index) {
+                          final continent = visibleContinents[index];
 
-                    final count = dinosaurs.where((dinosaur) {
-                      return dinosaur.period == selectedPeriod &&
-                          dinosaur.area == continent;
-                    }).length;
+                          final count = dinosaurs.where((dinosaur) {
+                            return dinosaur.period == selectedPeriod &&
+                                dinosaur.area == continent;
+                          }).length;
 
-                    return niceListTile(
-                      title: continent,
-                      subtitle: '$count dinosaurs',
-                      icon: Icons.public,
-                      onTap: () => selectContinent(continent),
-                    );
-                  },
-                ),
-              ),
+                          return niceListTile(
+                            title: continent,
+                            subtitle: '$count dinosaurs',
+                            icon: Icons.public,
+                            onTap: () => selectContinent(continent),
+                          );
+                        },
+                      ),
+                    ),
             ),
           ),
           const SizedBox(height: 16),
@@ -417,33 +413,32 @@ class _HomeScreenState extends State<HomeScreen> {
               decoration: cardDecoration(),
               child: visibleCountries.isEmpty
                   ? emptyMessage(
-                icon: Icons.flag,
-                text: 'No countries available\nfor this continent',
-              )
-                  : Scrollbar(
-                thumbVisibility: true,
-                child: ListView.separated(
-                  itemCount: visibleCountries.length,
-                  separatorBuilder: (_, _) =>
-                  const SizedBox(height: 10),
-                  itemBuilder: (context, index) {
-                    final country = visibleCountries[index];
-
-                    final count = dinosaurs.where((dinosaur) {
-                      return dinosaur.period == selectedPeriod &&
-                          dinosaur.area == selectedContinent &&
-                          dinosaur.country == country;
-                    }).length;
-
-                    return niceListTile(
-                      title: country,
-                      subtitle: '$count dinosaurs',
                       icon: Icons.flag,
-                      onTap: () => selectCountry(country),
-                    );
-                  },
-                ),
-              ),
+                      text: 'No countries available\nfor this continent',
+                    )
+                  : Scrollbar(
+                      thumbVisibility: true,
+                      child: ListView.separated(
+                        itemCount: visibleCountries.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 10),
+                        itemBuilder: (context, index) {
+                          final country = visibleCountries[index];
+
+                          final count = dinosaurs.where((dinosaur) {
+                            return dinosaur.period == selectedPeriod &&
+                                dinosaur.area == selectedContinent &&
+                                dinosaur.country == country;
+                          }).length;
+
+                          return niceListTile(
+                            title: country,
+                            subtitle: '$count dinosaurs',
+                            icon: Icons.flag,
+                            onTap: () => selectCountry(country),
+                          );
+                        },
+                      ),
+                    ),
             ),
           ),
           const SizedBox(height: 12),
@@ -485,27 +480,26 @@ class _HomeScreenState extends State<HomeScreen> {
               decoration: cardDecoration(),
               child: visibleDinosaurs.isEmpty
                   ? emptyMessage(
-                icon: Icons.search_off,
-                text: 'No dinosaurs found\nfor this country',
-              )
+                      icon: Icons.search_off,
+                      text: 'No dinosaurs found\nfor this country',
+                    )
                   : Scrollbar(
-                thumbVisibility: true,
-                child: ListView.separated(
-                  itemCount: visibleDinosaurs.length,
-                  separatorBuilder: (_, _) =>
-                  const SizedBox(height: 10),
-                  itemBuilder: (context, index) {
-                    final dinosaur = visibleDinosaurs[index];
+                      thumbVisibility: true,
+                      child: ListView.separated(
+                        itemCount: visibleDinosaurs.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 10),
+                        itemBuilder: (context, index) {
+                          final dinosaur = visibleDinosaurs[index];
 
-                    return niceListTile(
-                      title: dinosaur.name,
-                      subtitle: dinosaur.region,
-                      icon: Icons.pets,
-                      onTap: () => selectDinosaur(dinosaur),
-                    );
-                  },
-                ),
-              ),
+                          return niceListTile(
+                            title: dinosaur.name,
+                            subtitle: dinosaur.region,
+                            icon: Icons.pets,
+                            onTap: () => selectDinosaur(dinosaur),
+                          );
+                        },
+                      ),
+                    ),
             ),
           ),
           const SizedBox(height: 12),
@@ -538,13 +532,13 @@ class _HomeScreenState extends State<HomeScreen> {
           suffixIcon: searchController.text.isEmpty
               ? null
               : IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () {
-              setState(() {
-                searchController.clear();
-              });
-            },
-          ),
+                  icon: const Icon(Icons.close),
+                  onPressed: () {
+                    setState(() {
+                      searchController.clear();
+                    });
+                  },
+                ),
         ),
       ),
     );
@@ -572,10 +566,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget emptyMessage({
-    required IconData icon,
-    required String text,
-  }) {
+  Widget emptyMessage({required IconData icon, required String text}) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,

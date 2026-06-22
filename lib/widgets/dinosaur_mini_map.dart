@@ -42,10 +42,7 @@ class DinosaurMiniMap extends StatelessWidget {
       child: SizedBox(
         height: 220,
         child: FlutterMap(
-          options: MapOptions(
-            initialCenter: center,
-            initialZoom: 4,
-          ),
+          options: MapOptions(initialCenter: center, initialZoom: 4),
           children: [
             TileLayer(
               urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
