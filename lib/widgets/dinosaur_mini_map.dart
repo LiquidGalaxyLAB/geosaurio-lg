@@ -32,9 +32,11 @@ class DinosaurMiniMap extends StatelessWidget {
       );
     }
 
+    // Calculate center based on the first dinosaur's projected position
+    final firstCoords = validDinosaurs.first.getMarkerCoordinates();
     final center = LatLng(
-      validDinosaurs.first.latitude,
-      validDinosaurs.first.longitude,
+      firstCoords['latitude']!,
+      firstCoords['longitude']!,
     );
 
     return ClipRRect(
@@ -50,16 +52,20 @@ class DinosaurMiniMap extends StatelessWidget {
             ),
             MarkerLayer(
               markers: validDinosaurs.map((dinosaur) {
+                final coords = dinosaur.getMarkerCoordinates();
                 return Marker(
-                  point: LatLng(dinosaur.latitude, dinosaur.longitude),
-                  width: 42,
-                  height: 42,
+                  point: LatLng(coords['latitude']!, coords['longitude']!),
+                  width: 45,
+                  height: 45,
                   child: GestureDetector(
                     onTap: () => onDinosaurSelected(dinosaur),
-                    child: const Icon(
-                      Icons.location_on,
-                      color: Colors.red,
-                      size: 38,
+                    child: Image.asset(
+                      'assets/images/markers/dino_marker.png',
+                      errorBuilder: (context, error, stackTrace) => const Icon(
+                        Icons.location_on,
+                        color: Colors.red,
+                        size: 38,
+                      ),
                     ),
                   ),
                 );

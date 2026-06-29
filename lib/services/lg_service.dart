@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
-
+import 'dart:math' as math;
 import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -516,6 +516,11 @@ ${_cleanText(dinosaur.generalInfo)}
         groupedByCountry[dinosaur.country]!.add(dinosaur);
       }
 
+      await uploadAssetToLG(
+        assetPath: 'assets/images/markers/dino_marker.png',
+        fileName: 'dino_marker.png',
+      );
+
       final placemarks = groupedByCountry.entries
           .map((entry) {
             final country = _cleanText(entry.key);
@@ -541,7 +546,7 @@ ${_cleanText(dinosaur.generalInfo)}
     <IconStyle>
       <scale>1.4</scale>
       <Icon>
-        <href>http://maps.google.com/mapfiles/kml/paddle/grn-circle.png</href>
+         <href>http://lg1:81/dino_marker.png</href>
       </Icon>
     </IconStyle>
   </Style>
@@ -605,49 +610,87 @@ ${_cleanText(dinosaur.generalInfo)}
         return dinosaur.latitude != 0 && dinosaur.longitude != 0;
       }).toList();
 
-      final placemarks = validDinosaurs
-          .map((dinosaur) {
-            final name = _cleanText(dinosaur.name);
-            final description = _cleanText(
-              '${dinosaur.periodName}\\n'
-              '${dinosaur.country}, ${dinosaur.region}\\n'
-              'Diet: ${dinosaur.diet}\\n'
-              'Length: ${dinosaur.length}\\n'
-              'Weight: ${dinosaur.weight}',
-            );
+      if (validDinosaurs.isEmpty) {
+        debugPrint('No valid dinosaur coordinates');
+        return false;
+      }
 
-            return '''
+      final uploaded = await uploadAssetToLG(
+        assetPath: 'assets/images/markers/dino_marker.png',
+        fileName: 'dino_marker.png',
+      );
+
+      if (!uploaded) {
+        debugPrint('Could not upload dino marker');
+        return false;
+      }
+
+      final placemarks = validDinosaurs.map((dinosaur) {
+        final name = _cleanText(dinosaur.name);
+        final country = _cleanText(dinosaur.country);
+        final region = _cleanText(dinosaur.region);
+
+        final markerPosition = dinosaur.getMarkerCoordinates();
+        final markerLat = markerPosition['latitude'];
+        final markerLon = markerPosition['longitude'];
+
+        return '''
 <Placemark>
   <name>$name</name>
-  <description>$description</description>
+  <description>$country - $region</description>
+
   <Style>
     <IconStyle>
-      <scale>1.3</scale>
+      <scale>6.0</scale>
       <Icon>
-        <href>http://maps.google.com/mapfiles/kml/paddle/red-circle.png</href>
+        <href>http://lg1:81/dino_marker.png</href>
       </Icon>
+      <hotSpot x="0.5" y="0" xunits="fraction" yunits="fraction"/>
     </IconStyle>
+    <LabelStyle>
+      <scale>2.0</scale>
+    </LabelStyle>
   </Style>
+
   <Point>
-    <coordinates>${dinosaur.longitude},${dinosaur.latitude},0</coordinates>
+    <altitudeMode>clampToGround</altitudeMode>
+    <coordinates>$markerLon,$markerLat,0</coordinates>
   </Point>
 </Placemark>
 ''';
-          })
-          .join('\n');
+      }).join('\n');
 
-      final kml =
-          '''<?xml version="1.0" encoding="UTF-8"?>
+      final markersKml = '''<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
-    <name>Dinosaur Markers</name>
+    <name>GeoSaurio Dinosaur Markers</name>
     $placemarks
   </Document>
 </kml>''';
 
+      final networkLinkKml = '''<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>GeoSaurio Markers Link</name>
+    <NetworkLink>
+      <name>GeoSaurio Dinosaur Markers</name>
+      <Link>
+        <href>http://lg1:81/geosaurio_markers.kml</href>
+        <refreshMode>onInterval</refreshMode>
+        <refreshInterval>1</refreshInterval>
+      </Link>
+    </NetworkLink>
+  </Document>
+</kml>''';
+
+      await execute(
+        "echo '$markersKml' > /var/www/html/geosaurio_markers.kml",
+        'Markers KML file sent',
+      );
+
       final result = await execute(
-        "echo '$kml' > /var/www/html/kml/slave_1.kml",
-        'Dinosaur markers sent',
+        "echo '$networkLinkKml' > /var/www/html/kml/slave_1.kml",
+        'Markers NetworkLink sent',
       );
 
       return result != null;
