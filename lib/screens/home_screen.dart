@@ -126,6 +126,13 @@ class _HomeScreenState extends State<HomeScreen> {
       selectedDinosaur = null;
       searchController.clear();
     });
+
+    final lgService = context.read<LgService>();
+
+    if (lgService.isConnected) {
+      await lgService.cleanKmlKeepingLogos();
+      await lgService.flyToEarth();
+    }
   }
 
   Future<void> selectContinent(String continent) async {
@@ -189,12 +196,17 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted) return;
 
     if (lgService.isConnected && selectedContinent != null) {
+      await lgService.cleanKmlKeepingLogos();
+
       await lgService.flyToContinent(selectedContinent!);
-      await lgService.showCountryMarkers(dinosaursInSelectedContinent);
+
+      await lgService.showCountryMarkers(
+        dinosaursInSelectedContinent,
+      );
     }
   }
 
-  void goBackToContinents() {
+  void goBackToContinents() async {
     setState(() {
       selectedContinent = null;
       selectedCountry = null;
@@ -205,16 +217,28 @@ class _HomeScreenState extends State<HomeScreen> {
     final lgService = context.read<LgService>();
 
     if (lgService.isConnected) {
-      lgService.flyToEarth();
+      await lgService.cleanKmlKeepingLogos();
+      await lgService.flyToEarth();
     }
   }
 
-  void goBackToCountries() {
+  Future<void> goBackToCountries() async {
     setState(() {
       selectedCountry = null;
       selectedDinosaur = null;
       searchController.clear();
     });
+
+    final lgService = context.read<LgService>();
+
+    if (lgService.isConnected) {
+      await lgService.cleanKmlKeepingLogos();
+
+      if (selectedContinent != null) {
+        await lgService.flyToContinent(selectedContinent!);
+        await lgService.showCountryMarkers(dinosaursInSelectedContinent);
+      }
+    }
   }
 
   List<String> filteredContinents() {
@@ -505,7 +529,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 12),
           ElevatedButton.icon(
-            onPressed: goBackToCountries,
+            onPressed: () => goBackToCountries(),
             icon: const Icon(Icons.arrow_back),
             label: const Text('Back to countries'),
           ),

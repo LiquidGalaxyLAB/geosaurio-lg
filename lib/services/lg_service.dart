@@ -167,9 +167,14 @@ class LgService extends ChangeNotifier {
   }
 
   Future<dynamic> execute(String command, String successMessage) async {
-    if (_client == null) {
-      debugPrint('SSH client not connected');
-      return null;
+    if (_client == null || !_isConnected) {
+      debugPrint('SSH client not connected. Trying reconnect...');
+      final connected = await connectToLG();
+
+      if (connected != true) {
+        debugPrint('Reconnect failed');
+        return null;
+      }
     }
 
     try {
@@ -178,6 +183,25 @@ class LgService extends ChangeNotifier {
       return result;
     } catch (e) {
       debugPrint('Command error: $e');
+
+      _client?.close();
+      _client = null;
+      _isConnected = false;
+      notifyListeners();
+
+      debugPrint('Trying reconnect after command error...');
+      final connected = await connectToLG();
+
+      if (connected == true) {
+        try {
+          final retryResult = await _client!.execute(command);
+          debugPrint('$successMessage after reconnect');
+          return retryResult;
+        } catch (retryError) {
+          debugPrint('Retry command error: $retryError');
+        }
+      }
+
       return null;
     }
   }
@@ -855,6 +879,39 @@ $imageOverlay
       return result != null;
     } catch (e) {
       debugPrint('Error showing dinosaur about KML: $e');
+      return false;
+    }
+  }
+
+
+  Future<bool> cleanKmlKeepingLogos() async {
+    try {
+      final logoScreen = calculateLeftMostScreen(_lgConnectionModel.screens);
+
+      const blankKml = '''<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Empty</name>
+  </Document>
+</kml>''';
+
+      for (var i = 1; i <= _lgConnectionModel.screens; i++) {
+        if (i == logoScreen) continue;
+
+        await execute(
+          "echo '$blankKml' > /var/www/html/kml/slave_$i.kml",
+          'Cleaned KML screen $i',
+        );
+      }
+
+      await execute(
+        "echo '' > /tmp/query.txt",
+        'Query cleaned',
+      );
+
+      return true;
+    } catch (e) {
+      debugPrint('Error cleaning KML keeping logos: $e');
       return false;
     }
   }
