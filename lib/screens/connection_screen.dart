@@ -10,7 +10,7 @@ class ConnectionScreen extends StatefulWidget {
   State<ConnectionScreen> createState() => _ConnectionScreenState();
 }
 
-class _ConnectionScreenState extends State<ConnectionScreen> {
+class _ConnectionScreenState extends State<ConnectionScreen> {  // Stores and manages the user's connection input
   final TextEditingController ipController = TextEditingController();
   final TextEditingController userController = TextEditingController(
     text: 'lg',
@@ -25,15 +25,15 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
     text: '5',
   );
 
-  bool isConnecting = false;
+  bool isConnecting = false;  // Tracks whether the application is currently connecting to LG.
 
   @override
-  void initState() {
+  void initState() { //Load saved configuration and filling the connection parts
     super.initState();
     _loadSavedSettings();
   }
 
-  Future<void> _loadSavedSettings() async {
+  Future<void> _loadSavedSettings() async { //Recovers previous configuration
     final model = await LgConnectionModel.loadFromPreferences();
 
     if (!mounted) return;
@@ -56,7 +56,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
   }
 
   @override
-  void dispose() {
+  void dispose() { // Release all text controllers when leaving the screen
     ipController.dispose();
     userController.dispose();
     passwordController.dispose();
@@ -65,7 +65,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
     super.dispose();
   }
 
-  void snack(String message, {bool success = true}) {
+  void snack(String message, {bool success = true}) { //Shows a meesage if the action was succesful or not
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
@@ -75,11 +75,11 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
     );
   }
 
-  int parseInt(String value, int fallback) {
+  int parseInt(String value, int fallback) { //If value isn't valid use a default value to avoid errors
     return int.tryParse(value.trim()) ?? fallback;
   }
 
-  LgConnectionModel buildModel() {
+  LgConnectionModel buildModel() { //Creates a LG connection model using the user inputs
     return LgConnectionModel(
       ip: ipController.text.trim(),
       username: userController.text.trim(),
@@ -89,7 +89,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
     );
   }
 
-  Future<void> applySettings() async {
+  Future<void> applySettings() async { //Save configuration on the device and updates LgService
     final model = buildModel();
     await model.saveToPreferences();
 
@@ -105,6 +105,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
   }
 
   Future<void> connectToLg() async {
+    //Comprove if all the fields are full and tries to connect
     if (ipController.text.trim().isEmpty ||
         userController.text.trim().isEmpty ||
         passwordController.text.isEmpty ||
@@ -123,7 +124,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
     final lgService = context.read<LgService>();
     final connected = await lgService.connectToLG() ?? false;
 
-    if (connected) {
+    if (connected) { //Send logo
       await lgService.sendLogo();
 
       // This prepares the dinosaur marker icon when the app connects to LG.
@@ -137,7 +138,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
 
     setState(() => isConnecting = false);
 
-    snack(
+    snack( //Show a meesage if the LG connected or not
       connected
           ? 'Connected to Liquid Galaxy and markers prepared'
           : 'Could not connect to LG',
