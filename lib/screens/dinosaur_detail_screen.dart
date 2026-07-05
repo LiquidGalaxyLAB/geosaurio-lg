@@ -8,7 +8,7 @@ import '../services/audio_service.dart';
 import 'lg_settings_screen.dart';
 import 'about_screen.dart';
 
-class DinosaurDetailScreen extends StatefulWidget {
+class DinosaurDetailScreen extends StatefulWidget { //Shows the information about the selected dinosaur
   final Dinosaur dinosaur;
 
   const DinosaurDetailScreen({
@@ -35,7 +35,7 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
     );
   }
 
-  Future<void> sendToLg(BuildContext context, String action) async {
+  Future<void> sendToLg(BuildContext context, String action) async { //Send the selected visualization to LG
     final lgService = context.read<LgService>();
 
     if (!lgService.isConnected) {
@@ -57,7 +57,7 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
 
     if (!context.mounted) return;
 
-    showSnack(
+    showSnack( //Comprobation to show if it was sended
       context,
       ok
           ? '$action sent to Liquid Galaxy'
@@ -83,13 +83,13 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
   }
 
   @override
-  void dispose() {
+  void dispose() { //stop the narration if we left the screen
     AudioService().stop();
     super.dispose();
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) { //build visual interview
     final isLgConnected = context.watch<LgService>().isConnected;
     final lgService = context.read<LgService>();
     final cleanName = lgService.cleanDinosaurImageName(dinosaur.name);
@@ -372,7 +372,7 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
                         );
                       },
                       icon: const Icon(Icons.arrow_back),
-                      label: const Text('Return Back'),
+                      label: const Text('Return Back'), //Button to close chromiums and return visualization at the lg
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red,
                         foregroundColor: Colors.white,

@@ -152,7 +152,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {  // Stores and ma
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) { //build visual interface
     final lgService = context.watch<LgService>();
     final isConnected = lgService.isConnected;
 
@@ -250,7 +250,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {  // Stores and ma
                 label: isConnecting
                     ? 'Connecting...'
                     : isConnected
-                    ? 'Reconnect'
+                    ? 'Reconnect' //if it's already connected the button will say recconect
                     : 'Connect',
                 icon: Icons.link,
                 onPressed: isConnecting ? null : connectToLg,

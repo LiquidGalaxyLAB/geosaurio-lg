@@ -7,7 +7,7 @@ import 'connection_screen.dart';
 class LgSettingsScreen extends StatelessWidget {
   const LgSettingsScreen({super.key});
 
-  void showSnack(BuildContext context, String message, {bool success = true}) {
+  void showSnack(BuildContext context, String message, {bool success = true}) { //show feedback meesages to the user
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
@@ -17,7 +17,7 @@ class LgSettingsScreen extends StatelessWidget {
     );
   }
 
-  Future<void> runAction(
+  Future<void> runAction( //Executes a liquid galaxy action
     BuildContext context,
     String actionName,
     Future<bool> Function(LgService lgService) action,
@@ -40,7 +40,7 @@ class LgSettingsScreen extends StatelessWidget {
     );
   }
 
-  Future<void> toggleLogos(BuildContext context) async {
+  Future<void> toggleLogos(BuildContext context) async { //Show or hide the logos
     final lgService = context.read<LgService>();
 
     if (!lgService.isConnected) {
@@ -86,7 +86,7 @@ class LgSettingsScreen extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) { //Build visual interface
     final isConnected = context.watch<LgService>().isConnected;
 
     return Scaffold(

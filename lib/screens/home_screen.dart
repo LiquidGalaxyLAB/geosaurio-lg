@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+Zimport 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/dinosaur.dart';
@@ -17,7 +17,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  DinosaurPeriod selectedPeriod = DinosaurPeriod.jurassic;
+  DinosaurPeriod selectedPeriod = DinosaurPeriod.jurassic; //Stores the user selection: period, continent...
 
   String? selectedContinent;
   String? selectedCountry;
@@ -29,13 +29,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final TextEditingController searchController = TextEditingController();
 
+  //Loads all the dinosaurs data when the screen starts
   @override
   void initState() {
     super.initState();
     loadDinosaurData();
   }
 
-  Future<void> loadDinosaurData() async {
+  Future<void> loadDinosaurData() async { //loads the dinosaurs from the csv
     final data = await DinosaurService.loadDinosaurs();
 
     if (!mounted) return;
@@ -47,12 +48,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   @override
-  void dispose() {
+  void dispose() { //dispose the search controller
     searchController.dispose();
     super.dispose();
   }
 
-  List<String> get availableContinents {
+  List<String> get availableContinents { //Gets the available continents for the selected geological period
     final list = dinosaurs
         .where((dinosaur) => dinosaur.period == selectedPeriod)
         .map((dinosaur) => dinosaur.area)
@@ -117,7 +118,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> selectPeriod(DinosaurPeriod period) async {
+  Future<void> selectPeriod(DinosaurPeriod period) async { //change geological period
     setState(() {
       selectedPeriod = period;
       selectedContinent = null;
@@ -127,7 +128,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  Future<void> selectContinent(String continent) async {
+  Future<void> selectContinent(String continent) async { //Flies to the selected continent and shows country markers
     setState(() {
       selectedContinent = continent;
       selectedCountry = null;
@@ -158,7 +159,7 @@ class _HomeScreenState extends State<HomeScreen> {
     await lgService.showDinosaurMarkers(availableDinosaurs);
   }
 
-  Future<void> selectDinosaur(Dinosaur dinosaur) async {
+  Future<void> selectDinosaur(Dinosaur dinosaur) async { //Go to the dinosaur and show kml
     setState(() {
       selectedDinosaur = dinosaur.name;
     });
@@ -186,7 +187,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void goBackToContinents() {
+  void goBackToContinents() { //Returns to the continent selection
     setState(() {
       selectedContinent = null;
       selectedCountry = null;
@@ -203,7 +204,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  List<String> filteredContinents() {
+  List<String> filteredContinents() { //filters the continents using the search bar
     final query = searchController.text.toLowerCase();
 
     if (query.isEmpty) return availableContinents;
@@ -234,7 +235,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }).toList();
   }
 
-  String get breadcrumbTitle {
+  String get breadcrumbTitle { //Builds the current navigation path
     final parts = [
       getPeriodName(selectedPeriod),
       if (selectedContinent != null) selectedContinent!,
@@ -246,7 +247,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) { //Creates visual interface
     return Scaffold(
       backgroundColor: const Color(0xFFF7F4EF),
       drawer: buildDrawer(),
@@ -415,7 +416,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   itemBuilder: (context, index) {
                     final country = visibleCountries[index];
 
-                    final count = dinosaurs.where((dinosaur) {
+                    final count = dinosaurs.where((dinosaur) { //count the dinosaurs so it's showed as a subtitle
                       return dinosaur.period == selectedPeriod &&
                           dinosaur.area == selectedContinent &&
                           dinosaur.country == country;
