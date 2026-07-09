@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 import 'dart:ui' as ui;
-import 'dart:math' as math;
+
 import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -31,7 +32,7 @@ class LgConnectionModel {
     this.screens = 5,
   });
 
-  void updateConnection({
+  void updateConnection({ //update conection data
     String? username,
     String? ip,
     int? port,
@@ -45,7 +46,7 @@ class LgConnectionModel {
     this.screens = screens ?? this.screens;
   }
 
-  Future<void> saveToPreferences() async {
+  Future<void> saveToPreferences() async { //saves the configuration
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyUsername, username);
     await prefs.setString(_keyIp, ip);
@@ -54,10 +55,10 @@ class LgConnectionModel {
     await prefs.setInt(_keyScreens, screens);
   }
 
-  static Future<LgConnectionModel> loadFromPreferences() async {
+  static Future<LgConnectionModel> loadFromPreferences() async { //recovers the saved config
     final prefs = await SharedPreferences.getInstance();
 
-    return LgConnectionModel(
+    return LgConnectionModel( //
       username: prefs.getString(_keyUsername) ?? 'lg',
       ip: prefs.getString(_keyIp) ?? '',
       port: prefs.getInt(_keyPort) ?? 22,
@@ -87,7 +88,7 @@ class LgService extends ChangeNotifier {
 
   bool get isConnected => _isConnected;
 
-  void updateConnectionSettings({
+  void updateConnectionSettings({ // updates the configuration that lgService will use
     required String ip,
     required int port,
     required String username,
@@ -103,7 +104,7 @@ class LgService extends ChangeNotifier {
     );
   }
 
-  Future<void> initializeConnection() async {
+  Future<void> initializeConnection() async { //loads the saved config and tries to connect to LG
     try {
       final savedModel = await LgConnectionModel.loadFromPreferences();
 
@@ -121,7 +122,7 @@ class LgService extends ChangeNotifier {
     }
   }
 
-  Future<bool?> connectToLG() async {
+  Future<bool?> connectToLG() async { // Creates an SSH conection with LG and send the logo if it connects
     if (_currentConnectionAttempts >= _maxConnectionAttempts) {
       _currentConnectionAttempts = 0;
       notifyListeners();
@@ -166,15 +167,10 @@ class LgService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<dynamic> execute(String command, String successMessage) async {
-    if (_client == null || !_isConnected) {
-      debugPrint('SSH client not connected. Trying reconnect...');
-      final connected = await connectToLG();
-
-      if (connected != true) {
-        debugPrint('Reconnect failed');
-        return null;
-      }
+  Future<dynamic> execute(String command, String successMessage) async { //executes a command on LG
+    if (_client == null) {
+      debugPrint('SSH client not connected');
+      return null;
     }
 
     try {
@@ -183,38 +179,19 @@ class LgService extends ChangeNotifier {
       return result;
     } catch (e) {
       debugPrint('Command error: $e');
-
-      _client?.close();
-      _client = null;
-      _isConnected = false;
-      notifyListeners();
-
-      debugPrint('Trying reconnect after command error...');
-      final connected = await connectToLG();
-
-      if (connected == true) {
-        try {
-          final retryResult = await _client!.execute(command);
-          debugPrint('$successMessage after reconnect');
-          return retryResult;
-        } catch (retryError) {
-          debugPrint('Retry command error: $retryError');
-        }
-      }
-
       return null;
     }
   }
 
-  int calculateLeftMostScreen(int screenCount) {
+  int calculateLeftMostScreen(int screenCount) { //Calculate the left screen used for the logo
     return screenCount == 1 ? 1 : (screenCount / 2).floor() + 2;
   }
 
-  int calculateRightMostScreen(int screenCount) {
+  int calculateRightMostScreen(int screenCount) { //Calculate the right screen used for the KML
     return screenCount == 1 ? 1 : (screenCount / 2).floor() + 1;
   }
 
-  String cleanDinosaurImageName(String name) {
+  String cleanDinosaurImageName(String name) { //Cleans the dinosaur name to match asset filenames
     return name
         .trim()
         .replaceAll(RegExp(r'[ \s\u00A0]+'), '_')
@@ -226,10 +203,13 @@ class LgService extends ChangeNotifier {
         .replaceAll('__', '_');
   }
 
-  Future<String?> getExistingImagePath(String basePath) async {
+  Future<String?> getExistingImagePath(String basePath) async { //Finds an exisiting dinosaur image asset
     final extensions = ['.png', '.jpg', '.jpeg'];
 
-    final variants = <String>{basePath, basePath.toLowerCase()};
+    final variants = <String>{
+      basePath,
+      basePath.toLowerCase(),
+    };
 
     if (basePath.contains('_')) {
       final lastUnderscore = basePath.lastIndexOf('_');
@@ -282,10 +262,9 @@ class LgService extends ChangeNotifier {
 
       final remoteFile = await sftp.open(
         '/var/www/html/$fileName',
-        mode:
-            SftpFileOpenMode.create |
-            SftpFileOpenMode.truncate |
-            SftpFileOpenMode.write,
+        mode: SftpFileOpenMode.create |
+        SftpFileOpenMode.truncate |
+        SftpFileOpenMode.write,
       );
 
       await remoteFile.write(
@@ -310,13 +289,14 @@ class LgService extends ChangeNotifier {
 
       final remoteFile = await sftp.open(
         '/var/www/html/$fileName',
-        mode:
-            SftpFileOpenMode.create |
-            SftpFileOpenMode.truncate |
-            SftpFileOpenMode.write,
+        mode: SftpFileOpenMode.create |
+        SftpFileOpenMode.truncate |
+        SftpFileOpenMode.write,
       );
 
-      await remoteFile.write(Stream.value(bytes));
+      await remoteFile.write(
+        Stream.value(bytes),
+      );
 
       await remoteFile.close();
 
@@ -337,7 +317,7 @@ class LgService extends ChangeNotifier {
         .trim();
   }
 
-  Future<Uint8List?> createDinosaurInfoImage(Dinosaur dinosaur) async {
+  Future<Uint8List?> createDinosaurInfoImage(Dinosaur dinosaur) async { //Creates a information panel for a dinosaur
     try {
       const double width = 900;
       const double height = 620;
@@ -345,7 +325,8 @@ class LgService extends ChangeNotifier {
       final recorder = ui.PictureRecorder();
       final canvas = ui.Canvas(recorder);
 
-      final backgroundPaint = ui.Paint()..color = const ui.Color(0xEEFFFFFF);
+      final backgroundPaint = ui.Paint()
+        ..color = const ui.Color(0xEEFFFFFF);
 
       canvas.drawRRect(
         ui.RRect.fromRectAndRadius(
@@ -366,20 +347,26 @@ class LgService extends ChangeNotifier {
         fontSize: 28,
       );
 
-      final titleBuilder =
-          ui.ParagraphBuilder(
-              ui.ParagraphStyle(maxLines: 2, textAlign: ui.TextAlign.left),
-            )
-            ..pushStyle(titleStyle)
-            ..addText(_cleanText(dinosaur.name));
+      final titleBuilder = ui.ParagraphBuilder(
+        ui.ParagraphStyle(
+          maxLines: 2,
+          textAlign: ui.TextAlign.left,
+        ),
+      )
+        ..pushStyle(titleStyle)
+        ..addText(_cleanText(dinosaur.name));
 
       final titleParagraph = titleBuilder.build()
-        ..layout(const ui.ParagraphConstraints(width: width - 60));
+        ..layout(
+          const ui.ParagraphConstraints(width: width - 60),
+        );
 
-      canvas.drawParagraph(titleParagraph, const ui.Offset(30, 28));
+      canvas.drawParagraph(
+        titleParagraph,
+        const ui.Offset(30, 28),
+      );
 
-      final info =
-          '''
+      final info = '''
 Period: ${_cleanText(dinosaur.periodName)}
 Time: ${_cleanText(dinosaur.time1)} - ${_cleanText(dinosaur.time2)}
 Diet: ${_cleanText(dinosaur.diet)}
@@ -393,23 +380,35 @@ Habitat: ${_cleanText(dinosaur.habitat)}
 ${_cleanText(dinosaur.generalInfo)}
 ''';
 
-      final bodyBuilder =
-          ui.ParagraphBuilder(
-              ui.ParagraphStyle(maxLines: 14, textAlign: ui.TextAlign.left),
-            )
-            ..pushStyle(bodyStyle)
-            ..addText(info);
+      final bodyBuilder = ui.ParagraphBuilder(
+        ui.ParagraphStyle(
+          maxLines: 14,
+          textAlign: ui.TextAlign.left,
+        ),
+      )
+        ..pushStyle(bodyStyle)
+        ..addText(info);
 
       final bodyParagraph = bodyBuilder.build()
-        ..layout(const ui.ParagraphConstraints(width: width - 60));
+        ..layout(
+          const ui.ParagraphConstraints(width: width - 60),
+        );
 
-      canvas.drawParagraph(bodyParagraph, const ui.Offset(30, 125));
+      canvas.drawParagraph(
+        bodyParagraph,
+        const ui.Offset(30, 125),
+      );
 
       final picture = recorder.endRecording();
 
-      final image = await picture.toImage(width.toInt(), height.toInt());
+      final image = await picture.toImage(
+        width.toInt(),
+        height.toInt(),
+      );
 
-      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      final byteData = await image.toByteData(
+        format: ui.ImageByteFormat.png,
+      );
 
       if (byteData == null) return null;
 
@@ -420,7 +419,7 @@ ${_cleanText(dinosaur.generalInfo)}
     }
   }
 
-  Future<bool> flyToDinosaur(Dinosaur dinosaur) async {
+  Future<bool> flyToDinosaur(Dinosaur dinosaur) async { //Fly to the dinosaur location
     try {
       if (dinosaur.longitude == 0 || dinosaur.latitude == 0) return false;
 
@@ -445,7 +444,7 @@ ${_cleanText(dinosaur.generalInfo)}
     }
   }
 
-  final Map<String, List<double>> _continentViews = {
+  final Map<String, List<double>> _continentViews = { // Predefined positions too look at the continent
     'Africa': [20.0, 0.0, 7000000],
     'Asia': [95.0, 35.0, 8000000],
     'Europe': [15.0, 50.0, 5000000],
@@ -455,7 +454,7 @@ ${_cleanText(dinosaur.generalInfo)}
     'Antarctica': [0.0, -82.0, 6000000],
   };
 
-  Future<bool> flyToContinent(String continent) async {
+  Future<bool> flyToContinent(String continent) async { //Fly to continent
     try {
       final view = _continentViews[continent];
 
@@ -492,19 +491,15 @@ ${_cleanText(dinosaur.generalInfo)}
 
       if (validDinosaurs.isEmpty) return false;
 
-      final latitude =
-          validDinosaurs
-              .map((dinosaur) => dinosaur.latitude)
-              .reduce((a, b) => a + b) /
+      final latitude = validDinosaurs
+          .map((dinosaur) => dinosaur.latitude)
+          .reduce((a, b) => a + b) /
           validDinosaurs.length;
 
-      final longitude =
-          validDinosaurs
-              .map((dinosaur) => dinosaur.longitude)
-              .reduce((a, b) => a + b) /
+      final longitude = validDinosaurs
+          .map((dinosaur) => dinosaur.longitude)
+          .reduce((a, b) => a + b) /
           validDinosaurs.length;
-
-      final range = validDinosaurs.length <= 1 ? 250000 : 900000;
 
       final lookAt =
           '<LookAt>'
@@ -513,7 +508,7 @@ ${_cleanText(dinosaur.generalInfo)}
           '<altitude>0</altitude>'
           '<heading>0</heading>'
           '<tilt>0</tilt>'
-          '<range>$range</range>'
+          '<range>1200000</range>'
           '<altitudeMode>relativeToGround</altitudeMode>'
           '</LookAt>';
 
@@ -529,192 +524,52 @@ ${_cleanText(dinosaur.generalInfo)}
     }
   }
 
-  Future<bool> showCountryMarkers(List<Dinosaur> dinosaurs) async {
+  Future<bool> showDinosaurMarkers(List<Dinosaur> dinosaurs) async { //Generates KML dinosaur markers
     try {
-      final Map<String, List<Dinosaur>> groupedByCountry = {};
+      final validDinosaurs = dinosaurs.where((dinosaur) {
+        return dinosaur.latitude != 0 && dinosaur.longitude != 0;
+      }).toList();
 
-      for (final dinosaur in dinosaurs) {
-        if (dinosaur.latitude == 0 || dinosaur.longitude == 0) continue;
+      final placemarks = validDinosaurs.map((dinosaur) {
+        final name = _cleanText(dinosaur.name);
+        final description = _cleanText(
+          '${dinosaur.periodName}\\n'
+              '${dinosaur.country}, ${dinosaur.region}\\n'
+              'Diet: ${dinosaur.diet}\\n'
+              'Length: ${dinosaur.length}\\n'
+              'Weight: ${dinosaur.weight}',
+        );
 
-        groupedByCountry.putIfAbsent(dinosaur.country, () => []);
-        groupedByCountry[dinosaur.country]!.add(dinosaur);
-      }
-
-      await uploadAssetToLG(
-        assetPath: 'assets/images/markers/dino_marker.png',
-        fileName: 'dino_marker.png',
-      );
-
-      final placemarks = groupedByCountry.entries
-          .map((entry) {
-            final country = _cleanText(entry.key);
-            final countryDinosaurs = entry.value;
-
-            final latitude =
-                countryDinosaurs
-                    .map((dinosaur) => dinosaur.latitude)
-                    .reduce((a, b) => a + b) /
-                countryDinosaurs.length;
-
-            final longitude =
-                countryDinosaurs
-                    .map((dinosaur) => dinosaur.longitude)
-                    .reduce((a, b) => a + b) /
-                countryDinosaurs.length;
-
-            return '''
+        return '''
 <Placemark>
-  <name>$country</name>
-  <description>${countryDinosaurs.length} dinosaurs found</description>
+  <name>$name</name>
+  <description>$description</description>
   <Style>
     <IconStyle>
-      <scale>1.4</scale>
+      <scale>1.3</scale>
       <Icon>
-         <href>http://lg1:81/dino_marker.png</href>
+        <href>http://maps.google.com/mapfiles/kml/paddle/red-circle.png</href>
       </Icon>
     </IconStyle>
   </Style>
   <Point>
-    <coordinates>$longitude,$latitude,0</coordinates>
+    <coordinates>${dinosaur.longitude},${dinosaur.latitude},0</coordinates>
   </Point>
 </Placemark>
 ''';
-          })
-          .join('\n');
+      }).join('\n');
 
-      final kml =
-          '''<?xml version="1.0" encoding="UTF-8"?>
+      final kml = '''<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
-    <name>Country Markers</name>
+    <name>Dinosaur Markers</name>
     $placemarks
   </Document>
 </kml>''';
 
       final result = await execute(
         "echo '$kml' > /var/www/html/kml/slave_1.kml",
-        'Country markers sent',
-      );
-
-      return result != null;
-    } catch (e) {
-      debugPrint('Error showing country markers: $e');
-      return false;
-    }
-  }
-
-  Future<bool> flyToEarth() async {
-    try {
-      const lookAt =
-          '<LookAt>'
-          '<longitude>0</longitude>'
-          '<latitude>20</latitude>'
-          '<altitude>0</altitude>'
-          '<heading>0</heading>'
-          '<tilt>0</tilt>'
-          '<range>20000000</range>'
-          '<altitudeMode>relativeToGround</altitudeMode>'
-          '</LookAt>';
-
-      final result = await execute(
-        "echo 'flytoview=$lookAt' > /tmp/query.txt",
-        'FlyTo Earth sent',
-      );
-
-      return result != null;
-    } catch (e) {
-      debugPrint('Error flying to Earth: $e');
-      return false;
-    }
-  }
-
-  Future<bool> showDinosaurMarkers(List<Dinosaur> dinosaurs) async {
-    try {
-      final validDinosaurs = dinosaurs.where((dinosaur) {
-        return dinosaur.latitude != 0 && dinosaur.longitude != 0;
-      }).toList();
-
-      if (validDinosaurs.isEmpty) {
-        debugPrint('No valid dinosaur coordinates');
-        return false;
-      }
-
-      final uploaded = await uploadAssetToLG(
-        assetPath: 'assets/images/markers/dino_marker.png',
-        fileName: 'dino_marker.png',
-      );
-
-      if (!uploaded) {
-        debugPrint('Could not upload dino marker');
-        return false;
-      }
-
-      final placemarks = validDinosaurs.map((dinosaur) {
-        final name = _cleanText(dinosaur.name);
-        final country = _cleanText(dinosaur.country);
-        final region = _cleanText(dinosaur.region);
-
-        final markerPosition = dinosaur.getMarkerCoordinates();
-        final markerLat = markerPosition['latitude'];
-        final markerLon = markerPosition['longitude'];
-
-        return '''
-<Placemark>
-  <name>$name</name>
-  <description>$country - $region</description>
-
-  <Style>
-    <IconStyle>
-      <scale>6.0</scale>
-      <Icon>
-        <href>http://lg1:81/dino_marker.png</href>
-      </Icon>
-      <hotSpot x="0.5" y="0" xunits="fraction" yunits="fraction"/>
-    </IconStyle>
-    <LabelStyle>
-      <scale>2.0</scale>
-    </LabelStyle>
-  </Style>
-
-  <Point>
-    <altitudeMode>clampToGround</altitudeMode>
-    <coordinates>$markerLon,$markerLat,0</coordinates>
-  </Point>
-</Placemark>
-''';
-      }).join('\n');
-
-      final markersKml = '''<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2">
-  <Document>
-    <name>GeoSaurio Dinosaur Markers</name>
-    $placemarks
-  </Document>
-</kml>''';
-
-      final networkLinkKml = '''<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2">
-  <Document>
-    <name>GeoSaurio Markers Link</name>
-    <NetworkLink>
-      <name>GeoSaurio Dinosaur Markers</name>
-      <Link>
-        <href>http://lg1:81/geosaurio_markers.kml</href>
-        <refreshMode>onInterval</refreshMode>
-        <refreshInterval>1</refreshInterval>
-      </Link>
-    </NetworkLink>
-  </Document>
-</kml>''';
-
-      await execute(
-        "echo '$markersKml' > /var/www/html/geosaurio_markers.kml",
-        'Markers KML file sent',
-      );
-
-      final result = await execute(
-        "echo '$networkLinkKml' > /var/www/html/kml/slave_1.kml",
-        'Markers NetworkLink sent',
+        'Dinosaur markers sent',
       );
 
       return result != null;
@@ -724,7 +579,7 @@ ${_cleanText(dinosaur.generalInfo)}
     }
   }
 
-  Future<bool> sendLogo() async {
+  Future<bool> sendLogo() async { //Send logo
     try {
       final screen = calculateLeftMostScreen(_lgConnectionModel.screens);
 
@@ -762,7 +617,7 @@ ${_cleanText(dinosaur.generalInfo)}
     }
   }
 
-  Future<bool> showRightScreenImage({
+  Future<bool> showRightScreenImage({ //Show image on the right screen
     required String assetPath,
     required String fileName,
   }) async {
@@ -776,8 +631,7 @@ ${_cleanText(dinosaur.generalInfo)}
 
       if (!uploaded) return false;
 
-      final kml =
-          '''<?xml version="1.0" encoding="UTF-8"?>
+      final kml = '''<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
     <ScreenOverlay>
@@ -805,7 +659,10 @@ ${_cleanText(dinosaur.generalInfo)}
     }
   }
 
-  Future<bool> showDinosaurAboutKml(Dinosaur dinosaur) async {
+  Future<bool> showDinosaurAboutKml( //Shows the dinosaur information panel
+      Dinosaur dinosaur, {
+        List<Dinosaur> allDinosaurs = const [],
+      }) async {
     try {
       final screen = calculateRightMostScreen(_lgConnectionModel.screens);
       final cleanName = cleanDinosaurImageName(dinosaur.name);
@@ -820,7 +677,10 @@ ${_cleanText(dinosaur.generalInfo)}
         final extension = assetPath.split('.').last;
         imageFileName = '${cleanName}_normal.$extension';
 
-        await uploadAssetToLG(assetPath: assetPath, fileName: imageFileName);
+        await uploadAssetToLG(
+          assetPath: assetPath,
+          fileName: imageFileName,
+        );
       }
 
       final infoBytes = await createDinosaurInfoImage(dinosaur);
@@ -835,6 +695,21 @@ ${_cleanText(dinosaur.generalInfo)}
 
       if (!uploadedInfo) return false;
 
+      String? statsFileName;
+
+      if (allDinosaurs.isNotEmpty) {
+        final statsBytes = await createDinosaurStatsImage(allDinosaurs);
+
+        if (statsBytes != null) {
+          statsFileName = '${cleanName}_stats.png';
+
+          await uploadBytesToLG(
+            bytes: statsBytes,
+            fileName: statsFileName,
+          );
+        }
+      }
+
       final imageOverlay = imageFileName == null
           ? ''
           : '''
@@ -844,16 +719,29 @@ ${_cleanText(dinosaur.generalInfo)}
         <href>http://lg1:81/$imageFileName</href>
       </Icon>
       <overlayXY x="0.5" y="0.5" xunits="fraction" yunits="fraction"/>
-      <screenXY x="0.5" y="0.72" xunits="fraction" yunits="fraction"/>
-      <size x="620" y="0" xunits="pixels" yunits="pixels"/>
+      <screenXY x="0.5" y="0.76" xunits="fraction" yunits="fraction"/>
+      <size x="560" y="0" xunits="pixels" yunits="pixels"/>
     </ScreenOverlay>
 ''';
 
-      final textY = imageFileName == null ? '0.50' : '0.30';
-      final textSize = imageFileName == null ? '900' : '760';
+      final textY = imageFileName == null ? '0.55' : '0.40';
+      final textSize = imageFileName == null ? '850' : '720';
 
-      final kml =
-          '''<?xml version="1.0" encoding="UTF-8"?>
+      final statsOverlay = statsFileName == null
+          ? ''
+          : '''
+    <ScreenOverlay>
+      <name>GeoSaurio Statistics</name>
+      <Icon>
+        <href>http://lg1:81/$statsFileName</href>
+      </Icon>
+      <overlayXY x="0.5" y="0.5" xunits="fraction" yunits="fraction"/>
+      <screenXY x="0.5" y="0.10" xunits="fraction" yunits="fraction"/>
+      <size x="720" y="0" xunits="pixels" yunits="pixels"/>
+    </ScreenOverlay>
+''';
+
+      final kml = '''<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
 $imageOverlay
@@ -866,6 +754,7 @@ $imageOverlay
       <screenXY x="0.5" y="$textY" xunits="fraction" yunits="fraction"/>
       <size x="$textSize" y="0" xunits="pixels" yunits="pixels"/>
     </ScreenOverlay>
+$statsOverlay
   </Document>
 </kml>''';
 
@@ -883,40 +772,7 @@ $imageOverlay
     }
   }
 
-
-  Future<bool> cleanKmlKeepingLogos() async {
-    try {
-      final logoScreen = calculateLeftMostScreen(_lgConnectionModel.screens);
-
-      const blankKml = '''<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2">
-  <Document>
-    <name>Empty</name>
-  </Document>
-</kml>''';
-
-      for (var i = 1; i <= _lgConnectionModel.screens; i++) {
-        if (i == logoScreen) continue;
-
-        await execute(
-          "echo '$blankKml' > /var/www/html/kml/slave_$i.kml",
-          'Cleaned KML screen $i',
-        );
-      }
-
-      await execute(
-        "echo '' > /tmp/query.txt",
-        'Query cleaned',
-      );
-
-      return true;
-    } catch (e) {
-      debugPrint('Error cleaning KML keeping logos: $e');
-      return false;
-    }
-  }
-
-  Future<bool> cleanRightScreenKml() async {
+  Future<bool> cleanRightScreenKml() async { //Clears the right screen overlay
     try {
       final screen = calculateRightMostScreen(_lgConnectionModel.screens);
 
@@ -943,7 +799,7 @@ $imageOverlay
     return await showDinosaurAboutKml(dinosaur);
   }
 
-  Future<bool> showDinosaurNormalOverlay(Dinosaur dinosaur) async {
+  Future<bool> showDinosaurNormalOverlay(Dinosaur dinosaur) async { //Show dinosaur image
     final cleanName = cleanDinosaurImageName(dinosaur.name);
 
     final assetPath = await getExistingImagePath(
@@ -952,7 +808,9 @@ $imageOverlay
 
     if (assetPath == null) return false;
 
-    final extension = assetPath.split('.').last;
+    final extension = assetPath
+        .split('.')
+        .last;
 
     return await showRightScreenImage(
       assetPath: assetPath,
@@ -960,7 +818,7 @@ $imageOverlay
     );
   }
 
-  Future<bool> showDinosaurSkeletonImage(Dinosaur dinosaur) async {
+  Future<bool> showDinosaurSkeletonImage(Dinosaur dinosaur) async { //Show the dinosaur skeleton
     final cleanName = cleanDinosaurImageName(dinosaur.name);
 
     final assetPath = await getExistingImagePath(
@@ -969,7 +827,9 @@ $imageOverlay
 
     if (assetPath == null) return false;
 
-    final extension = assetPath.split('.').last;
+    final extension = assetPath
+        .split('.')
+        .last;
     final imageFileName = '${cleanName}_skeleton.$extension';
 
     final uploadedImage = await uploadAssetToLG(
@@ -979,7 +839,7 @@ $imageOverlay
 
     if (!uploadedImage) return false;
 
-    final uploadedHtml = await uploadHtmlToLG(
+    final uploadedHtml = await uploadHtmlToLG( //decide the size of the image
       htmlFileName: 'skeleton.html',
       imageFileName: imageFileName,
       title: '${dinosaur.name} Skeleton',
@@ -988,7 +848,9 @@ $imageOverlay
 
     if (!uploadedHtml) return false;
 
-    return await openChromiumOnAllScreens('http://lg1:81/skeleton.html');
+    return await openChromiumOnAllScreens(
+      'http://lg1:81/skeleton.html',
+    );
   }
 
   Future<bool> showDinosaurComparisonImage(Dinosaur dinosaur) async {
@@ -1000,7 +862,9 @@ $imageOverlay
 
     if (assetPath == null) return false;
 
-    final extension = assetPath.split('.').last;
+    final extension = assetPath
+        .split('.')
+        .last;
     final imageFileName = '${cleanName}_comparison.$extension';
 
     final uploadedImage = await uploadAssetToLG(
@@ -1010,7 +874,7 @@ $imageOverlay
 
     if (!uploadedImage) return false;
 
-    final uploadedHtml = await uploadHtmlToLG(
+    final uploadedHtml = await uploadHtmlToLG( //decide the size of the image
       htmlFileName: 'comparison.html',
       imageFileName: imageFileName,
       title: '${dinosaur.name} Comparison',
@@ -1019,17 +883,19 @@ $imageOverlay
 
     if (!uploadedHtml) return false;
 
-    return await openChromiumOnAllScreens('http://lg1:81/comparison.html');
+    return await openChromiumOnAllScreens(
+      'http://lg1:81/comparison.html',
+    );
   }
 
-  Future<bool> openChromiumOnAllScreens(String url) async {
+  Future<bool> openChromiumOnAllScreens(String url) async { //Opens Chromium on every LG screen
     try {
       for (var i = 1; i <= _lgConnectionModel.screens; i++) {
         final fullUrl = '$url?screen=$i&total=${_lgConnectionModel.screens}';
 
-        final command =
-            '''
-sshpass -p ${_lgConnectionModel.password} ssh -t lg$i "DISPLAY=:0 chromium-browser --kiosk --no-first-run --disable-infobars '$fullUrl' > /dev/null 2>&1 &"
+        final command = '''
+sshpass -p ${_lgConnectionModel
+            .password} ssh -t lg$i "DISPLAY=:0 chromium-browser --kiosk --no-first-run --disable-infobars '$fullUrl' > /dev/null 2>&1 &"
 ''';
 
         await execute(command, 'Chromium opened on lg$i');
@@ -1047,8 +913,7 @@ sshpass -p ${_lgConnectionModel.password} ssh -t lg$i "DISPLAY=:0 chromium-brows
   Future<bool> closeChromiumOnAllScreens() async {
     try {
       for (var i = 1; i <= _lgConnectionModel.screens; i++) {
-        final command =
-            '''
+        final command = '''
 sshpass -p ${_lgConnectionModel.password} ssh -t lg$i "
 pkill -f chromium-browser || true
 pkill -f chromium || true
@@ -1083,15 +948,14 @@ DISPLAY=:0 xdotool key F11 || true
     }
   }
 
-  Future<bool> uploadHtmlToLG({
+  Future<bool> uploadHtmlToLG({ //Creates the HTML that LG uses on every screen
     required String htmlFileName,
     required String imageFileName,
     required String title,
     double imageHeight = 95,
   }) async {
     try {
-      final html =
-          '''
+      final html = '''
 <!DOCTYPE html>
 <html>
 <head>
@@ -1144,16 +1008,7 @@ const total = parseInt(params.get("total") || "1");
 
 const img = document.getElementById("dino");
 
-/*
- * Orden visual del Liquid Galaxy.
- *
- * Para 5 pantallas:
- * posición visual:  1  2  3  4  5
- * LG lógico:        4  5  1  2  3
- *
- * Para otros tamaños intenta mantener lg1 en el centro
- * y reparte las demás pantallas alrededor.
- */
+
 const leftSide = [];
 const rightSide = [];
 
@@ -1167,10 +1022,6 @@ for (let i = 2; i <= total; i++) {
 
 const screenOrder = [...leftSide, 1, ...rightSide];
 
-/*
- * Usamos las 3 pantallas centrales visuales.
- * Con 5 pantallas será: [5, 1, 2]
- */
 const imageScreens = total;
 const activeScreens = screenOrder;
 
@@ -1202,13 +1053,16 @@ img.onload = () => {
 
       final remoteFile = await sftp.open(
         '/var/www/html/$htmlFileName',
-        mode:
-            SftpFileOpenMode.create |
-            SftpFileOpenMode.truncate |
-            SftpFileOpenMode.write,
+        mode: SftpFileOpenMode.create |
+        SftpFileOpenMode.truncate |
+        SftpFileOpenMode.write,
       );
 
-      await remoteFile.write(Stream.value(Uint8List.fromList(html.codeUnits)));
+      await remoteFile.write(
+        Stream.value(
+          Uint8List.fromList(html.codeUnits),
+        ),
+      );
 
       await remoteFile.close();
 
@@ -1219,7 +1073,7 @@ img.onload = () => {
     }
   }
 
-  Future<void> cleanLogos() async {
+  Future<void> cleanLogos() async { //Removes the logo
     try {
       final screen = calculateLeftMostScreen(_lgConnectionModel.screens);
 
@@ -1239,7 +1093,7 @@ img.onload = () => {
     }
   }
 
-  Future<bool> cleanAll() async {
+  Future<bool> cleanAll() async { //Clean the chromium and restores the logo
     try {
       await closeChromiumOnAllScreens();
 
@@ -1250,7 +1104,9 @@ img.onload = () => {
   </Document>
 </kml>''';
 
-      final logoScreen = calculateLeftMostScreen(_lgConnectionModel.screens);
+      final logoScreen = calculateLeftMostScreen(
+        _lgConnectionModel.screens,
+      );
 
       for (var i = 1; i <= _lgConnectionModel.screens; i++) {
         if (i == logoScreen) {
@@ -1263,9 +1119,15 @@ img.onload = () => {
         );
       }
 
-      await execute("echo 'exittour=true' > /tmp/query.txt", 'Stop tour');
+      await execute(
+        "echo 'exittour=true' > /tmp/query.txt",
+        'Stop tour',
+      );
 
-      await execute("echo '' > /tmp/query.txt", 'Clean query');
+      await execute(
+        "echo '' > /tmp/query.txt",
+        'Clean query',
+      );
 
       await execute(
         "rm -f /var/www/html/skeleton.html /var/www/html/comparison.html",
@@ -1281,11 +1143,13 @@ img.onload = () => {
     }
   }
 
-  Future<bool> reboot() async {
+  Future<bool> reboot() async { //Reboot all LG
     try {
       for (var i = _lgConnectionModel.screens; i >= 1; i--) {
         await execute(
-          'sshpass -p ${_lgConnectionModel.password} ssh -t lg$i "echo ${_lgConnectionModel.password} | sudo -S reboot"',
+          'sshpass -p ${_lgConnectionModel
+              .password} ssh -t lg$i "echo ${_lgConnectionModel
+              .password} | sudo -S reboot"',
           'Reboot sent to lg$i',
         );
       }
@@ -1297,11 +1161,13 @@ img.onload = () => {
     }
   }
 
-  Future<bool> shutdown() async {
+  Future<bool> shutdown() async { //Shutdown LG
     try {
       for (var i = _lgConnectionModel.screens; i >= 1; i--) {
         await execute(
-          'sshpass -p ${_lgConnectionModel.password} ssh -t lg$i "echo ${_lgConnectionModel.password} | sudo -S poweroff"',
+          'sshpass -p ${_lgConnectionModel
+              .password} ssh -t lg$i "echo ${_lgConnectionModel
+              .password} | sudo -S poweroff"',
           'Shutdown sent to lg$i',
         );
       }
@@ -1313,9 +1179,8 @@ img.onload = () => {
     }
   }
 
-  Future<bool> relaunchLG() async {
-    final relaunchCmd =
-        '''
+  Future<bool> relaunchLG() async { //Relaunch LG
+    final relaunchCmd = '''
 RELAUNCH_CMD="\\
 if [ -f /etc/init/lxdm.conf ];
 then
@@ -1335,8 +1200,128 @@ fi
 " && sshpass -p ${_lgConnectionModel.password} ssh -x -t lg@lg1 "\$RELAUNCH_CMD"
 ''';
 
-    final result = await execute(relaunchCmd, 'Liquid Galaxy relaunched');
+    final result = await execute(
+      relaunchCmd,
+      'Liquid Galaxy relaunched',
+    );
 
     return result != null;
+  }
+
+  Future<Uint8List?> createDinosaurStatsImage(List<Dinosaur> dinosaurs) async { //Create statistics image
+    try {
+      const double width = 900;
+      const double height = 260;
+
+      final validDinosaurs = dinosaurs.where((d) => d.name.isNotEmpty).toList();
+
+      final countries = validDinosaurs
+          .map((d) => d.country)
+          .where((value) => value.isNotEmpty)
+          .toSet();
+
+      final continents = validDinosaurs
+          .map((d) => d.area)
+          .where((value) => value.isNotEmpty)
+          .toSet();
+
+      final regions = validDinosaurs
+          .map((d) => d.region)
+          .where((value) => value.isNotEmpty)
+          .toSet();
+
+      final triassic = validDinosaurs
+          .where((d) => d.period == DinosaurPeriod.triassic)
+          .length;
+
+      final jurassic = validDinosaurs
+          .where((d) => d.period == DinosaurPeriod.jurassic)
+          .length;
+
+      final cretaceous = validDinosaurs
+          .where((d) => d.period == DinosaurPeriod.cretaceous)
+          .length;
+
+      final recorder = ui.PictureRecorder();
+      final canvas = ui.Canvas(recorder);
+
+      final backgroundPaint = ui.Paint()
+        ..color = const ui.Color(0xEEFFFFFF);
+
+      canvas.drawRRect(
+        ui.RRect.fromRectAndRadius(
+          const ui.Rect.fromLTWH(0, 0, width, height),
+          const ui.Radius.circular(24),
+        ),
+        backgroundPaint,
+      );
+
+      final titleStyle = ui.TextStyle(
+        color: const ui.Color(0xFF111111),
+        fontSize: 34,
+        fontWeight: ui.FontWeight.bold,
+      );
+
+      final bodyStyle = ui.TextStyle(
+        color: const ui.Color(0xFF111111),
+        fontSize: 25,
+      );
+
+      final titleBuilder = ui.ParagraphBuilder(
+        ui.ParagraphStyle(maxLines: 1),
+      )
+        ..pushStyle(titleStyle)
+        ..addText('GeoSaurio Statistics');
+
+      final titleParagraph = titleBuilder.build()
+        ..layout(
+          const ui.ParagraphConstraints(width: width - 60),
+        );
+
+      canvas.drawParagraph(
+        titleParagraph,
+        const ui.Offset(30, 22),
+      );
+
+      final stats = '''
+Dinosaurs: ${validDinosaurs.length}
+Countries: ${countries.length}  |  Continents: ${continents.length}  |  Regions: ${regions.length}
+Triassic: $triassic  |  Jurassic: $jurassic  |  Cretaceous: $cretaceous
+''';
+
+      final bodyBuilder = ui.ParagraphBuilder(
+        ui.ParagraphStyle(maxLines: 4),
+      )
+        ..pushStyle(bodyStyle)
+        ..addText(stats);
+
+      final bodyParagraph = bodyBuilder.build()
+        ..layout(
+          const ui.ParagraphConstraints(width: width - 60),
+        );
+
+      canvas.drawParagraph(
+        bodyParagraph,
+        const ui.Offset(30, 85),
+      );
+
+      final picture = recorder.endRecording();
+
+      final image = await picture.toImage(
+        width.toInt(),
+        height.toInt(),
+      );
+
+      final byteData = await image.toByteData(
+        format: ui.ImageByteFormat.png,
+      );
+
+      if (byteData == null) return null;
+
+      return byteData.buffer.asUint8List();
+    } catch (e) {
+      debugPrint('Error creating dinosaur stats image: $e');
+      return null;
+    }
   }
 }

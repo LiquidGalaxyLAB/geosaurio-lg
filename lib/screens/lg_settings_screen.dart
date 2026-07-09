@@ -7,7 +7,7 @@ import 'connection_screen.dart';
 class LgSettingsScreen extends StatelessWidget {
   const LgSettingsScreen({super.key});
 
-  void showSnack(BuildContext context, String message, {bool success = true}) {
+  void showSnack(BuildContext context, String message, {bool success = true}) { //show feedback meesages to the user
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
@@ -17,64 +17,17 @@ class LgSettingsScreen extends StatelessWidget {
     );
   }
 
-  Future<bool> confirmLgAction(
-      BuildContext context,
-      String actionName,
-      ) async {
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-          ),
-          title: Text(
-            '$actionName Liquid Galaxy?',
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-          content: Text(
-            'Are you sure you want to $actionName Liquid Galaxy?',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context, true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Yes'),
-            ),
-          ],
-        );
-      },
-    );
-
-    return result ?? false;
-  }
-
-  Future<void> runAction(
-      BuildContext context,
-      String actionName,
-      Future<bool> Function(LgService lgService) action, {
-        bool needsConfirmation = false,
-      }) async {
+  Future<void> runAction( //Executes a liquid galaxy action
+    BuildContext context,
+    String actionName,
+    Future<bool> Function(LgService lgService) action,
+  ) async {
     final lgService = context.read<LgService>();
 
     if (!lgService.isConnected) {
       showSnack(context, 'Connect to Liquid Galaxy first.', success: false);
       return;
     }
-
-    if (needsConfirmation) {
-      final confirmed = await confirmLgAction(context, actionName);
-      if (!confirmed) return;
-    }
-
-    showSnack(context, '$actionName command sent...', success: true);
 
     final ok = await action(lgService);
 
@@ -87,7 +40,7 @@ class LgSettingsScreen extends StatelessWidget {
     );
   }
 
-  Future<void> toggleLogos(BuildContext context) async {
+  Future<void> toggleLogos(BuildContext context) async { //Show or hide the logos
     final lgService = context.read<LgService>();
 
     if (!lgService.isConnected) {
@@ -120,7 +73,6 @@ class LgSettingsScreen extends StatelessWidget {
     if (result == true) {
       final ok = await lgService.sendLogo();
       if (!context.mounted) return;
-
       showSnack(
         context,
         ok ? 'Logo shown.' : 'Error showing logo.',
@@ -129,13 +81,12 @@ class LgSettingsScreen extends StatelessWidget {
     } else if (result == false) {
       await lgService.cleanLogos();
       if (!context.mounted) return;
-
       showSnack(context, 'Logo hidden.');
     }
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) { //Build visual interface
     final isConnected = context.watch<LgService>().isConnected;
 
     return Scaffold(
@@ -204,34 +155,114 @@ class LgSettingsScreen extends StatelessWidget {
                       icon: Icons.restart_alt,
                       text: 'Reboot',
                       color: Colors.green,
-                      onTap: () => runAction(
-                        context,
-                        'Reboot',
-                            (LgService lg) => lg.reboot(),
-                        needsConfirmation: true,
-                      ),
+                      onTap: () => runAction(context, 'Reboot', (
+                        LgService lg,
+                      ) async {
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (context) {
+                            return AlertDialog(
+                              title: const Text('Reboot Liquid Galaxy'),
+                              content: const Text(
+                                'Are you sure you want to reboot all screens?',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pop(context, false);
+                                  },
+                                  child: const Text('Cancel'),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    Navigator.pop(context, true);
+                                  },
+                                  child: const Text('Reboot'),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+
+                        if (confirm == true) {
+                          return await lg.reboot();
+                        }
+
+                        return false;
+                      }),
                     ),
                     lgButton(
                       icon: Icons.refresh,
                       text: 'Relaunch',
                       color: Colors.blue,
-                      onTap: () => runAction(
-                        context,
-                        'Relaunch',
-                            (LgService lg) => lg.relaunchLG(),
-                        needsConfirmation: true,
-                      ),
+                      onTap: () async {
+                        final lgService = context.read<LgService>();
+
+                        if (!lgService.isConnected) {
+                          showSnack(
+                            context,
+                            'Connect to Liquid Galaxy first.',
+                            success: false,
+                          );
+                          return;
+                        }
+
+                        showSnack(
+                          context,
+                          'Relaunch command sent...',
+                          success: true,
+                        );
+
+                        final ok = await lgService.relaunchLG();
+
+                        if (!context.mounted) return;
+
+                        showSnack(
+                          context,
+                          ok ? 'Relaunch completed.' : 'Relaunch failed.',
+                          success: ok,
+                        );
+                      },
                     ),
                     lgButton(
                       icon: Icons.power_settings_new,
                       text: 'Shutdown',
                       color: Colors.red,
-                      onTap: () => runAction(
-                        context,
-                        'Shutdown',
-                            (LgService lg) => lg.shutdown(),
-                        needsConfirmation: true,
-                      ),
+                      onTap: () => runAction(context, 'Shutdown', (
+                        LgService lg,
+                      ) async {
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (context) {
+                            return AlertDialog(
+                              title: const Text('Shutdown Liquid Galaxy'),
+                              content: const Text(
+                                'Are you sure you want to shutdown all screens?',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pop(context, false);
+                                  },
+                                  child: const Text('Cancel'),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    Navigator.pop(context, true);
+                                  },
+                                  child: const Text('Shutdown'),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+
+                        if (confirm == true) {
+                          return await lg.shutdown();
+                        }
+
+                        return false;
+                      }),
                     ),
                     lgButton(
                       icon: Icons.visibility,
@@ -246,7 +277,7 @@ class LgSettingsScreen extends StatelessWidget {
                       onTap: () => runAction(
                         context,
                         "Clean KML's",
-                            (LgService lg) => lg.cleanAll(),
+                        (LgService lg) => lg.cleanAll(),
                       ),
                     ),
                     lgButton(

@@ -14,7 +14,7 @@ class AboutScreen extends StatelessWidget {
 
   // Builds the visual interface of the screen.
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) { //Declaration of what the user would see  background color, name of the application, etc
     return Scaffold(
       // Background color of the screen.
       backgroundColor: const Color(0xFFF7F4EF),
@@ -26,8 +26,8 @@ class AboutScreen extends StatelessWidget {
       body: SafeArea(
         child: Builder(
           builder: (context) {
-            // Allows scrolling if the content exceeds the screen size.
-            return SingleChildScrollView(
+
+            return SingleChildScrollView( // scrolling in case the content exceeds the screen size.
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
                 children: [
@@ -130,7 +130,7 @@ class AboutScreen extends StatelessWidget {
     );
   }
 
-  // Builds the side navigation drawer for this screen.
+  //Side menu that will allow the user to move between different screens
   Widget buildDrawer(BuildContext context) {
     return Drawer(
       child: SafeArea(
@@ -145,7 +145,7 @@ class AboutScreen extends StatelessWidget {
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
 
-            // Space between title and menu options.
+
             const SizedBox(height: 25),
 
             // Option to return to the main menu.
@@ -153,7 +153,7 @@ class AboutScreen extends StatelessWidget {
               leading: const Icon(Icons.home),
               title: const Text('Main Menu'),
               onTap: () {
-                // Navigates to HomeScreen and removes previous screens.
+                // Go to HomeScreen and removes previous screens.
                 Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute(builder: (context) => const HomeScreen()),
                   (route) => false,
@@ -161,7 +161,7 @@ class AboutScreen extends StatelessWidget {
               },
             ),
 
-            // Option to open the Liquid Galaxy settings screen.
+
             ListTile(
               leading: const Icon(Icons.settings),
               title: const Text('LG Settings'),
