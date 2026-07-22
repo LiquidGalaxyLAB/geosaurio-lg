@@ -284,13 +284,19 @@ class LgSettingsScreen extends StatelessWidget {
                       icon: Icons.wifi,
                       text: 'Connection',
                       color: const Color(0xFF3E2A1F),
-                      onTap: () {
-                        Navigator.push(
+                      onTap: () async {
+                        final connected = await Navigator.push<bool>(
                           context,
                           MaterialPageRoute(
                             builder: (context) => const ConnectionScreen(),
                           ),
                         );
+
+                        if (!context.mounted) return;
+
+                        if (connected == true) {
+                          Navigator.pop(context, true);
+                        }
                       },
                     ),
                   ],

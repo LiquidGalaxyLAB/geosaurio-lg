@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
-
+import 'dart:math' as math;
 import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -524,59 +524,112 @@ ${_cleanText(dinosaur.generalInfo)}
     }
   }
 
-  Future<bool> showDinosaurMarkers(List<Dinosaur> dinosaurs) async { //Generates KML dinosaur markers
+  Future<bool> showDinosaurMarker(Dinosaur dinosaur) async {
     try {
-      final validDinosaurs = dinosaurs.where((dinosaur) {
-        return dinosaur.latitude != 0 && dinosaur.longitude != 0;
-      }).toList();
+      if (dinosaur.latitude == 0 || dinosaur.longitude == 0) {
+        debugPrint('No valid dinosaur coordinates');
+        return false;
+      }
 
-      final placemarks = validDinosaurs.map((dinosaur) {
-        final name = _cleanText(dinosaur.name);
-        final description = _cleanText(
-          '${dinosaur.periodName}\\n'
-              '${dinosaur.country}, ${dinosaur.region}\\n'
-              'Diet: ${dinosaur.diet}\\n'
-              'Length: ${dinosaur.length}\\n'
-              'Weight: ${dinosaur.weight}',
-        );
+      final uploaded = await uploadAssetToLG(
+        assetPath: 'assets/images/markers/dinosaur_marker.png',
+        fileName: 'dinosaur_marker.png',
+      );
 
-        return '''
-<Placemark>
-  <name>$name</name>
-  <description>$description</description>
-  <Style>
-    <IconStyle>
-      <scale>1.3</scale>
-      <Icon>
-        <href>http://maps.google.com/mapfiles/kml/paddle/red-circle.png</href>
-      </Icon>
-    </IconStyle>
-  </Style>
-  <Point>
-    <coordinates>${dinosaur.longitude},${dinosaur.latitude},0</coordinates>
-  </Point>
-</Placemark>
-''';
-      }).join('\n');
+      if (!uploaded) {
+        debugPrint('Could not upload dinosaur marker');
+        return false;
+      }
+
+      final markerPosition = calculateMarkerPosition(dinosaur);
+      final markerLat = markerPosition[0];
+      final markerLon = markerPosition[1];
+
+      final name = _cleanText(dinosaur.name);
+      final description = _cleanText(
+        '${dinosaur.periodName}\n'
+            '${dinosaur.country}, ${dinosaur.region}\n'
+            'Diet: ${dinosaur.diet}\n'
+            'Length: ${dinosaur.length}\n'
+            'Weight: ${dinosaur.weight}',
+      );
 
       final kml = '''<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
-    <name>Dinosaur Markers</name>
-    $placemarks
+    <name>Dinosaur Marker</name>
+
+    <Placemark>
+      <name>$name</name>
+      <description>$description</description>
+
+      <Style>
+        <IconStyle>
+          <scale>8.0</scale>
+          <Icon>
+            <href>http://lg1:81/dinosaur_marker.png</href>
+          </Icon>
+          <hotSpot x="0.5" y="0" xunits="fraction" yunits="fraction"/>
+        </IconStyle>
+        <LabelStyle>
+          <scale>2.0</scale>
+        </LabelStyle>
+      </Style>
+
+      <Point>
+        <altitudeMode>clampToGround</altitudeMode>
+        <coordinates>$markerLon,$markerLat,0</coordinates>
+      </Point>
+    </Placemark>
   </Document>
 </kml>''';
 
       final result = await execute(
         "echo '$kml' > /var/www/html/kml/slave_1.kml",
-        'Dinosaur markers sent',
+        'Dinosaur marker sent',
       );
 
       return result != null;
     } catch (e) {
-      debugPrint('Error showing dinosaur markers: $e');
+      debugPrint('Error showing dinosaur marker: $e');
       return false;
     }
+  }
+
+  List<double> calculateMarkerPosition(Dinosaur dinosaur) {
+    const earthRadius = 6371000.0;
+
+    final startLat = dinosaur.latitude * math.pi / 180.0;
+    final startLon = dinosaur.longitude * math.pi / 180.0;
+    final heading = dinosaur.heading * math.pi / 180.0;
+
+    final baseRange = dinosaur.range == 0 ? 8000.0 : dinosaur.range;
+
+    // Ajusta esto si quieres el marker más cerca o más lejos del centro visual
+    final distance = (baseRange * 0.25).clamp(400.0, 5000.0);
+
+    final angularDistance = distance / earthRadius;
+
+    final markerLat = math.asin(
+      math.sin(startLat) * math.cos(angularDistance) +
+          math.cos(startLat) *
+              math.sin(angularDistance) *
+              math.cos(heading),
+    );
+
+    final markerLon = startLon +
+        math.atan2(
+          math.sin(heading) *
+              math.sin(angularDistance) *
+              math.cos(startLat),
+          math.cos(angularDistance) -
+              math.sin(startLat) * math.sin(markerLat),
+        );
+
+    return [
+      markerLat * 180.0 / math.pi,
+      markerLon * 180.0 / math.pi,
+    ];
   }
 
   Future<bool> sendLogo() async { //Send logo
@@ -1206,6 +1259,235 @@ fi
     );
 
     return result != null;
+  }
+
+  List<double> calculateModelPositionInFrontOfCamera(
+      Dinosaur dinosaur, {
+        double positionFactor = 0.0,
+      }) {
+    const earthRadius = 6371000.0;
+
+    final range = dinosaur.range == 0 ? 8000.0 : dinosaur.range;
+    final tiltRadians = dinosaur.tilt * math.pi / 180.0;
+    final horizontalDistance = range * math.sin(tiltRadians);
+
+    final factor = positionFactor.clamp(0.0, 1.0).toDouble();
+    final displacement = horizontalDistance * factor;
+
+    if (displacement == 0) {
+      return [
+        dinosaur.latitude,
+        dinosaur.longitude,
+      ];
+    }
+
+    final startLatitude =
+        dinosaur.latitude * math.pi / 180.0;
+
+    final startLongitude =
+        dinosaur.longitude * math.pi / 180.0;
+
+    final bearing =
+        (dinosaur.heading + 180.0) * math.pi / 180.0;
+
+    final angularDistance = displacement / earthRadius;
+
+    final destinationLatitude = math.asin(
+      math.sin(startLatitude) * math.cos(angularDistance) +
+          math.cos(startLatitude) *
+              math.sin(angularDistance) *
+              math.cos(bearing),
+    );
+
+    final destinationLongitude = startLongitude +
+        math.atan2(
+          math.sin(bearing) *
+              math.sin(angularDistance) *
+              math.cos(startLatitude),
+          math.cos(angularDistance) -
+              math.sin(startLatitude) *
+                  math.sin(destinationLatitude),
+        );
+
+    return [
+      destinationLatitude * 180.0 / math.pi,
+      destinationLongitude * 180.0 / math.pi,
+    ];
+  }
+
+  Future<bool> showDinosaurModel(
+      Dinosaur dinosaur, {
+        double scale = 100,
+        double altitude = 1,
+        double headingOffset = 0,
+        double tilt = 0,
+        double roll = 0,
+      }) async {
+    try {
+      if (dinosaur.latitude == 0 || dinosaur.longitude == 0) {
+        debugPrint('No valid dinosaur coordinates');
+        return false;
+      }
+
+      final uploadedModel = await uploadAssetToLG(
+        assetPath: 'assets/models/dinosaur_skull.dae',
+        fileName: 'dinosaur_skull.dae',
+      );
+
+      if (!uploadedModel) {
+        debugPrint('Could not upload dinosaur model');
+        return false;
+      }
+
+      // Coordinates obtained directly from the database.
+      final modelLatitude = dinosaur.latitude;
+      final modelLongitude = dinosaur.longitude;
+
+      final modelHeading =
+          (dinosaur.heading + headingOffset) % 360.0;
+
+      final name = _cleanText(dinosaur.name);
+
+      final kml = '''<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>$name 3D Model</name>
+
+    <Placemark>
+      <name>$name</name>
+
+      <Model>
+        <altitudeMode>relativeToGround</altitudeMode>
+
+        <Location>
+          <longitude>$modelLongitude</longitude>
+          <latitude>$modelLatitude</latitude>
+          <altitude>$altitude</altitude>
+        </Location>
+
+        <Orientation>
+          <heading>$modelHeading</heading>
+          <tilt>$tilt</tilt>
+          <roll>$roll</roll>
+        </Orientation>
+
+        <Scale>
+          <x>$scale</x>
+          <y>$scale</y>
+          <z>$scale</z>
+        </Scale>
+
+        <Link>
+          <href>http://lg1:81/dinosaur_skull.dae</href>
+        </Link>
+      </Model>
+    </Placemark>
+  </Document>
+</kml>''';
+
+      final result = await execute(
+        "echo '$kml' > /var/www/html/kml/slave_1.kml",
+        'Dinosaur 3D model sent',
+      );
+
+      return result != null;
+    } catch (e) {
+      debugPrint('Error showing dinosaur model: $e');
+      return false;
+    }
+  }
+
+  Future<bool> showAllDinosaurModels(
+      List<Dinosaur> dinosaurs, {
+        double scale = 100,
+        double altitude = 1,
+        double headingOffset = 0,
+      }) async {
+    try {
+      final validDinosaurs = dinosaurs.where((dinosaur) {
+        return dinosaur.latitude != 0 && dinosaur.longitude != 0;
+      }).toList();
+
+      if (validDinosaurs.isEmpty) {
+        debugPrint('No dinosaurs with valid coordinates');
+        return false;
+      }
+
+      final uploadedModel = await uploadAssetToLG(
+        assetPath: 'assets/models/dinosaur_skull.dae',
+        fileName: 'dinosaur_skull.dae',
+      );
+
+      if (!uploadedModel) {
+        debugPrint('Could not upload dinosaur model');
+        return false;
+      }
+
+      final placemarks = validDinosaurs.map((dinosaur) {
+        final name = _cleanText(dinosaur.name);
+
+        final modelHeading =
+            (dinosaur.heading + headingOffset) % 360.0;
+
+        return '''
+    <Placemark>
+      <name>$name</name>
+
+      <Model>
+        <altitudeMode>relativeToGround</altitudeMode>
+
+        <Location>
+          <longitude>${dinosaur.longitude}</longitude>
+          <latitude>${dinosaur.latitude}</latitude>
+          <altitude>$altitude</altitude>
+        </Location>
+
+        <Orientation>
+          <heading>$modelHeading</heading>
+          <tilt>0</tilt>
+          <roll>0</roll>
+        </Orientation>
+
+        <Scale>
+          <x>$scale</x>
+          <y>$scale</y>
+          <z>$scale</z>
+        </Scale>
+
+        <Link>
+          <href>http://lg1:81/dinosaur_skull.dae</href>
+        </Link>
+      </Model>
+    </Placemark>
+''';
+      }).join('\n');
+
+      final kml = '''<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>GeoSaurio 3D Models</name>
+
+$placemarks
+
+  </Document>
+</kml>''';
+
+      final result = await execute(
+        "cat > /var/www/html/kml/slave_1.kml <<'EOF'\n"
+            "$kml\n"
+            "EOF",
+        '${validDinosaurs.length} dinosaur models sent',
+      );
+
+      debugPrint(
+        '${validDinosaurs.length} dinosaur models placed at database coordinates',
+      );
+
+      return result != null;
+    } catch (e) {
+      debugPrint('Error showing all dinosaur models: $e');
+      return false;
+    }
   }
 
   Future<Uint8List?> createDinosaurStatsImage(List<Dinosaur> dinosaurs) async { //Create statistics image

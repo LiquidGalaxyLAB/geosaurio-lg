@@ -39,5 +39,6 @@ flutter:
     - assets/images/
     - assets/images/dinosaurs/
     - assets/images/markers/
+    - assets/models/
     - assets/data/
     - assets/audio/

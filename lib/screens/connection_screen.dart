@@ -105,7 +105,6 @@ class _ConnectionScreenState extends State<ConnectionScreen> {  // Stores and ma
   }
 
   Future<void> connectToLg() async {
-    //Comprove if all the fields are full and tries to connect
     if (ipController.text.trim().isEmpty ||
         userController.text.trim().isEmpty ||
         passwordController.text.isEmpty ||
@@ -124,26 +123,24 @@ class _ConnectionScreenState extends State<ConnectionScreen> {  // Stores and ma
     final lgService = context.read<LgService>();
     final connected = await lgService.connectToLG() ?? false;
 
-    if (connected) { //Send logo
+    if (connected) {
       await lgService.sendLogo();
-
-      // This prepares the dinosaur marker icon when the app connects to LG.
-      await lgService.uploadAssetToLG(
-        assetPath: 'assets/images/dino_marker.png',
-        fileName: 'dino_marker.png',
-      );
     }
 
     if (!mounted) return;
 
     setState(() => isConnecting = false);
 
-    snack( //Show a meesage if the LG connected or not
+    snack(
       connected
-          ? 'Connected to Liquid Galaxy and markers prepared'
+          ? 'Connected to Liquid Galaxy'
           : 'Could not connect to LG',
       success: connected,
     );
+
+    if (connected) {
+      Navigator.pop(context, true);
+    }
   }
 
   Future<void> disconnectLg() async {
