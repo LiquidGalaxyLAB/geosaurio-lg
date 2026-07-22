@@ -164,9 +164,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final countryDinosaurs = availableDinosaurs;
 
-    await lgService.showDinosaurMarkers(countryDinosaurs);
-    await Future.delayed(const Duration(milliseconds: 700));
-    await lgService.flyToCountry(country, countryDinosaurs);
+    await lgService.flyToCountry(
+      country,
+      countryDinosaurs,
+    );
+
+    await Future.delayed(
+      const Duration(milliseconds: 700),
+    );
+
+    await lgService.showDinosaurMarkers(
+      countryDinosaurs,
+    );
   }
 
   Future<void> selectDinosaur(Dinosaur dinosaur) async {

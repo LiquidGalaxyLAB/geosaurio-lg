@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/dinosaur.dart';
+import 'dinosaur_service.dart';
 
 class LgConnectionModel {
   String username;
@@ -80,6 +81,13 @@ class LgService extends ChangeNotifier {
   bool _isConnected = false;
   int _currentConnectionAttempts = 0;
 
+  // Prevents two SSH authentication attempts from running at the same time.
+  Future<bool?>? _connectionInProgress;
+
+  // Prevents the automatic logo/marker setup from recursively starting again
+  // when execute() has to reconnect.
+  bool _initializingAfterConnection = false;
+
   static const int _maxConnectionAttempts = 5;
   static const Duration _connectionTimeout = Duration(seconds: 10);
 
@@ -121,42 +129,126 @@ class LgService extends ChangeNotifier {
     }
   }
 
-  Future<bool?> connectToLG() async {
+  Future<bool?> connectToLG({
+    bool initializeAfterConnect = true,
+  }) async {
+    // Reuse the same pending authentication instead of opening another socket.
+    final pendingConnection = _connectionInProgress;
+    if (pendingConnection != null) {
+      final connected = await pendingConnection;
+
+      if (connected == true &&
+          initializeAfterConnect &&
+          !_initializingAfterConnection) {
+        await _initializeLiquidGalaxyContent();
+      }
+
+      return connected;
+    }
+
+    if (_client != null && _isConnected) {
+      if (initializeAfterConnect && !_initializingAfterConnection) {
+        await _initializeLiquidGalaxyContent();
+      }
+
+      return true;
+    }
+
+    final future = _openSshConnection();
+    _connectionInProgress = future;
+
+    try {
+      final connected = await future;
+
+      if (connected == true &&
+          initializeAfterConnect &&
+          !_initializingAfterConnection) {
+        await _initializeLiquidGalaxyContent();
+      }
+
+      return connected;
+    } finally {
+      if (identical(_connectionInProgress, future)) {
+        _connectionInProgress = null;
+      }
+    }
+  }
+
+  Future<bool?> _openSshConnection() async {
     if (_currentConnectionAttempts >= _maxConnectionAttempts) {
       _currentConnectionAttempts = 0;
       notifyListeners();
       return false;
     }
 
+    SSHClient? newClient;
+
     try {
+      debugPrint('Opening SSH connection...');
+
       final socket = await SSHSocket.connect(
         _lgConnectionModel.ip,
         _lgConnectionModel.port,
       ).timeout(_connectionTimeout);
 
-      _client = SSHClient(
+      newClient = SSHClient(
         socket,
         username: _lgConnectionModel.username,
         onPasswordRequest: () => _lgConnectionModel.password,
         keepAliveInterval: const Duration(seconds: 10),
       );
 
+      // SSHClient authenticates lazily. Running a harmless command here forces
+      // authentication to finish before SFTP, logos or markers are started.
+      await newClient.run('true').timeout(_connectionTimeout);
+
+      _client?.close();
+      _client = newClient;
       _isConnected = true;
       _currentConnectionAttempts = 0;
+
+      debugPrint('SSH authentication completed');
+      notifyListeners();
+      return true;
+    } catch (e, stackTrace) {
+      debugPrint('Connection/authentication error: $e');
+      debugPrint('$stackTrace');
+
+      newClient?.close();
+
+      _client = null;
+      _isConnected = false;
+      _currentConnectionAttempts++;
       notifyListeners();
 
-      Future.delayed(const Duration(seconds: 2), () async {
-        await sendLogo();
-      });
+      return false;
+    }
+  }
 
-      return true;
-    } catch (e) {
-      debugPrint('Connection error: $e');
-      _currentConnectionAttempts++;
+  Future<void> _initializeLiquidGalaxyContent() async {
+    if (_initializingAfterConnection || !_isConnected || _client == null) {
+      return;
     }
 
-    notifyListeners();
-    return false;
+    _initializingAfterConnection = true;
+
+    try {
+      await Future.delayed(const Duration(seconds: 2));
+
+      debugPrint('Sending logo');
+      final logoSent = await sendLogo();
+      debugPrint('Logo result: $logoSent');
+
+      debugPrint('Starting all dinosaur markers');
+      await showAllDinosaurMarkers();
+
+      debugPrint('Connection initialization completed');
+    } catch (e, stackTrace) {
+      debugPrint('Error initializing Liquid Galaxy content: $e');
+      debugPrint('$stackTrace');
+    } finally {
+      _initializingAfterConnection = false;
+    }
   }
 
   void disconnect() {
@@ -169,9 +261,12 @@ class LgService extends ChangeNotifier {
   Future<dynamic> execute(String command, String successMessage) async {
     if (_client == null || !_isConnected) {
       debugPrint('SSH client not connected. Trying reconnect...');
-      final connected = await connectToLG();
 
-      if (connected != true) {
+      final connected = await connectToLG(
+        initializeAfterConnect: false,
+      );
+
+      if (connected != true || _client == null) {
         debugPrint('Reconnect failed');
         return null;
       }
@@ -181,28 +276,36 @@ class LgService extends ChangeNotifier {
       final result = await _client!.execute(command);
       debugPrint(successMessage);
       return result;
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('Command error: $e');
+      debugPrint('$stackTrace');
 
-      _client?.close();
+      final failedClient = _client;
       _client = null;
       _isConnected = false;
+      failedClient?.close();
       notifyListeners();
 
       debugPrint('Trying reconnect after command error...');
-      final connected = await connectToLG();
 
-      if (connected == true) {
-        try {
-          final retryResult = await _client!.execute(command);
-          debugPrint('$successMessage after reconnect');
-          return retryResult;
-        } catch (retryError) {
-          debugPrint('Retry command error: $retryError');
-        }
+      final connected = await connectToLG(
+        initializeAfterConnect: false,
+      );
+
+      if (connected != true || _client == null) {
+        debugPrint('Reconnect after command error failed');
+        return null;
       }
 
-      return null;
+      try {
+        final retryResult = await _client!.execute(command);
+        debugPrint('$successMessage after reconnect');
+        return retryResult;
+      } catch (retryError, retryStackTrace) {
+        debugPrint('Retry command error: $retryError');
+        debugPrint('$retryStackTrace');
+        return null;
+      }
     }
   }
 
@@ -272,6 +375,15 @@ class LgService extends ChangeNotifier {
     required String fileName,
   }) async {
     try {
+      final connected = await connectToLG(
+        initializeAfterConnect: false,
+      );
+
+      if (connected != true || _client == null) {
+        debugPrint('Cannot upload $fileName: SSH is not connected');
+        return false;
+      }
+
       final bytes = await rootBundle.load(assetPath);
       final tempDir = await getTemporaryDirectory();
       final file = File('${tempDir.path}/$fileName');
@@ -283,9 +395,9 @@ class LgService extends ChangeNotifier {
       final remoteFile = await sftp.open(
         '/var/www/html/$fileName',
         mode:
-            SftpFileOpenMode.create |
-            SftpFileOpenMode.truncate |
-            SftpFileOpenMode.write,
+        SftpFileOpenMode.create |
+        SftpFileOpenMode.truncate |
+        SftpFileOpenMode.write,
       );
 
       await remoteFile.write(
@@ -295,8 +407,9 @@ class LgService extends ChangeNotifier {
       await remoteFile.close();
 
       return true;
-    } catch (e) {
-      debugPrint('Error subiendo imagen: $e');
+    } catch (e, stackTrace) {
+      debugPrint('Error uploading $assetPath as $fileName: $e');
+      debugPrint('$stackTrace');
       return false;
     }
   }
@@ -306,14 +419,23 @@ class LgService extends ChangeNotifier {
     required String fileName,
   }) async {
     try {
+      final connected = await connectToLG(
+        initializeAfterConnect: false,
+      );
+
+      if (connected != true || _client == null) {
+        debugPrint('Cannot upload $fileName: SSH is not connected');
+        return false;
+      }
+
       final sftp = await _client!.sftp();
 
       final remoteFile = await sftp.open(
         '/var/www/html/$fileName',
         mode:
-            SftpFileOpenMode.create |
-            SftpFileOpenMode.truncate |
-            SftpFileOpenMode.write,
+        SftpFileOpenMode.create |
+        SftpFileOpenMode.truncate |
+        SftpFileOpenMode.write,
       );
 
       await remoteFile.write(Stream.value(bytes));
@@ -367,11 +489,11 @@ class LgService extends ChangeNotifier {
       );
 
       final titleBuilder =
-          ui.ParagraphBuilder(
-              ui.ParagraphStyle(maxLines: 2, textAlign: ui.TextAlign.left),
-            )
-            ..pushStyle(titleStyle)
-            ..addText(_cleanText(dinosaur.name));
+      ui.ParagraphBuilder(
+        ui.ParagraphStyle(maxLines: 2, textAlign: ui.TextAlign.left),
+      )
+        ..pushStyle(titleStyle)
+        ..addText(_cleanText(dinosaur.name));
 
       final titleParagraph = titleBuilder.build()
         ..layout(const ui.ParagraphConstraints(width: width - 60));
@@ -379,7 +501,7 @@ class LgService extends ChangeNotifier {
       canvas.drawParagraph(titleParagraph, const ui.Offset(30, 28));
 
       final info =
-          '''
+      '''
 Period: ${_cleanText(dinosaur.periodName)}
 Time: ${_cleanText(dinosaur.time1)} - ${_cleanText(dinosaur.time2)}
 Diet: ${_cleanText(dinosaur.diet)}
@@ -394,11 +516,11 @@ ${_cleanText(dinosaur.generalInfo)}
 ''';
 
       final bodyBuilder =
-          ui.ParagraphBuilder(
-              ui.ParagraphStyle(maxLines: 14, textAlign: ui.TextAlign.left),
-            )
-            ..pushStyle(bodyStyle)
-            ..addText(info);
+      ui.ParagraphBuilder(
+        ui.ParagraphStyle(maxLines: 14, textAlign: ui.TextAlign.left),
+      )
+        ..pushStyle(bodyStyle)
+        ..addText(info);
 
       final bodyParagraph = bodyBuilder.build()
         ..layout(const ui.ParagraphConstraints(width: width - 60));
@@ -496,13 +618,13 @@ ${_cleanText(dinosaur.generalInfo)}
           validDinosaurs
               .map((dinosaur) => dinosaur.latitude)
               .reduce((a, b) => a + b) /
-          validDinosaurs.length;
+              validDinosaurs.length;
 
       final longitude =
           validDinosaurs
               .map((dinosaur) => dinosaur.longitude)
               .reduce((a, b) => a + b) /
-          validDinosaurs.length;
+              validDinosaurs.length;
 
       final range = validDinosaurs.length <= 1 ? 250000 : 900000;
 
@@ -530,77 +652,7 @@ ${_cleanText(dinosaur.generalInfo)}
   }
 
   Future<bool> showCountryMarkers(List<Dinosaur> dinosaurs) async {
-    try {
-      final Map<String, List<Dinosaur>> groupedByCountry = {};
-
-      for (final dinosaur in dinosaurs) {
-        if (dinosaur.latitude == 0 || dinosaur.longitude == 0) continue;
-
-        groupedByCountry.putIfAbsent(dinosaur.country, () => []);
-        groupedByCountry[dinosaur.country]!.add(dinosaur);
-      }
-
-      await uploadAssetToLG(
-        assetPath: 'assets/images/markers/dino_marker.png',
-        fileName: 'dino_marker.png',
-      );
-
-      final placemarks = groupedByCountry.entries
-          .map((entry) {
-            final country = _cleanText(entry.key);
-            final countryDinosaurs = entry.value;
-
-            final latitude =
-                countryDinosaurs
-                    .map((dinosaur) => dinosaur.latitude)
-                    .reduce((a, b) => a + b) /
-                countryDinosaurs.length;
-
-            final longitude =
-                countryDinosaurs
-                    .map((dinosaur) => dinosaur.longitude)
-                    .reduce((a, b) => a + b) /
-                countryDinosaurs.length;
-
-            return '''
-<Placemark>
-  <name>$country</name>
-  <description>${countryDinosaurs.length} dinosaurs found</description>
-  <Style>
-    <IconStyle>
-      <scale>1.4</scale>
-      <Icon>
-         <href>http://lg1:81/dino_marker.png</href>
-      </Icon>
-    </IconStyle>
-  </Style>
-  <Point>
-    <coordinates>$longitude,$latitude,0</coordinates>
-  </Point>
-</Placemark>
-''';
-          })
-          .join('\n');
-
-      final kml =
-          '''<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2">
-  <Document>
-    <name>Country Markers</name>
-    $placemarks
-  </Document>
-</kml>''';
-
-      final result = await execute(
-        "echo '$kml' > /var/www/html/kml/slave_1.kml",
-        'Country markers sent',
-      );
-
-      return result != null;
-    } catch (e) {
-      debugPrint('Error showing country markers: $e');
-      return false;
-    }
+    return showDinosaurMarkers(dinosaurs);
   }
 
   Future<bool> flyToEarth() async {
@@ -628,23 +680,39 @@ ${_cleanText(dinosaur.generalInfo)}
     }
   }
 
+  Future<void> showAllDinosaurMarkers() async {
+    try {
+      final dinosaurs = await DinosaurService.loadDinosaurs();
+      await showDinosaurMarkers(dinosaurs);
+    } catch (e) {
+      debugPrint('Error showing all dinosaur markers: $e');
+    }
+  }
+
   Future<bool> showDinosaurMarkers(List<Dinosaur> dinosaurs) async {
     try {
+      debugPrint('1. showDinosaurMarkers started');
+      debugPrint('Dinosaurs received: ${dinosaurs.length}');
+
       final validDinosaurs = dinosaurs.where((dinosaur) {
         return dinosaur.latitude != 0 && dinosaur.longitude != 0;
       }).toList();
+
+      debugPrint('2. Valid dinosaurs: ${validDinosaurs.length}');
 
       if (validDinosaurs.isEmpty) {
         debugPrint('No valid dinosaur coordinates');
         return false;
       }
 
-      final uploaded = await uploadAssetToLG(
+      final markerUploaded = await uploadAssetToLG(
         assetPath: 'assets/images/markers/dino_marker.png',
         fileName: 'dino_marker.png',
       );
 
-      if (!uploaded) {
+      debugPrint('3. Marker image uploaded: $markerUploaded');
+
+      if (!markerUploaded) {
         debugPrint('Could not upload dino marker');
         return false;
       }
@@ -654,35 +722,36 @@ ${_cleanText(dinosaur.generalInfo)}
         final country = _cleanText(dinosaur.country);
         final region = _cleanText(dinosaur.region);
 
-        final markerPosition = dinosaur.getMarkerCoordinates();
-        final markerLat = markerPosition['latitude'];
-        final markerLon = markerPosition['longitude'];
+        debugPrint(
+          'Creating marker: ${dinosaur.name} '
+              'lat=${dinosaur.latitude}, lon=${dinosaur.longitude}',
+        );
 
         return '''
 <Placemark>
   <name>$name</name>
   <description>$country - $region</description>
-
   <Style>
     <IconStyle>
-      <scale>6.0</scale>
+      <scale>1.5</scale>
       <Icon>
         <href>http://lg1:81/dino_marker.png</href>
       </Icon>
       <hotSpot x="0.5" y="0" xunits="fraction" yunits="fraction"/>
     </IconStyle>
     <LabelStyle>
-      <scale>2.0</scale>
+      <scale>0.8</scale>
     </LabelStyle>
   </Style>
-
   <Point>
     <altitudeMode>clampToGround</altitudeMode>
-    <coordinates>$markerLon,$markerLat,0</coordinates>
+    <coordinates>${dinosaur.longitude},${dinosaur.latitude},0</coordinates>
   </Point>
 </Placemark>
 ''';
       }).join('\n');
+
+      debugPrint('4. Placemarks generated');
 
       final markersKml = '''<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
@@ -692,34 +761,54 @@ ${_cleanText(dinosaur.generalInfo)}
   </Document>
 </kml>''';
 
+      final markersUploaded = await uploadBytesToLG(
+        bytes: Uint8List.fromList(markersKml.codeUnits),
+        fileName: 'geosaurio_markers.kml',
+      );
+
+      debugPrint('5. Marker KML uploaded: $markersUploaded');
+
+      if (!markersUploaded) {
+        debugPrint('KML upload failed');
+        return false;
+      }
+
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+
       final networkLinkKml = '''<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
-    <name>GeoSaurio Markers Link</name>
+    <name>GeoSaurio Markers Loader</name>
     <NetworkLink>
-      <name>GeoSaurio Dinosaur Markers</name>
+      <name>Dinosaur Markers</name>
+      <open>1</open>
       <Link>
-        <href>http://lg1:81/geosaurio_markers.kml</href>
+        <href>http://lg1:81/geosaurio_markers.kml?v=$timestamp</href>
         <refreshMode>onInterval</refreshMode>
-        <refreshInterval>1</refreshInterval>
+        <refreshInterval>2</refreshInterval>
+        <viewRefreshMode>never</viewRefreshMode>
       </Link>
     </NetworkLink>
   </Document>
 </kml>''';
 
-      await execute(
-        "echo '$markersKml' > /var/www/html/geosaurio_markers.kml",
-        'Markers KML file sent',
+      final loaderUploaded = await uploadBytesToLG(
+        bytes: Uint8List.fromList(networkLinkKml.codeUnits),
+        fileName: 'kml/slave_1.kml',
       );
 
-      final result = await execute(
-        "echo '$networkLinkKml' > /var/www/html/kml/slave_1.kml",
-        'Markers NetworkLink sent',
-      );
+      debugPrint('6. NetworkLink loader uploaded: $loaderUploaded');
 
-      return result != null;
-    } catch (e) {
+      if (!loaderUploaded) {
+        debugPrint('Could not write NetworkLink to slave_1.kml');
+        return false;
+      }
+
+      debugPrint('7. showDinosaurMarkers finished');
+      return true;
+    } catch (e, stackTrace) {
       debugPrint('Error showing dinosaur markers: $e');
+      debugPrint('$stackTrace');
       return false;
     }
   }
@@ -777,7 +866,7 @@ ${_cleanText(dinosaur.generalInfo)}
       if (!uploaded) return false;
 
       final kml =
-          '''<?xml version="1.0" encoding="UTF-8"?>
+      '''<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
     <ScreenOverlay>
@@ -853,7 +942,7 @@ ${_cleanText(dinosaur.generalInfo)}
       final textSize = imageFileName == null ? '900' : '760';
 
       final kml =
-          '''<?xml version="1.0" encoding="UTF-8"?>
+      '''<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
 $imageOverlay
@@ -883,7 +972,6 @@ $imageOverlay
     }
   }
 
-
   Future<bool> cleanKmlKeepingLogos() async {
     try {
       final logoScreen = calculateLeftMostScreen(_lgConnectionModel.screens);
@@ -896,13 +984,18 @@ $imageOverlay
 </kml>''';
 
       for (var i = 1; i <= _lgConnectionModel.screens; i++) {
-        if (i == logoScreen) continue;
+        if (i == 1 || i == logoScreen) continue;
 
         await execute(
           "echo '$blankKml' > /var/www/html/kml/slave_$i.kml",
           'Cleaned KML screen $i',
         );
       }
+
+      await execute(
+        "echo '' > /var/www/html/kmls.txt",
+        'Loaded geographic KMLs cleaned',
+      );
 
       await execute(
         "echo '' > /tmp/query.txt",
@@ -1028,7 +1121,7 @@ $imageOverlay
         final fullUrl = '$url?screen=$i&total=${_lgConnectionModel.screens}';
 
         final command =
-            '''
+        '''
 sshpass -p ${_lgConnectionModel.password} ssh -t lg$i "DISPLAY=:0 chromium-browser --kiosk --no-first-run --disable-infobars '$fullUrl' > /dev/null 2>&1 &"
 ''';
 
@@ -1048,7 +1141,7 @@ sshpass -p ${_lgConnectionModel.password} ssh -t lg$i "DISPLAY=:0 chromium-brows
     try {
       for (var i = 1; i <= _lgConnectionModel.screens; i++) {
         final command =
-            '''
+        '''
 sshpass -p ${_lgConnectionModel.password} ssh -t lg$i "
 pkill -f chromium-browser || true
 pkill -f chromium || true
@@ -1083,6 +1176,24 @@ DISPLAY=:0 xdotool key F11 || true
     }
   }
 
+  Future<bool> uploadBytesToKml(String kml, String fileName) async {
+    try {
+      final sftp = await _client!.sftp();
+      final remoteFile = await sftp.open(
+        '/var/www/html/$fileName',
+        mode: SftpFileOpenMode.create |
+        SftpFileOpenMode.truncate |
+        SftpFileOpenMode.write,
+      );
+      await remoteFile.write(Stream.value(Uint8List.fromList(kml.codeUnits)));
+      await remoteFile.close();
+      return true;
+    } catch (e) {
+      debugPrint('Error uploading KML: $e');
+      return false;
+    }
+  }
+
   Future<bool> uploadHtmlToLG({
     required String htmlFileName,
     required String imageFileName,
@@ -1091,7 +1202,7 @@ DISPLAY=:0 xdotool key F11 || true
   }) async {
     try {
       final html =
-          '''
+      '''
 <!DOCTYPE html>
 <html>
 <head>
@@ -1203,9 +1314,9 @@ img.onload = () => {
       final remoteFile = await sftp.open(
         '/var/www/html/$htmlFileName',
         mode:
-            SftpFileOpenMode.create |
-            SftpFileOpenMode.truncate |
-            SftpFileOpenMode.write,
+        SftpFileOpenMode.create |
+        SftpFileOpenMode.truncate |
+        SftpFileOpenMode.write,
       );
 
       await remoteFile.write(Stream.value(Uint8List.fromList(html.codeUnits)));
@@ -1253,7 +1364,7 @@ img.onload = () => {
       final logoScreen = calculateLeftMostScreen(_lgConnectionModel.screens);
 
       for (var i = 1; i <= _lgConnectionModel.screens; i++) {
-        if (i == logoScreen) {
+        if (i == 1 || i == logoScreen) {
           continue;
         }
 
@@ -1358,7 +1469,7 @@ img.onload = () => {
 
   Future<bool> relaunchLG() async {
     final relaunchCmd =
-        '''
+    '''
 RELAUNCH_CMD="\\
 if [ -f /etc/init/lxdm.conf ];
 then
