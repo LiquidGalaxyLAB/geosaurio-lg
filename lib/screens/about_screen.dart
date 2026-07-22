@@ -14,6 +14,10 @@ class AboutScreen extends StatelessWidget {
       body: SafeArea(
         child: Builder(
           builder: (context) {
+<<<<<<< HEAD
+=======
+            // Allows scrolling if the content exceeds the screen size.
+>>>>>>> parent of 6812104 (Merge branch 'comments')
             return SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
@@ -117,6 +121,10 @@ class AboutScreen extends StatelessWidget {
     );
   }
 
+<<<<<<< HEAD
+=======
+  // Builds the side navigation drawer for this screen.
+>>>>>>> parent of 6812104 (Merge branch 'comments')
   Widget buildDrawer(BuildContext context) {
     return Drawer(
       child: SafeArea(
@@ -127,17 +135,31 @@ class AboutScreen extends StatelessWidget {
               'GeoSaurio',
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
+<<<<<<< HEAD
+=======
+
+            // Space between title and menu options.
+>>>>>>> parent of 6812104 (Merge branch 'comments')
             const SizedBox(height: 25),
             ListTile(
               leading: const Icon(Icons.home),
               title: const Text('Main Menu'),
               onTap: () {
+<<<<<<< HEAD
+=======
+                // Navigates to HomeScreen and removes previous screens.
+>>>>>>> parent of 6812104 (Merge branch 'comments')
                 Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute(builder: (context) => const HomeScreen()),
                       (route) => false,
                 );
               },
             ),
+<<<<<<< HEAD
+=======
+
+            // Option to open the Liquid Galaxy settings screen.
+>>>>>>> parent of 6812104 (Merge branch 'comments')
             ListTile(
               leading: const Icon(Icons.settings),
               title: const Text('LG Settings'),

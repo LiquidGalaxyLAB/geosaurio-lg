@@ -10,7 +10,7 @@ class ConnectionScreen extends StatefulWidget {
   State<ConnectionScreen> createState() => _ConnectionScreenState();
 }
 
-class _ConnectionScreenState extends State<ConnectionScreen> {  // Stores and manages the user's connection input
+class _ConnectionScreenState extends State<ConnectionScreen> {
   final TextEditingController ipController = TextEditingController();
   final TextEditingController userController = TextEditingController(
     text: 'lg',
@@ -25,15 +25,15 @@ class _ConnectionScreenState extends State<ConnectionScreen> {  // Stores and ma
     text: '5',
   );
 
-  bool isConnecting = false;  // Tracks whether the application is currently connecting to LG.
+  bool isConnecting = false;
 
   @override
-  void initState() { //Load saved configuration and filling the connection parts
+  void initState() {
     super.initState();
     _loadSavedSettings();
   }
 
-  Future<void> _loadSavedSettings() async { //Recovers previous configuration
+  Future<void> _loadSavedSettings() async {
     final model = await LgConnectionModel.loadFromPreferences();
 
     if (!mounted) return;
@@ -56,7 +56,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {  // Stores and ma
   }
 
   @override
-  void dispose() { // Release all text controllers when leaving the screen
+  void dispose() {
     ipController.dispose();
     userController.dispose();
     passwordController.dispose();
@@ -65,7 +65,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {  // Stores and ma
     super.dispose();
   }
 
-  void snack(String message, {bool success = true}) { //Shows a meesage if the action was succesful or not
+  void snack(String message, {bool success = true}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
@@ -75,11 +75,11 @@ class _ConnectionScreenState extends State<ConnectionScreen> {  // Stores and ma
     );
   }
 
-  int parseInt(String value, int fallback) { //If value isn't valid use a default value to avoid errors
+  int parseInt(String value, int fallback) {
     return int.tryParse(value.trim()) ?? fallback;
   }
 
-  LgConnectionModel buildModel() { //Creates a LG connection model using the user inputs
+  LgConnectionModel buildModel() {
     return LgConnectionModel(
       ip: ipController.text.trim(),
       username: userController.text.trim(),
@@ -89,7 +89,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {  // Stores and ma
     );
   }
 
-  Future<void> applySettings() async { //Save configuration on the device and updates LgService
+  Future<void> applySettings() async {
     final model = buildModel();
     await model.saveToPreferences();
 
@@ -149,7 +149,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {  // Stores and ma
   }
 
   @override
-  Widget build(BuildContext context) { //build visual interface
+  Widget build(BuildContext context) {
     final lgService = context.watch<LgService>();
     final isConnected = lgService.isConnected;
 
@@ -247,7 +247,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {  // Stores and ma
                 label: isConnecting
                     ? 'Connecting...'
                     : isConnected
-                    ? 'Reconnect' //if it's already connected the button will say recconect
+                    ? 'Reconnect'
                     : 'Connect',
                 icon: Icons.link,
                 onPressed: isConnecting ? null : connectToLg,

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+Zimport 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/dinosaur.dart';
@@ -34,6 +34,17 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     loadDinosaurData();
+  }
+
+  Future<void> loadDinosaurData() async { //loads the dinosaurs from the csv
+    final data = await DinosaurService.loadDinosaurs();
+
+    if (!mounted) return;
+
+    setState(() {
+      dinosaurs = data;
+      isLoadingDinosaurs = false;
+    });
   }
 
   @override
@@ -130,6 +141,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!lgService.isConnected) return;
 
     await lgService.flyToContinent(continent);
+    await lgService.showCountryMarkers(dinosaursInSelectedContinent);
   }
 
   Future<void> selectCountry(String country) async {
@@ -144,9 +156,10 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!lgService.isConnected) return;
 
     await lgService.flyToCountry(country, availableDinosaurs);
+    await lgService.showDinosaurMarkers(availableDinosaurs);
   }
 
-  Future<void> selectDinosaur(Dinosaur dinosaur) async {
+  Future<void> selectDinosaur(Dinosaur dinosaur) async { //Go to the dinosaur and show kml
     setState(() {
       selectedDinosaur = dinosaur.name;
     });
@@ -157,8 +170,6 @@ class _HomeScreenState extends State<HomeScreen> {
       final flyOk = await lgService.flyToDinosaur(dinosaur);
 
       if (flyOk) {
-        await Future.delayed(const Duration(seconds: 2));
-
         await lgService.showDinosaurAboutKml(
           dinosaur,
           allDinosaurs: dinosaurs,
@@ -171,32 +182,9 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => DinosaurDetailScreen(
-          dinosaur: dinosaur,
-        ),
+        builder: (context) => DinosaurDetailScreen(dinosaur: dinosaur),
       ),
     );
-  }
-
-  Future<void> loadDinosaurData() async {
-    final data = await DinosaurService.loadDinosaurs();
-
-    if (!mounted) return;
-
-    setState(() {
-      dinosaurs = data;
-      isLoadingDinosaurs = false;
-    });
-
-    final lgService = context.read<LgService>();
-
-    if (lgService.isConnected) {
-      await lgService.showAllDinosaurModels(
-        dinosaurs,
-        scale: 100,
-        altitude: 1,
-      );
-    }
   }
 
   void goBackToContinents() { //Returns to the continent selection
@@ -660,27 +648,14 @@ class _HomeScreenState extends State<HomeScreen> {
             drawerTile(
               icon: Icons.settings,
               title: 'LG Settings',
-              onTap: () async {
+              onTap: () {
                 Navigator.pop(context);
-
-                final connected = await Navigator.push<bool>(
+                Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => const LgSettingsScreen(),
                   ),
                 );
-
-                if (!mounted) return;
-
-                if (connected == true && dinosaurs.isNotEmpty) {
-                  final lgService = context.read<LgService>();
-
-                  await lgService.showAllDinosaurModels(
-                    dinosaurs,
-                    scale: 100,
-                    altitude: 1,
-                  );
-                }
               },
             ),
             drawerTile(

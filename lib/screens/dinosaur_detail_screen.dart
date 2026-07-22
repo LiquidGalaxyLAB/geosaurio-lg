@@ -8,7 +8,7 @@ import '../services/audio_service.dart';
 import 'lg_settings_screen.dart';
 import 'about_screen.dart';
 
-class DinosaurDetailScreen extends StatefulWidget { //Shows the information about the selected dinosaur
+class DinosaurDetailScreen extends StatefulWidget {
   final Dinosaur dinosaur;
 
   const DinosaurDetailScreen({super.key, required this.dinosaur});
@@ -32,7 +32,7 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
     );
   }
 
-  Future<void> sendToLg(BuildContext context, String action) async { //Send the selected visualization to LG
+  Future<void> sendToLg(BuildContext context, String action) async {
     final lgService = context.read<LgService>();
 
     if (!lgService.isConnected) {
@@ -54,7 +54,7 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
 
     if (!context.mounted) return;
 
-    showSnack( //Comprobation to show if it was sended
+    showSnack(
       context,
       ok
           ? '$action sent to Liquid Galaxy'
@@ -76,13 +76,13 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
   }
 
   @override
-  void dispose() { //stop the narration if we left the screen
+  void dispose() {
     AudioService().stop();
     super.dispose();
   }
 
   @override
-  Widget build(BuildContext context) { //build visual interview
+  Widget build(BuildContext context) {
     final isLgConnected = context.watch<LgService>().isConnected;
     final lgService = context.read<LgService>();
     final cleanName = lgService.cleanDinosaurImageName(dinosaur.name);
@@ -365,7 +365,7 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
                         );
                       },
                       icon: const Icon(Icons.arrow_back),
-                      label: const Text('Return Back'), //Button to close chromiums and return visualization at the lg
+                      label: const Text('Return Back'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red,
                         foregroundColor: Colors.white,
