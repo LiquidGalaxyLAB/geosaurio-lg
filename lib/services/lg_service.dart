@@ -529,37 +529,6 @@ ${_cleanText(dinosaur.generalInfo)}
     }
   }
 
-
-  Future<bool> showDinosaurMarker(Dinosaur dinosaur) async {
-    try {
-      if (dinosaur.latitude == 0 || dinosaur.longitude == 0) {
-        debugPrint('No valid dinosaur coordinates');
-        return false;
-      }
-
-      final uploaded = await uploadAssetToLG(
-        assetPath: 'assets/images/markers/dinosaur_marker.png',
-        fileName: 'dinosaur_marker.png',
-      );
-
-      if (!uploaded) {
-        debugPrint('Could not upload dinosaur marker');
-        return false;
-      }
-
-      final markerPosition = calculateMarkerPosition(dinosaur);
-      final markerLat = markerPosition[0];
-      final markerLon = markerPosition[1];
-
-      final name = _cleanText(dinosaur.name);
-      final description = _cleanText(
-        '${dinosaur.periodName}\n'
-            '${dinosaur.country}, ${dinosaur.region}\n'
-            'Diet: ${dinosaur.diet}\n'
-            'Length: ${dinosaur.length}\n'
-            'Weight: ${dinosaur.weight}',
-      );
-
   Future<bool> showCountryMarkers(List<Dinosaur> dinosaurs) async {
     try {
       final Map<String, List<Dinosaur>> groupedByCountry = {};
@@ -611,45 +580,19 @@ ${_cleanText(dinosaur.generalInfo)}
 </Placemark>
 ''';
           })
+          .join('\n');
+
       final kml =
           '''<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
-    <name>Dinosaur Marker</name>
-
-    <Placemark>
-      <name>$name</name>
-      <description>$description</description>
-
-      <Style>
-        <IconStyle>
-          <scale>8.0</scale>
-          <Icon>
-            <href>http://lg1:81/dinosaur_marker.png</href>
-          </Icon>
-          <hotSpot x="0.5" y="0" xunits="fraction" yunits="fraction"/>
-        </IconStyle>
-        <LabelStyle>
-          <scale>2.0</scale>
-        </LabelStyle>
-      </Style>
-
-      <Point>
-        <altitudeMode>clampToGround</altitudeMode>
-        <coordinates>$markerLon,$markerLat,0</coordinates>
-      </Point>
-    </Placemark>
-
     <name>Country Markers</name>
     $placemarks
->>>>>>> parent of 6812104 (Merge branch 'comments')
   </Document>
 </kml>''';
 
       final result = await execute(
         "echo '$kml' > /var/www/html/kml/slave_1.kml",
-        'Dinosaur marker sent',
-
         'Country markers sent',
       );
 
@@ -772,57 +715,16 @@ ${_cleanText(dinosaur.generalInfo)}
       final result = await execute(
         "echo '$networkLinkKml' > /var/www/html/kml/slave_1.kml",
         'Markers NetworkLink sent',
->>>>>>> parent of 6812104 (Merge branch 'comments')
       );
 
       return result != null;
     } catch (e) {
-      debugPrint('Error showing dinosaur marker: $e');
+      debugPrint('Error showing dinosaur markers: $e');
       return false;
     }
   }
 
-<<<<<<< HEAD
-  List<double> calculateMarkerPosition(Dinosaur dinosaur) {
-    const earthRadius = 6371000.0;
-
-    final startLat = dinosaur.latitude * math.pi / 180.0;
-    final startLon = dinosaur.longitude * math.pi / 180.0;
-    final heading = dinosaur.heading * math.pi / 180.0;
-
-    final baseRange = dinosaur.range == 0 ? 8000.0 : dinosaur.range;
-
-    // Ajusta esto si quieres el marker más cerca o más lejos del centro visual
-    final distance = (baseRange * 0.25).clamp(400.0, 5000.0);
-
-    final angularDistance = distance / earthRadius;
-
-    final markerLat = math.asin(
-      math.sin(startLat) * math.cos(angularDistance) +
-          math.cos(startLat) *
-              math.sin(angularDistance) *
-              math.cos(heading),
-    );
-
-    final markerLon = startLon +
-        math.atan2(
-          math.sin(heading) *
-              math.sin(angularDistance) *
-              math.cos(startLat),
-          math.cos(angularDistance) -
-              math.sin(startLat) * math.sin(markerLat),
-        );
-
-    return [
-      markerLat * 180.0 / math.pi,
-      markerLon * 180.0 / math.pi,
-    ];
-  }
-
-  Future<bool> sendLogo() async { //Send logo
-=======
   Future<bool> sendLogo() async {
->>>>>>> parent of 6812104 (Merge branch 'comments')
     try {
       final screen = calculateLeftMostScreen(_lgConnectionModel.screens);
 
@@ -1411,6 +1313,49 @@ img.onload = () => {
     }
   }
 
+  Future<bool> flyToMapPosition({
+    required double latitude,
+    required double longitude,
+    required double zoom,
+    double bearing = 0,
+  }) async {
+    try {
+      final range = _mapZoomToRange(zoom);
+
+      final lookAt =
+          '<LookAt>'
+          '<longitude>$longitude</longitude>'
+          '<latitude>$latitude</latitude>'
+          '<altitude>0</altitude>'
+          '<heading>$bearing</heading>'
+          '<tilt>0</tilt>'
+          '<range>$range</range>'
+          '<altitudeMode>relativeToGround</altitudeMode>'
+          '</LookAt>';
+
+      debugPrint(
+        'Sending map position: '
+            'lat=$latitude, lon=$longitude, zoom=$zoom, range=$range',
+      );
+
+      final result = await execute(
+        "echo 'flytoview=$lookAt' > /tmp/query.txt",
+        'Map position sent to Liquid Galaxy',
+      );
+
+      return result != null;
+    } catch (e) {
+      debugPrint('Error synchronizing map with Liquid Galaxy: $e');
+      return false;
+    }
+  }
+
+  double _mapZoomToRange(double zoom) {
+    final calculatedRange = 40000000.0 / math.pow(2, zoom);
+
+    return calculatedRange.clamp(300.0, 20000000.0).toDouble();
+  }
+
   Future<bool> relaunchLG() async {
     final relaunchCmd =
         '''
@@ -1437,354 +1382,4 @@ fi
 
     return result != null;
   }
-<<<<<<< HEAD
-
-  List<double> calculateModelPositionInFrontOfCamera(
-      Dinosaur dinosaur, {
-        double positionFactor = 0.0,
-      }) {
-    const earthRadius = 6371000.0;
-
-    final range = dinosaur.range == 0 ? 8000.0 : dinosaur.range;
-    final tiltRadians = dinosaur.tilt * math.pi / 180.0;
-    final horizontalDistance = range * math.sin(tiltRadians);
-
-    final factor = positionFactor.clamp(0.0, 1.0).toDouble();
-    final displacement = horizontalDistance * factor;
-
-    if (displacement == 0) {
-      return [
-        dinosaur.latitude,
-        dinosaur.longitude,
-      ];
-    }
-
-    final startLatitude =
-        dinosaur.latitude * math.pi / 180.0;
-
-    final startLongitude =
-        dinosaur.longitude * math.pi / 180.0;
-
-    final bearing =
-        (dinosaur.heading + 180.0) * math.pi / 180.0;
-
-    final angularDistance = displacement / earthRadius;
-
-    final destinationLatitude = math.asin(
-      math.sin(startLatitude) * math.cos(angularDistance) +
-          math.cos(startLatitude) *
-              math.sin(angularDistance) *
-              math.cos(bearing),
-    );
-
-    final destinationLongitude = startLongitude +
-        math.atan2(
-          math.sin(bearing) *
-              math.sin(angularDistance) *
-              math.cos(startLatitude),
-          math.cos(angularDistance) -
-              math.sin(startLatitude) *
-                  math.sin(destinationLatitude),
-        );
-
-    return [
-      destinationLatitude * 180.0 / math.pi,
-      destinationLongitude * 180.0 / math.pi,
-    ];
-  }
-
-  Future<bool> showDinosaurModel(
-      Dinosaur dinosaur, {
-        double scale = 100,
-        double altitude = 1,
-        double headingOffset = 0,
-        double tilt = 0,
-        double roll = 0,
-      }) async {
-    try {
-      if (dinosaur.latitude == 0 || dinosaur.longitude == 0) {
-        debugPrint('No valid dinosaur coordinates');
-        return false;
-      }
-
-      final uploadedModel = await uploadAssetToLG(
-        assetPath: 'assets/models/dinosaur_skull.dae',
-        fileName: 'dinosaur_skull.dae',
-      );
-
-      if (!uploadedModel) {
-        debugPrint('Could not upload dinosaur model');
-        return false;
-      }
-
-      // Coordinates obtained directly from the database.
-      final modelLatitude = dinosaur.latitude;
-      final modelLongitude = dinosaur.longitude;
-
-      final modelHeading =
-          (dinosaur.heading + headingOffset) % 360.0;
-
-      final name = _cleanText(dinosaur.name);
-
-      final kml = '''<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2">
-  <Document>
-    <name>$name 3D Model</name>
-
-    <Placemark>
-      <name>$name</name>
-
-      <Model>
-        <altitudeMode>relativeToGround</altitudeMode>
-
-        <Location>
-          <longitude>$modelLongitude</longitude>
-          <latitude>$modelLatitude</latitude>
-          <altitude>$altitude</altitude>
-        </Location>
-
-        <Orientation>
-          <heading>$modelHeading</heading>
-          <tilt>$tilt</tilt>
-          <roll>$roll</roll>
-        </Orientation>
-
-        <Scale>
-          <x>$scale</x>
-          <y>$scale</y>
-          <z>$scale</z>
-        </Scale>
-
-        <Link>
-          <href>http://lg1:81/dinosaur_skull.dae</href>
-        </Link>
-      </Model>
-    </Placemark>
-  </Document>
-</kml>''';
-
-      final result = await execute(
-        "echo '$kml' > /var/www/html/kml/slave_1.kml",
-        'Dinosaur 3D model sent',
-      );
-
-      return result != null;
-    } catch (e) {
-      debugPrint('Error showing dinosaur model: $e');
-      return false;
-    }
-  }
-
-  Future<bool> showAllDinosaurModels(
-      List<Dinosaur> dinosaurs, {
-        double scale = 100,
-        double altitude = 1,
-        double headingOffset = 0,
-      }) async {
-    try {
-      final validDinosaurs = dinosaurs.where((dinosaur) {
-        return dinosaur.latitude != 0 && dinosaur.longitude != 0;
-      }).toList();
-
-      if (validDinosaurs.isEmpty) {
-        debugPrint('No dinosaurs with valid coordinates');
-        return false;
-      }
-
-      final uploadedModel = await uploadAssetToLG(
-        assetPath: 'assets/models/dinosaur_skull.dae',
-        fileName: 'dinosaur_skull.dae',
-      );
-
-      if (!uploadedModel) {
-        debugPrint('Could not upload dinosaur model');
-        return false;
-      }
-
-      final placemarks = validDinosaurs.map((dinosaur) {
-        final name = _cleanText(dinosaur.name);
-
-        final modelHeading =
-            (dinosaur.heading + headingOffset) % 360.0;
-
-        return '''
-    <Placemark>
-      <name>$name</name>
-
-      <Model>
-        <altitudeMode>relativeToGround</altitudeMode>
-
-        <Location>
-          <longitude>${dinosaur.longitude}</longitude>
-          <latitude>${dinosaur.latitude}</latitude>
-          <altitude>$altitude</altitude>
-        </Location>
-
-        <Orientation>
-          <heading>$modelHeading</heading>
-          <tilt>0</tilt>
-          <roll>0</roll>
-        </Orientation>
-
-        <Scale>
-          <x>$scale</x>
-          <y>$scale</y>
-          <z>$scale</z>
-        </Scale>
-
-        <Link>
-          <href>http://lg1:81/dinosaur_skull.dae</href>
-        </Link>
-      </Model>
-    </Placemark>
-''';
-      }).join('\n');
-
-      final kml = '''<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2">
-  <Document>
-    <name>GeoSaurio 3D Models</name>
-
-$placemarks
-
-  </Document>
-</kml>''';
-
-      final result = await execute(
-        "cat > /var/www/html/kml/slave_1.kml <<'EOF'\n"
-            "$kml\n"
-            "EOF",
-        '${validDinosaurs.length} dinosaur models sent',
-      );
-
-      debugPrint(
-        '${validDinosaurs.length} dinosaur models placed at database coordinates',
-      );
-
-      return result != null;
-    } catch (e) {
-      debugPrint('Error showing all dinosaur models: $e');
-      return false;
-    }
-  }
-
-  Future<Uint8List?> createDinosaurStatsImage(List<Dinosaur> dinosaurs) async { //Create statistics image
-    try {
-      const double width = 900;
-      const double height = 260;
-
-      final validDinosaurs = dinosaurs.where((d) => d.name.isNotEmpty).toList();
-
-      final countries = validDinosaurs
-          .map((d) => d.country)
-          .where((value) => value.isNotEmpty)
-          .toSet();
-
-      final continents = validDinosaurs
-          .map((d) => d.area)
-          .where((value) => value.isNotEmpty)
-          .toSet();
-
-      final regions = validDinosaurs
-          .map((d) => d.region)
-          .where((value) => value.isNotEmpty)
-          .toSet();
-
-      final triassic = validDinosaurs
-          .where((d) => d.period == DinosaurPeriod.triassic)
-          .length;
-
-      final jurassic = validDinosaurs
-          .where((d) => d.period == DinosaurPeriod.jurassic)
-          .length;
-
-      final cretaceous = validDinosaurs
-          .where((d) => d.period == DinosaurPeriod.cretaceous)
-          .length;
-
-      final recorder = ui.PictureRecorder();
-      final canvas = ui.Canvas(recorder);
-
-      final backgroundPaint = ui.Paint()
-        ..color = const ui.Color(0xEEFFFFFF);
-
-      canvas.drawRRect(
-        ui.RRect.fromRectAndRadius(
-          const ui.Rect.fromLTWH(0, 0, width, height),
-          const ui.Radius.circular(24),
-        ),
-        backgroundPaint,
-      );
-
-      final titleStyle = ui.TextStyle(
-        color: const ui.Color(0xFF111111),
-        fontSize: 34,
-        fontWeight: ui.FontWeight.bold,
-      );
-
-      final bodyStyle = ui.TextStyle(
-        color: const ui.Color(0xFF111111),
-        fontSize: 25,
-      );
-
-      final titleBuilder = ui.ParagraphBuilder(
-        ui.ParagraphStyle(maxLines: 1),
-      )
-        ..pushStyle(titleStyle)
-        ..addText('GeoSaurio Statistics');
-
-      final titleParagraph = titleBuilder.build()
-        ..layout(
-          const ui.ParagraphConstraints(width: width - 60),
-        );
-
-      canvas.drawParagraph(
-        titleParagraph,
-        const ui.Offset(30, 22),
-      );
-
-      final stats = '''
-Dinosaurs: ${validDinosaurs.length}
-Countries: ${countries.length}  |  Continents: ${continents.length}  |  Regions: ${regions.length}
-Triassic: $triassic  |  Jurassic: $jurassic  |  Cretaceous: $cretaceous
-''';
-
-      final bodyBuilder = ui.ParagraphBuilder(
-        ui.ParagraphStyle(maxLines: 4),
-      )
-        ..pushStyle(bodyStyle)
-        ..addText(stats);
-
-      final bodyParagraph = bodyBuilder.build()
-        ..layout(
-          const ui.ParagraphConstraints(width: width - 60),
-        );
-
-      canvas.drawParagraph(
-        bodyParagraph,
-        const ui.Offset(30, 85),
-      );
-
-      final picture = recorder.endRecording();
-
-      final image = await picture.toImage(
-        width.toInt(),
-        height.toInt(),
-      );
-
-      final byteData = await image.toByteData(
-        format: ui.ImageByteFormat.png,
-      );
-
-      if (byteData == null) return null;
-
-      return byteData.buffer.asUint8List();
-    } catch (e) {
-      debugPrint('Error creating dinosaur stats image: $e');
-      return null;
-    }
-  }
 }
-=======
-}
->>>>>>> parent of 6812104 (Merge branch 'comments')
