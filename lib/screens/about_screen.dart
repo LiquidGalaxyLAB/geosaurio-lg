@@ -16,36 +16,27 @@ class AboutScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Background color of the screen.
       backgroundColor: const Color(0xFFF7F4EF),
 
-      // Side navigation drawer.
       drawer: buildDrawer(context),
 
-      // Main content protected by SafeArea.
       body: SafeArea(
         child: Builder(
           builder: (context) {
-            // Allows scrolling if the content exceeds the screen size.
             return SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
                 children: [
-                  // Top spacing.
                   const SizedBox(height: 10),
 
-                  // Top bar with menu button and title.
                   Row(
                     children: [
-                      // Button that opens the side drawer.
                       IconButton(
                         icon: const Icon(Icons.menu, size: 32),
                         onPressed: () {
                           Scaffold.of(context).openDrawer();
                         },
                       ),
-
-                      // Centered screen title.
                       const Expanded(
                         child: Text(
                           'Information',
@@ -56,71 +47,108 @@ class AboutScreen extends StatelessWidget {
                           ),
                         ),
                       ),
-
-                      // Space to visually balance the row.
                       const SizedBox(width: 48),
                     ],
                   ),
 
-                  // Space between top bar and logo.
                   const SizedBox(height: 20),
 
-                  // GeoSaurio logo loaded from assets.
-                  Image.asset('assets/images/GeoSaurio.png', height: 140),
-
-                  // Space between logo and title.
-                  const SizedBox(height: 12),
-
-                  // Application name.
                   const Text(
                     'GEOSAURIO',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
 
-                  // Space between title and subtitle.
                   const SizedBox(height: 6),
 
-                  // Application subtitle.
-                  const Text('FOR LIQUID GALAXY'),
-
-                  // Space before author section.
-                  const SizedBox(height: 30),
-
-                  // Author section title.
                   const Text(
-                    'Author',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                    'FOR LIQUID GALAXY',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.black54,
+                    ),
                   ),
 
-                  // Space between title and author name.
+                  const SizedBox(height: 30),
+
+                  const Text(
+                    'Author',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+
                   const SizedBox(height: 10),
 
-                  // Project author name.
                   const Text(
                     'Josep Miquel Sert Esteban',
                     textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 16),
                   ),
 
-                  // Space before project description section.
+                  const SizedBox(height: 6),
+
+                  const Text(
+                    'Google Summer of Code 2026',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.black54,
+                    ),
+                  ),
+
                   const SizedBox(height: 30),
 
-                  // Project description section title.
                   const Text(
                     'Project Description',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
 
-                  // Space between title and description.
                   const SizedBox(height: 12),
 
-                  // Project description text.
                   const Text(
-                    'GeoSaurio allows users to explore dinosaurs using the Liquid Galaxy platform.',
+                    'GeoSaurio is an educational application developed for '
+                        'the Liquid Galaxy platform during Google Summer of Code '
+                        '2026. It allows users to explore dinosaurs through '
+                        'interactive maps, geological periods and detailed '
+                        'scientific information synchronized with Google Earth.',
                     textAlign: TextAlign.center,
+                    style: TextStyle(height: 1.4),
                   ),
 
-                  // Final bottom spacing.
                   const SizedBox(height: 30),
+
+                  const Divider(
+                    thickness: 1,
+                    indent: 40,
+                    endIndent: 40,
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  const Text(
+                    'Developed in collaboration with',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.black54,
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  Image.asset(
+                    'assets/images/logos.png',
+                    width: double.infinity,
+                    height: 130,
+                    fit: BoxFit.contain,
+                  ),
+
+                  const SizedBox(height: 35),
                 ],
               ),
             );
@@ -136,40 +164,37 @@ class AboutScreen extends StatelessWidget {
       child: SafeArea(
         child: Column(
           children: [
-            // Top spacing inside the drawer.
             const SizedBox(height: 25),
 
-            // Drawer title.
             const Text(
               'GeoSaurio',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
             ),
 
-            // Space between title and menu options.
             const SizedBox(height: 25),
 
-            // Option to return to the main menu.
             ListTile(
               leading: const Icon(Icons.home),
               title: const Text('Main Menu'),
               onTap: () {
-                // Navigates to HomeScreen and removes previous screens.
                 Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (context) => const HomeScreen()),
-                  (route) => false,
+                  MaterialPageRoute(
+                    builder: (context) => const HomeScreen(),
+                  ),
+                      (route) => false,
                 );
               },
             ),
 
-            // Option to open the Liquid Galaxy settings screen.
             ListTile(
               leading: const Icon(Icons.settings),
               title: const Text('LG Settings'),
               onTap: () {
-                // Closes the current drawer.
                 Navigator.pop(context);
 
-                // Opens the settings screen.
                 Navigator.push(
                   context,
                   MaterialPageRoute(
