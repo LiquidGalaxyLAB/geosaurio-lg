@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
+import '../widgets/drawer_menu.dart';
 import '../models/dinosaur.dart';
 import '../services/dinosaur_service.dart';
 import '../services/lg_service.dart';
@@ -702,13 +702,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               },
             ),
-            drawerTile(
-              icon: Icons.language,
-              title: 'Language',
-              onTap: () {
-                debugPrint('Language tapped');
-              },
-            ),
+
             const Spacer(),
             Container(
               margin: const EdgeInsets.all(18),

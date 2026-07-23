@@ -1164,6 +1164,41 @@ class LgService extends ChangeNotifier {
     }
   }
 
+  Future<bool> showDinosaurSkeletonImage(Dinosaur dinosaur) async {
+    final cleanName = cleanDinosaurImageName(dinosaur.name);
+
+    final assetPath = await getExistingImagePath(
+      'assets/images/dinosaurs/${cleanName}_skeleton',
+    );
+
+    if (assetPath == null) {
+      debugPrint('Skeleton image not found for ${dinosaur.name}');
+      return false;
+    }
+
+    final extension = assetPath.split('.').last;
+    final imageFileName = '${cleanName}_skeleton.$extension';
+
+    final uploadedImage = await uploadAssetToLG(
+      assetPath: assetPath,
+      fileName: imageFileName,
+    );
+
+    if (!uploadedImage) return false;
+
+    final uploadedHtml = await uploadHtmlToLG(
+      htmlFileName: 'skeleton.html',
+      imageFileName: imageFileName,
+      title: '${dinosaur.name} Skeleton',
+      imageHeight: 67,
+    );
+
+    if (!uploadedHtml) return false;
+
+    return openChromiumOnAllScreens(
+      'http://lg1:81/skeleton.html',
+    );
+  }
 
   Future<bool> showDinosaurComparisonImage(Dinosaur dinosaur) async {
     final cleanName = cleanDinosaurImageName(dinosaur.name);
