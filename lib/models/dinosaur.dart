@@ -1,58 +1,43 @@
 import 'dart:math' as math;
 
 // Geological periods available in the app
-enum DinosaurPeriod { triassic, jurassic, cretaceous, unknown }
+enum DinosaurPeriod {
+  triassic,
+  jurassic,
+  cretaceous,
+  unknown,
+}
 
 class Dinosaur {
-  // Dinosaur name
+  // Basic information
   final String name;
-
-  // Scientific status
   final String status;
-
-  // Author who described the dinosaur
   final String author;
-
-  // Discovery/publication year
   final String year;
 
-  // Estimated length
+  // Physical characteristics
   final String length;
-
-  // Estimated weight
   final String weight;
 
-  // Geographic area / continent
+  // Geographic information
   final String area;
-
-  // Country
   final String country;
-
-  // Region/state
   final String region;
-
-  // Geological formation
   final String formation;
 
-  // Geological period start
+  // Geological period information
   final String time1;
-
-  // Geological period end
   final String time2;
 
-  // Fossil material information
+  // Fossil and general information
   final String material;
-
-  // General dinosaur information
   final String generalInfo;
 
-  // Dinosaur diet
+  // Ecology
   final String diet;
-
-  // Dinosaur habitat
   final String habitat;
 
-  // Narration audio link
+  // Narration
   final String audioLink;
 
   // Liquid Galaxy coordinates
@@ -64,7 +49,6 @@ class Dinosaur {
   final double range;
   final String altitudeMode;
 
-  // Constructor
   Dinosaur({
     required this.name,
     required this.status,
@@ -92,7 +76,7 @@ class Dinosaur {
     required this.altitudeMode,
   });
 
-  // Detects the dinosaur geological period automatically
+  // Detects the geological period automatically
   DinosaurPeriod get period {
     final text = '$time1 $time2'.toLowerCase();
 
@@ -111,62 +95,65 @@ class Dinosaur {
     return DinosaurPeriod.unknown;
   }
 
-  // Returns readable geological period name
+  // Returns a readable geological period name
   String get periodName {
     switch (period) {
       case DinosaurPeriod.triassic:
         return 'Triassic';
+
       case DinosaurPeriod.jurassic:
         return 'Jurassic';
+
       case DinosaurPeriod.cretaceous:
         return 'Cretaceous';
+
       case DinosaurPeriod.unknown:
         return 'Unknown';
     }
   }
 
-  /// Calculates the projected marker position based on the camera LookAt position.
-  /// This moves the marker from the camera coordinates towards the center of the viewport
-  /// based on heading, tilt, and range.
+  /// Calculates the projected marker position based on the camera LookAt.
   Map<String, double> getMarkerCoordinates() {
     if (latitude == 0 && longitude == 0) {
-      return {'latitude': 0, 'longitude': 0};
+      return {
+        'latitude': 0,
+        'longitude': 0,
+      };
     }
 
     const earthRadius = 6371000.0;
+
     final lat1 = latitude * math.pi / 180.0;
     final lon1 = longitude * math.pi / 180.0;
     final h = heading * math.pi / 180.0;
     final t = tilt * math.pi / 180.0;
+
     final r = range == 0 ? 8000.0 : range;
 
-    // We project the point forward. If the camera is at (lat, lon) and looking
-    // at a point on the ground, the distance to that point depends on tilt.
-    // A simple approximation is using the range and the sine of the tilt.
-    // We also add a small adjustment factor to ensure it looks centered.
     double distance = r * math.sin(t);
-    
-    // If tilt is 0, sin(t) is 0, so we use a small fallback distance or 0.
-    // However, if it's 0, it means we are looking straight down, so the marker
-    // should be exactly at the coordinates.
+
     if (distance == 0 && tilt > 0) {
-       distance = r * 0.3; // Fallback
+      distance = r * 0.3;
     }
-    
-    // Limit distance to avoid projecting too far
+
     distance = distance.clamp(0.0, r);
 
     final angularDistance = distance / earthRadius;
 
     final lat2 = math.asin(
       math.sin(lat1) * math.cos(angularDistance) +
-          math.cos(lat1) * math.sin(angularDistance) * math.cos(h),
+          math.cos(lat1) *
+              math.sin(angularDistance) *
+              math.cos(h),
     );
 
     final lon2 = lon1 +
         math.atan2(
-          math.sin(h) * math.sin(angularDistance) * math.cos(lat1),
-          math.cos(angularDistance) - math.sin(lat1) * math.sin(lat2),
+          math.sin(h) *
+              math.sin(angularDistance) *
+              math.cos(lat1),
+          math.cos(angularDistance) -
+              math.sin(lat1) * math.sin(lat2),
         );
 
     return {
@@ -175,13 +162,17 @@ class Dinosaur {
     };
   }
 
-  // Parses numbers with comma decimal format from CSV
+  // Parses numbers from the CSV
   static double parseNumber(dynamic value) {
     final text = value?.toString().trim() ?? '';
 
-    if (text.isEmpty) return 0;
+    if (text.isEmpty) {
+      return 0;
+    }
 
-    final normalized = text.replaceAll('.', '').replaceAll(',', '.');
+    final normalized = text
+        .replaceAll('.', '')
+        .replaceAll(',', '.');
 
     return double.tryParse(normalized) ?? 0;
   }
@@ -193,8 +184,10 @@ class Dinosaur {
       status: row[2]?.toString().trim() ?? '',
       author: row[3]?.toString().trim() ?? '',
       year: row[4]?.toString().trim() ?? '',
+
       length: row[5]?.toString().trim() ?? '',
       weight: row[6]?.toString().trim() ?? '',
+
       area: row[8]?.toString().trim() ?? '',
       country: row[9]?.toString().trim() ?? '',
 
@@ -207,6 +200,7 @@ class Dinosaur {
       heading: parseNumber(row[72]),
       tilt: parseNumber(row[73]),
       range: parseNumber(row[74]),
+
       altitudeMode: row[75]?.toString().trim().isEmpty ?? true
           ? 'relativeToGround'
           : row[75].toString().trim(),
@@ -216,6 +210,7 @@ class Dinosaur {
 
       material: row[194]?.toString().trim() ?? '',
       generalInfo: row[196]?.toString().trim() ?? '',
+
       diet: row[197]?.toString().trim() ?? '',
       habitat: row[198]?.toString().trim() ?? '',
       audioLink: row[199]?.toString().trim() ?? '',

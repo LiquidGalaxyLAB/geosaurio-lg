@@ -45,7 +45,7 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
     await lgService.flyToDinosaur(dinosaur);
 
     if (action == 'About') {
-      ok = await lgService.showDinosaurAboutBalloon(dinosaur);
+      ok = await lgService.showDinosaurAboutColumn(dinosaur);
     } else if (action == 'Comparison') {
       ok = await lgService.showDinosaurComparisonImage(dinosaur);
     } else if (action == 'Skeleton') {

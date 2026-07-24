@@ -469,282 +469,533 @@ class LgService extends ChangeNotifier {
         .trim();
   }
 
-  Future<bool> showDinosaurAboutBalloon(Dinosaur dinosaur) async {
+  Future<bool> createDinosaurInfoColumn(
+      Dinosaur dinosaur,
+      String fileName,
+      ) async {
     try {
-      if (dinosaur.latitude == 0 || dinosaur.longitude == 0) {
-        debugPrint('Cannot show balloon: invalid dinosaur coordinates');
-        return false;
+      const double width = 1000;
+      const double height = 1900;
+      const double padding = 70;
+
+      final recorder = ui.PictureRecorder();
+      final canvas = ui.Canvas(recorder);
+
+      // Background
+      final backgroundPaint = ui.Paint()
+        ..color = const ui.Color(0xFF181818);
+
+      canvas.drawRRect(
+        ui.RRect.fromRectAndRadius(
+          const ui.Rect.fromLTWH(
+            0,
+            0,
+            width,
+            height,
+          ),
+          const ui.Radius.circular(40),
+        ),
+        backgroundPaint,
+      );
+
+      double currentY = 60;
+
+      // Helper method for wrapped text
+      double drawText({
+        required String text,
+        required double fontSize,
+        required double y,
+        ui.FontWeight fontWeight = ui.FontWeight.normal,
+        ui.Color color = const ui.Color(0xFFFFFFFF),
+        double maxWidth = width - (padding * 2),
+        double lineHeight = 1.3,
+        ui.TextAlign textAlign = ui.TextAlign.left,
+      }) {
+        final builder = ui.ParagraphBuilder(
+          ui.ParagraphStyle(
+            textAlign: textAlign,
+            fontSize: fontSize,
+            fontWeight: fontWeight,
+            height: lineHeight,
+          ),
+        )
+          ..pushStyle(
+            ui.TextStyle(
+              color: color,
+              fontSize: fontSize,
+              fontWeight: fontWeight,
+            ),
+          )
+          ..addText(text);
+
+        final paragraph = builder.build();
+
+        paragraph.layout(
+          ui.ParagraphConstraints(
+            width: maxWidth,
+          ),
+        );
+
+        canvas.drawParagraph(
+          paragraph,
+          ui.Offset(
+            padding,
+            y,
+          ),
+        );
+
+        return paragraph.height;
       }
 
-      final cleanName = cleanDinosaurImageName(dinosaur.name);
+      // --------------------------------------------------
+      // DINOSAUR NAME
+      // --------------------------------------------------
 
-      final assetPath = await getExistingImagePath(
+      currentY += drawText(
+        text: dinosaur.name.toUpperCase(),
+        fontSize: 60,
+        y: currentY,
+        fontWeight: ui.FontWeight.bold,
+        textAlign: ui.TextAlign.center,
+      );
+
+      currentY += 30;
+
+      // Separator
+      final separatorPaint = ui.Paint()
+        ..color = const ui.Color(0xFF8D6E63)
+        ..strokeWidth = 5;
+
+      canvas.drawLine(
+        ui.Offset(
+          padding,
+          currentY,
+        ),
+        ui.Offset(
+          width - padding,
+          currentY,
+        ),
+        separatorPaint,
+      );
+
+      currentY += 35;
+
+      // --------------------------------------------------
+      // OPTIONAL DINOSAUR IMAGE
+      // --------------------------------------------------
+
+      final cleanName = cleanDinosaurImageName(
+        dinosaur.name,
+      );
+
+      final dinosaurImagePath = await getExistingImagePath(
         'assets/images/dinosaurs/${cleanName}_normal',
       );
 
-      String imageHtml = '';
+      ui.Image? dinosaurImage;
 
-      if (assetPath != null) {
-        final extension = assetPath.split('.').last;
-        final imageFileName = '${cleanName}_normal.$extension';
+      if (dinosaurImagePath != null) {
+        try {
+          final data = await rootBundle.load(
+            dinosaurImagePath,
+          );
 
-        final uploadedImage = await uploadAssetToLG(
-          assetPath: assetPath,
-          fileName: imageFileName,
-        );
+          final bytes = data.buffer.asUint8List();
 
-        if (uploadedImage) {
-          imageHtml = '''
-<img
-  src="http://lg1:81/$imageFileName"
-  style="
-    display: block;
-    width: 100%;
-    max-height: 280px;
-    object-fit: contain;
-    margin: 0 auto 18px auto;
-  "
-/>
-''';
+          final codec = await ui.instantiateImageCodec(
+            bytes,
+          );
+
+          final frame = await codec.getNextFrame();
+
+          dinosaurImage = frame.image;
+
+          debugPrint(
+            'Dinosaur image added to info column: '
+                '$dinosaurImagePath',
+          );
+        } catch (e) {
+          debugPrint(
+            'Could not load dinosaur image for column: $e',
+          );
         }
       }
 
-      final name = _escapeHtml(dinosaur.name);
-      final period = _escapeHtml(dinosaur.periodName);
-      final time1 = _escapeHtml(dinosaur.time1);
-      final time2 = _escapeHtml(dinosaur.time2);
-      final diet = _escapeHtml(dinosaur.diet);
-      final length = _escapeHtml(dinosaur.length);
-      final weight = _escapeHtml(dinosaur.weight);
-      final country = _escapeHtml(dinosaur.country);
-      final region = _escapeHtml(dinosaur.region);
-      final formation = _escapeHtml(dinosaur.formation);
-      final habitat = _escapeHtml(dinosaur.habitat);
-      final description = _escapeHtml(dinosaur.generalInfo);
+      if (dinosaurImage != null) {
+        const double maxImageWidth = 760;
+        const double maxImageHeight = 430;
 
-      final balloonKml = '''<?xml version="1.0" encoding="UTF-8"?>
+        final originalWidth =
+        dinosaurImage.width.toDouble();
+
+        final originalHeight =
+        dinosaurImage.height.toDouble();
+
+        final scale = math.min(
+          maxImageWidth / originalWidth,
+          maxImageHeight / originalHeight,
+        );
+
+        final imageWidth =
+            originalWidth * scale;
+
+        final imageHeight =
+            originalHeight * scale;
+
+        final imageX =
+            (width - imageWidth) / 2;
+
+        final sourceRect = ui.Rect.fromLTWH(
+          0,
+          0,
+          originalWidth,
+          originalHeight,
+        );
+
+        final destinationRect =
+        ui.Rect.fromLTWH(
+          imageX,
+          currentY,
+          imageWidth,
+          imageHeight,
+        );
+
+        canvas.drawImageRect(
+          dinosaurImage,
+          sourceRect,
+          destinationRect,
+          ui.Paint(),
+        );
+
+        currentY += imageHeight + 40;
+      }
+
+      // --------------------------------------------------
+      // PERIOD
+      // --------------------------------------------------
+
+      currentY += drawText(
+        text: 'Period',
+        fontSize: 32,
+        y: currentY,
+        fontWeight: ui.FontWeight.bold,
+        color: const ui.Color(0xFFD7CCC8),
+      );
+
+      currentY += 5;
+
+      currentY += drawText(
+        text: dinosaur.periodName,
+        fontSize: 38,
+        y: currentY,
+      );
+
+      currentY += 25;
+
+      // --------------------------------------------------
+      // DIET
+      // --------------------------------------------------
+
+      currentY += drawText(
+        text: 'Diet',
+        fontSize: 32,
+        y: currentY,
+        fontWeight: ui.FontWeight.bold,
+        color: const ui.Color(0xFFD7CCC8),
+      );
+
+      currentY += 5;
+
+      currentY += drawText(
+        text: dinosaur.diet.isEmpty
+            ? 'Unknown'
+            : dinosaur.diet,
+        fontSize: 38,
+        y: currentY,
+      );
+
+      currentY += 25;
+
+      // --------------------------------------------------
+      // LENGTH
+      // --------------------------------------------------
+
+      currentY += drawText(
+        text: 'Length',
+        fontSize: 32,
+        y: currentY,
+        fontWeight: ui.FontWeight.bold,
+        color: const ui.Color(0xFFD7CCC8),
+      );
+
+      currentY += 5;
+
+      currentY += drawText(
+        text: dinosaur.length.isEmpty
+            ? 'Unknown'
+            : dinosaur.length,
+        fontSize: 38,
+        y: currentY,
+      );
+
+      currentY += 25;
+
+      // --------------------------------------------------
+      // WEIGHT
+      // --------------------------------------------------
+
+      currentY += drawText(
+        text: 'Weight',
+        fontSize: 32,
+        y: currentY,
+        fontWeight: ui.FontWeight.bold,
+        color: const ui.Color(0xFFD7CCC8),
+      );
+
+      currentY += 5;
+
+      currentY += drawText(
+        text: dinosaur.weight.isEmpty
+            ? 'Unknown'
+            : dinosaur.weight,
+        fontSize: 38,
+        y: currentY,
+      );
+
+      currentY += 25;
+
+      // --------------------------------------------------
+      // HABITAT
+      // --------------------------------------------------
+
+      currentY += drawText(
+        text: 'Habitat',
+        fontSize: 32,
+        y: currentY,
+        fontWeight: ui.FontWeight.bold,
+        color: const ui.Color(0xFFD7CCC8),
+      );
+
+      currentY += 5;
+
+      currentY += drawText(
+        text: dinosaur.habitat.isEmpty
+            ? 'Unknown'
+            : dinosaur.habitat,
+        fontSize: 36,
+        y: currentY,
+      );
+
+      currentY += 25;
+
+      // --------------------------------------------------
+      // LOCATION
+      // --------------------------------------------------
+
+      currentY += drawText(
+        text: 'Location',
+        fontSize: 32,
+        y: currentY,
+        fontWeight: ui.FontWeight.bold,
+        color: const ui.Color(0xFFD7CCC8),
+      );
+
+      currentY += 5;
+
+      final location = [
+        dinosaur.region,
+        dinosaur.country,
+      ]
+          .where(
+            (value) => value.trim().isNotEmpty,
+      )
+          .join(', ');
+
+      currentY += drawText(
+        text: location.isEmpty
+            ? 'Unknown'
+            : location,
+        fontSize: 36,
+        y: currentY,
+      );
+
+      currentY += 35;
+
+      // --------------------------------------------------
+      // ABOUT SEPARATOR
+      // --------------------------------------------------
+
+      canvas.drawLine(
+        ui.Offset(
+          padding,
+          currentY,
+        ),
+        ui.Offset(
+          width - padding,
+          currentY,
+        ),
+        separatorPaint,
+      );
+
+      currentY += 35;
+
+      // --------------------------------------------------
+      // ABOUT
+      // --------------------------------------------------
+
+      currentY += drawText(
+        text: 'About',
+        fontSize: 38,
+        y: currentY,
+        fontWeight: ui.FontWeight.bold,
+        color: const ui.Color(0xFFD7CCC8),
+      );
+
+      currentY += 12;
+
+      drawText(
+        text: dinosaur.generalInfo.isEmpty
+            ? 'No additional information available.'
+            : dinosaur.generalInfo,
+        fontSize: 31,
+        y: currentY,
+        lineHeight: 1.4,
+      );
+
+      // --------------------------------------------------
+      // CONVERT CANVAS TO PNG
+      // --------------------------------------------------
+
+      final picture =
+      recorder.endRecording();
+
+      final image =
+      await picture.toImage(
+        width.toInt(),
+        height.toInt(),
+      );
+
+      final byteData =
+      await image.toByteData(
+        format: ui.ImageByteFormat.png,
+      );
+
+      if (byteData == null) {
+        debugPrint(
+          'Could not generate dinosaur info column image',
+        );
+
+        return false;
+      }
+
+      final bytes =
+      byteData.buffer.asUint8List();
+
+      // --------------------------------------------------
+      // UPLOAD PNG TO LIQUID GALAXY
+      // --------------------------------------------------
+
+      final uploaded =
+      await uploadBytesToLG(
+        bytes: bytes,
+        fileName: fileName,
+      );
+
+      if (!uploaded) {
+        debugPrint(
+          'Could not upload dinosaur info column',
+        );
+
+        return false;
+      }
+
+      debugPrint(
+        'Dinosaur info column created and uploaded: '
+            '$fileName',
+      );
+
+      return true;
+    } catch (e, stackTrace) {
+      debugPrint(
+        'Error creating dinosaur info column: $e',
+      );
+
+      debugPrint(
+        '$stackTrace',
+      );
+
+      return false;
+    }
+  }
+
+  Future<bool> showDinosaurAboutColumn(Dinosaur dinosaur) async {
+    try {
+      final screen = calculateRightMostScreen(
+        _lgConnectionModel.screens,
+      );
+
+      final imageFileName =
+          '${cleanDinosaurImageName(dinosaur.name)}_info.png';
+
+      final created = await createDinosaurInfoColumn(
+        dinosaur,
+        imageFileName,
+      );
+
+      if (!created) {
+        debugPrint('Could not create dinosaur information column');
+        return false;
+      }
+
+      final kml = '''
+<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
-    <name>Selected Dinosaur Balloon</name>
 
-    <Style id="selectedDinosaurStyle">
-      <IconStyle>
-        <scale>0</scale>
-      </IconStyle>
+    <ScreenOverlay>
+      <name>${_cleanText(dinosaur.name)} Information</name>
 
-      <LabelStyle>
-        <scale>0</scale>
-      </LabelStyle>
+      <Icon>
+        <href>http://lg1:81/$imageFileName</href>
+      </Icon>
 
-      <BalloonStyle>
-        <bgColor>fff7f4ef</bgColor>
-        <textColor>ff111111</textColor>
+      <overlayXY
+        x="0.5"
+        y="0.5"
+        xunits="fraction"
+        yunits="fraction"
+      />
 
-        <text><![CDATA[
-          <div style="
-            width: 520px;
-            padding: 20px;
-            box-sizing: border-box;
-            font-family: Arial, sans-serif;
-            color: #111111;
-          ">
-            <h1 style="
-              margin: 0;
-              font-size: 30px;
-              text-align: center;
-            ">
-              $name
-            </h1>
+      <screenXY
+        x="0.5"
+        y="0.5"
+        xunits="fraction"
+        yunits="fraction"
+      />
 
-            <p style="
-              margin: 7px 0 18px 0;
-              text-align: center;
-              font-size: 16px;
-              color: #666666;
-            ">
-              $period · $time1 - $time2
-            </p>
+      <size
+        x="850"
+        y="0"
+        xunits="pixels"
+        yunits="pixels"
+      />
 
-            $imageHtml
+    </ScreenOverlay>
 
-            <table style="
-              width: 100%;
-              border-collapse: collapse;
-              font-size: 16px;
-            ">
-              <tr>
-                <td style="
-                  padding: 8px;
-                  font-weight: bold;
-                  border-bottom: 1px solid #dddddd;
-                ">
-                  Diet
-                </td>
-
-                <td style="
-                  padding: 8px;
-                  border-bottom: 1px solid #dddddd;
-                ">
-                  $diet
-                </td>
-              </tr>
-
-              <tr>
-                <td style="
-                  padding: 8px;
-                  font-weight: bold;
-                  border-bottom: 1px solid #dddddd;
-                ">
-                  Length
-                </td>
-
-                <td style="
-                  padding: 8px;
-                  border-bottom: 1px solid #dddddd;
-                ">
-                  $length
-                </td>
-              </tr>
-
-              <tr>
-                <td style="
-                  padding: 8px;
-                  font-weight: bold;
-                  border-bottom: 1px solid #dddddd;
-                ">
-                  Weight
-                </td>
-
-                <td style="
-                  padding: 8px;
-                  border-bottom: 1px solid #dddddd;
-                ">
-                  $weight
-                </td>
-              </tr>
-
-              <tr>
-                <td style="
-                  padding: 8px;
-                  font-weight: bold;
-                  border-bottom: 1px solid #dddddd;
-                ">
-                  Country
-                </td>
-
-                <td style="
-                  padding: 8px;
-                  border-bottom: 1px solid #dddddd;
-                ">
-                  $country
-                </td>
-              </tr>
-
-              <tr>
-                <td style="
-                  padding: 8px;
-                  font-weight: bold;
-                  border-bottom: 1px solid #dddddd;
-                ">
-                  Region
-                </td>
-
-                <td style="
-                  padding: 8px;
-                  border-bottom: 1px solid #dddddd;
-                ">
-                  $region
-                </td>
-              </tr>
-
-              <tr>
-                <td style="
-                  padding: 8px;
-                  font-weight: bold;
-                  border-bottom: 1px solid #dddddd;
-                ">
-                  Formation
-                </td>
-
-                <td style="
-                  padding: 8px;
-                  border-bottom: 1px solid #dddddd;
-                ">
-                  $formation
-                </td>
-              </tr>
-
-              <tr>
-                <td style="
-                  padding: 8px;
-                  font-weight: bold;
-                ">
-                  Habitat
-                </td>
-
-                <td style="padding: 8px;">
-                  $habitat
-                </td>
-              </tr>
-            </table>
-
-            <p style="
-              margin: 20px 0 0 0;
-              font-size: 16px;
-              line-height: 1.45;
-              text-align: justify;
-            ">
-              $description
-            </p>
-          </div>
-        ]]></text>
-      </BalloonStyle>
-    </Style>
-
-    <Placemark id="selectedDinosaur">
-      <name>$name</name>
-      <styleUrl>#selectedDinosaurStyle</styleUrl>
-
-      <Point>
-        <altitudeMode>clampToGround</altitudeMode>
-        <coordinates>${dinosaur.longitude},${dinosaur.latitude},0</coordinates>
-      </Point>
-    </Placemark>
   </Document>
-</kml>''';
+</kml>
+''';
 
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final balloonFileName = 'selected_dinosaur_$timestamp.kml';
+      await cleanRightScreenKml();
 
-      final uploadedKml = await uploadBytesToLG(
-        bytes: Uint8List.fromList(balloonKml.codeUnits),
-        fileName: balloonFileName,
+      final result = await execute(
+        "echo '$kml' > /var/www/html/kml/slave_$screen.kml",
+        'Dinosaur information column sent',
       );
 
-      if (!uploadedKml) {
-        debugPrint('Could not upload dinosaur balloon KML');
-        return false;
-      }
-
-      final loadResult = await execute(
-        "echo 'http://lg1:81/$balloonFileName' > /var/www/html/kmls.txt",
-        'Dinosaur balloon KML loaded',
-      );
-
-      if (loadResult == null) {
-        return false;
-      }
-
-      await Future.delayed(const Duration(seconds: 1));
-
-      final balloonResult = await execute(
-        "echo 'balloon=selectedDinosaur' > /tmp/query.txt",
-        'Dinosaur balloon opened',
-      );
-
-      return balloonResult != null;
+      return result != null;
     } catch (e, stackTrace) {
-      debugPrint('Error showing dinosaur balloon: $e');
+      debugPrint('Error showing dinosaur information column: $e');
       debugPrint('$stackTrace');
       return false;
     }
@@ -1164,6 +1415,47 @@ class LgService extends ChangeNotifier {
     }
   }
 
+  Future<bool> showDinosaurSkeletonImage(Dinosaur dinosaur) async {
+    final cleanName = cleanDinosaurImageName(dinosaur.name);
+
+    final assetPath = await getExistingImagePath(
+      'assets/images/dinosaurs/${cleanName}_skeleton',
+    );
+
+    if (assetPath == null) {
+      debugPrint(
+        'Skeleton image not found for ${dinosaur.name}',
+      );
+      return false;
+    }
+
+    final extension = assetPath.split('.').last;
+    final imageFileName = '${cleanName}_skeleton.$extension';
+
+    final uploadedImage = await uploadAssetToLG(
+      assetPath: assetPath,
+      fileName: imageFileName,
+    );
+
+    if (!uploadedImage) {
+      return false;
+    }
+
+    final uploadedHtml = await uploadHtmlToLG(
+      htmlFileName: 'skeleton.html',
+      imageFileName: imageFileName,
+      title: '${dinosaur.name} Skeleton',
+      imageHeight: 95,
+    );
+
+    if (!uploadedHtml) {
+      return false;
+    }
+
+    return await openChromiumOnAllScreens(
+      'http://lg1:81/skeleton.html',
+    );
+  }
 
   Future<bool> showDinosaurComparisonImage(Dinosaur dinosaur) async {
     final cleanName = cleanDinosaurImageName(dinosaur.name);

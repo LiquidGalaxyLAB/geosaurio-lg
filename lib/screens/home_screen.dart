@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
+import '../widgets/dinosaur_mini_map.dart';
 import '../models/dinosaur.dart';
 import '../services/dinosaur_service.dart';
 import '../services/lg_service.dart';
-
+import '../widgets/drawer_menu.dart';
 import 'dinosaur_detail_screen.dart';
 import 'lg_settings_screen.dart';
 import 'about_screen.dart';
@@ -159,7 +159,7 @@ class _HomeScreenState extends State<HomeScreen> {
     await lgService.showDinosaurMarkers(availableDinosaurs);
   }
 
-  Future<void> selectDinosaur(Dinosaur dinosaur) async { //Go to the dinosaur and show kml
+  Future<void> selectDinosaur(Dinosaur dinosaur) async {
     setState(() {
       selectedDinosaur = dinosaur.name;
     });
@@ -170,10 +170,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final flyOk = await lgService.flyToDinosaur(dinosaur);
 
       if (flyOk) {
-        await lgService.showDinosaurAboutKml(
-          dinosaur,
-          allDinosaurs: dinosaurs,
-        );
+        await lgService.showDinosaurAboutColumn(dinosaur);
       }
     }
 
@@ -182,7 +179,9 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => DinosaurDetailScreen(dinosaur: dinosaur),
+        builder: (context) => DinosaurDetailScreen(
+          dinosaur: dinosaur,
+        ),
       ),
     );
   }
@@ -250,7 +249,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) { //Creates visual interface
     return Scaffold(
       backgroundColor: const Color(0xFFF7F4EF),
-      drawer: buildDrawer(),
+      drawer: AppDrawer(
+        isLgConnected: context.watch<LgService>().isConnected,
+      ),
       body: SafeArea(
         child: Builder(
           builder: (context) {
@@ -458,6 +459,13 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 16),
           searchBox(hintText: 'Search dinosaur...'),
+          const SizedBox(height: 12),
+          DinosaurMiniMap(
+            dinosaurs: visibleDinosaurs,
+            onDinosaurSelected: (dinosaur) {
+              selectDinosaur(dinosaur);
+            },
+          ),
           const SizedBox(height: 18),
           Expanded(
             child: Container(
@@ -604,116 +612,4 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
-  Widget buildDrawer() {
-    final lgService = context.watch<LgService>();
-
-    return Drawer(
-      backgroundColor: const Color(0xFFF7F4EF),
-      child: SafeArea(
-        child: Column(
-          children: [
-            const SizedBox(height: 28),
-            const CircleAvatar(
-              radius: 38,
-              backgroundColor: Color(0xFF3E2A1F),
-              child: Icon(Icons.public, size: 42, color: Colors.white),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'GeoSaurio',
-              style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
-            ),
-            const Text(
-              'For Liquid Galaxy',
-              style: TextStyle(color: Colors.black54),
-            ),
-            const SizedBox(height: 22),
-            drawerTile(
-              icon: Icons.home,
-              title: 'Main Menu',
-              onTap: () => Navigator.pop(context),
-            ),
-            drawerTile(
-              icon: Icons.info,
-              title: 'Information',
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const AboutScreen()),
-                );
-              },
-            ),
-            drawerTile(
-              icon: Icons.settings,
-              title: 'LG Settings',
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const LgSettingsScreen(),
-                  ),
-                );
-              },
-            ),
-            drawerTile(
-              icon: Icons.language,
-              title: 'Language',
-              onTap: () {
-                debugPrint('Language tapped');
-              },
-            ),
-            const Spacer(),
-            Container(
-              margin: const EdgeInsets.all(18),
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.circle,
-                    color: lgService.isConnected ? Colors.green : Colors.red,
-                    size: 14,
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    lgService.isConnected ? 'LG connected' : 'LG disconnected',
-                    style: const TextStyle(fontWeight: FontWeight.w500),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
-
-  Widget drawerTile({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-      child: Material(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        child: ListTile(
-          leading: Icon(icon, color: Colors.brown),
-          title: Text(
-            title,
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-          trailing: const Icon(Icons.chevron_right, size: 20),
-          onTap: onTap,
-        ),
-      ),
-    );
-  }
-}
