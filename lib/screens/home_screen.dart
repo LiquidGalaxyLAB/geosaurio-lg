@@ -17,7 +17,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  DinosaurPeriod selectedPeriod = DinosaurPeriod.jurassic; //Stores the user selection: period, continent...
+  DinosaurPeriod selectedPeriod = DinosaurPeriod
+      .jurassic; //Stores the user selection: period, continent...
 
   String? selectedContinent;
   String? selectedCountry;
@@ -36,7 +37,8 @@ class _HomeScreenState extends State<HomeScreen> {
     loadDinosaurData();
   }
 
-  Future<void> loadDinosaurData() async { //loads the dinosaurs from the csv
+  Future<void> loadDinosaurData() async {
+    //loads the dinosaurs from the csv
     final data = await DinosaurService.loadDinosaurs();
 
     if (!mounted) return;
@@ -48,12 +50,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   @override
-  void dispose() { //dispose the search controller
+  void dispose() {
+    //dispose the search controller
     searchController.dispose();
     super.dispose();
   }
 
-  List<String> get availableContinents { //Gets the available continents for the selected geological period
+  List<String> get availableContinents {
+    //Gets the available continents for the selected geological period
     final list = dinosaurs
         .where((dinosaur) => dinosaur.period == selectedPeriod)
         .map((dinosaur) => dinosaur.area)
@@ -118,7 +122,8 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> selectPeriod(DinosaurPeriod period) async { //change geological period
+  Future<void> selectPeriod(DinosaurPeriod period) async {
+    //change geological period
     setState(() {
       selectedPeriod = period;
       selectedContinent = null;
@@ -128,7 +133,8 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  Future<void> selectContinent(String continent) async { //Flies to the selected continent and shows country markers
+  Future<void> selectContinent(String continent) async {
+    //Flies to the selected continent and shows country markers
     setState(() {
       selectedContinent = continent;
       selectedCountry = null;
@@ -179,14 +185,16 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => DinosaurDetailScreen(
-          dinosaur: dinosaur,
-        ),
+        builder: (context) =>
+            DinosaurDetailScreen(
+              dinosaur: dinosaur,
+            ),
       ),
     );
   }
 
-  void goBackToContinents() { //Returns to the continent selection
+  void goBackToContinents() {
+    //Returns to the continent selection
     setState(() {
       selectedContinent = null;
       selectedCountry = null;
@@ -203,7 +211,8 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  List<String> filteredContinents() { //filters the continents using the search bar
+  List<String> filteredContinents() {
+    //filters the continents using the search bar
     final query = searchController.text.toLowerCase();
 
     if (query.isEmpty) return availableContinents;
@@ -234,7 +243,8 @@ class _HomeScreenState extends State<HomeScreen> {
     }).toList();
   }
 
-  String get breadcrumbTitle { //Builds the current navigation path
+  String get breadcrumbTitle {
+    //Builds the current navigation path
     final parts = [
       getPeriodName(selectedPeriod),
       if (selectedContinent != null) selectedContinent!,
@@ -246,11 +256,16 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   @override
-  Widget build(BuildContext context) { //Creates visual interface
+  Widget build(BuildContext context) {
+    //Creates visual interface
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F4EF),
+      backgroundColor: Theme
+          .of(context)
+          .scaffoldBackgroundColor,
       drawer: AppDrawer(
-        isLgConnected: context.watch<LgService>().isConnected,
+        isLgConnected: context
+            .watch<LgService>()
+            .isConnected,
       ),
       body: SafeArea(
         child: Builder(
@@ -265,25 +280,27 @@ class _HomeScreenState extends State<HomeScreen> {
                     const Expanded(
                       child: Center(child: CircularProgressIndicator()),
                     )
-                  else ...[
-                    Text(
-                      breadcrumbTitle,
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w600,
+                  else
+                    ...[
+                      Text(
+                        breadcrumbTitle,
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 18),
-                    buildPeriodSelector(),
-                    const SizedBox(height: 24),
-                    if (selectedContinent == null)
-                      buildContinentSelector()
-                    else if (selectedCountry == null)
-                      buildCountrySelector()
-                    else
-                      buildDinosaurSelector(),
-                  ],
+                      const SizedBox(height: 18),
+                      buildPeriodSelector(),
+                      const SizedBox(height: 24),
+                      if (selectedContinent == null)
+                        buildContinentSelector()
+                      else
+                        if (selectedCountry == null)
+                          buildCountrySelector()
+                        else
+                          buildDinosaurSelector(),
+                    ],
                 ],
               ),
             );
@@ -298,7 +315,10 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme
+                .of(context)
+                .colorScheme
+                .surfaceContainerHighest,
             borderRadius: BorderRadius.circular(14),
           ),
           child: IconButton(
@@ -417,7 +437,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   itemBuilder: (context, index) {
                     final country = visibleCountries[index];
 
-                    final count = dinosaurs.where((dinosaur) { //count the dinosaurs so it's showed as a subtitle
+                    final count = dinosaurs.where((
+                        dinosaur) { //count the dinosaurs so it's showed as a subtitle
                       return dinosaur.period == selectedPeriod &&
                           dinosaur.area == selectedContinent &&
                           dinosaur.country == country;
@@ -510,24 +531,47 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget searchBox({required String hintText}) {
+    final colorScheme = Theme
+        .of(context)
+        .colorScheme;
+
     return Container(
       height: 48,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.black12),
+        border: Border.all(
+          color: colorScheme.outlineVariant,
+        ),
       ),
       child: TextField(
         controller: searchController,
         onChanged: (_) => setState(() {}),
+
+        style: TextStyle(
+          color: colorScheme.onSurface,
+        ),
+
         decoration: InputDecoration(
           hintText: hintText,
+
+          hintStyle: TextStyle(
+            color: colorScheme.onSurfaceVariant,
+          ),
+
           border: InputBorder.none,
-          prefixIcon: const Icon(Icons.search),
+
+          prefixIcon: Icon(
+            Icons.search,
+            color: colorScheme.onSurfaceVariant,
+          ),
           suffixIcon: searchController.text.isEmpty
               ? null
               : IconButton(
-            icon: const Icon(Icons.close),
+            icon: Icon(
+              Icons.close,
+              color: colorScheme.onSurfaceVariant,
+            ),
             onPressed: () {
               setState(() {
                 searchController.clear();
@@ -545,17 +589,36 @@ class _HomeScreenState extends State<HomeScreen> {
     required IconData icon,
     required VoidCallback onTap,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Material(
-      color: Colors.white,
+      color: colorScheme.surfaceContainerHighest,
       borderRadius: BorderRadius.circular(16),
       child: ListTile(
-        leading: Icon(icon, color: Colors.brown),
+        leading: Icon(
+          icon,
+          color: colorScheme.primary,
+        ),
         title: Text(
           title,
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w500,
+            color: colorScheme.onSurface,
+          ),
         ),
-        subtitle: subtitle == null || subtitle.isEmpty ? null : Text(subtitle),
-        trailing: const Icon(Icons.chevron_right),
+        subtitle: subtitle == null || subtitle.isEmpty
+            ? null
+            : Text(
+          subtitle,
+          style: TextStyle(
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+        trailing: Icon(
+          Icons.chevron_right,
+          color: colorScheme.onSurfaceVariant,
+        ),
         onTap: onTap,
       ),
     );
@@ -565,16 +628,25 @@ class _HomeScreenState extends State<HomeScreen> {
     required IconData icon,
     required String text,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 55, color: Colors.black38),
+          Icon(
+            icon,
+            size: 55,
+            color: colorScheme.onSurfaceVariant,
+          ),
           const SizedBox(height: 14),
           Text(
             text,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 19, color: Colors.black54),
+            style: TextStyle(
+              fontSize: 19,
+              color: colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
@@ -583,13 +655,19 @@ class _HomeScreenState extends State<HomeScreen> {
 
   BoxDecoration cardDecoration() {
     return BoxDecoration(
-      color: const Color(0xFFE8E1D8),
+      color: Theme
+          .of(context)
+          .colorScheme
+          .surfaceContainer,
       borderRadius: BorderRadius.circular(20),
     );
   }
 
   Widget periodButton(DinosaurPeriod period) {
     final bool isSelected = selectedPeriod == period;
+    final colorScheme = Theme
+        .of(context)
+        .colorScheme;
 
     return GestureDetector(
       onTap: () => selectPeriod(period),
@@ -597,14 +675,20 @@ class _HomeScreenState extends State<HomeScreen> {
         height: 45,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF3E2A1F) : Colors.white,
+          color: isSelected
+              ? colorScheme.primary
+              : colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: Colors.black12),
+          border: Border.all(
+            color: colorScheme.outlineVariant,
+          ),
         ),
         child: Text(
           getPeriodName(period),
           style: TextStyle(
-            color: isSelected ? Colors.white : Colors.black,
+            color: isSelected
+                ? colorScheme.onPrimary
+                : colorScheme.onSurface,
             fontSize: 13,
             fontWeight: FontWeight.w600,
           ),
@@ -612,4 +696,4 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-  }
+}

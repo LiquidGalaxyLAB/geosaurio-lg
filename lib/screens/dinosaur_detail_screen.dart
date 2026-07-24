@@ -4,17 +4,19 @@ import 'package:provider/provider.dart';
 import '../models/dinosaur.dart';
 import '../services/lg_service.dart';
 import '../services/audio_service.dart';
-
-import 'lg_settings_screen.dart';
-import 'about_screen.dart';
+import '../widgets/drawer_menu.dart';
 
 class DinosaurDetailScreen extends StatefulWidget {
   final Dinosaur dinosaur;
 
-  const DinosaurDetailScreen({super.key, required this.dinosaur});
+  const DinosaurDetailScreen({
+    super.key,
+    required this.dinosaur,
+  });
 
   @override
-  State<DinosaurDetailScreen> createState() => _DinosaurDetailScreenState();
+  State<DinosaurDetailScreen> createState() =>
+      _DinosaurDetailScreenState();
 }
 
 class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
@@ -22,7 +24,11 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
 
   Dinosaur get dinosaur => widget.dinosaur;
 
-  void showSnack(BuildContext context, String message, {bool success = true}) {
+  void showSnack(
+      BuildContext context,
+      String message, {
+        bool success = true,
+      }) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
@@ -32,11 +38,18 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
     );
   }
 
-  Future<void> sendToLg(BuildContext context, String action) async {
+  Future<void> sendToLg(
+      BuildContext context,
+      String action,
+      ) async {
     final lgService = context.read<LgService>();
 
     if (!lgService.isConnected) {
-      showSnack(context, 'Liquid Galaxy is not connected', success: false);
+      showSnack(
+        context,
+        'Liquid Galaxy is not connected',
+        success: false,
+      );
       return;
     }
 
@@ -72,7 +85,11 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
       isNarrationPlaying = false;
     });
 
-    showSnack(context, 'Narration stopped', success: true);
+    showSnack(
+      context,
+      'Narration stopped',
+      success: true,
+    );
   }
 
   @override
@@ -83,26 +100,48 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isLgConnected = context.watch<LgService>().isConnected;
-    final lgService = context.read<LgService>();
-    final cleanName = lgService.cleanDinosaurImageName(dinosaur.name);
+    final lgService = context.watch<LgService>();
+    final colorScheme = Theme.of(context).colorScheme;
+
+    final cleanName = lgService.cleanDinosaurImageName(
+      dinosaur.name,
+    );
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F4EF),
-      drawer: buildDrawer(context, isLgConnected),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+
+      drawer: AppDrawer(
+        isLgConnected: lgService.isConnected,
+      ),
+
       body: SafeArea(
         child: Builder(
           builder: (context) {
             return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24,
+              ),
               child: Column(
                 children: [
+
                   Row(
                     children: [
-                      IconButton(
-                        icon: const Icon(Icons.menu, size: 32),
-                        onPressed: () => Scaffold.of(context).openDrawer(),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: IconButton(
+                          icon: const Icon(
+                            Icons.menu,
+                            size: 32,
+                          ),
+                          onPressed: () {
+                            Scaffold.of(context).openDrawer();
+                          },
+                        ),
                       ),
+
                       const Expanded(
                         child: Text(
                           'Dinosaur Information',
@@ -113,6 +152,7 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
                           ),
                         ),
                       ),
+
                       const SizedBox(width: 48),
                     ],
                   ),
@@ -129,7 +169,7 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
                           height: 180,
                           width: double.infinity,
                           decoration: BoxDecoration(
-                            color: const Color(0xFFE8E1D8),
+                            color: colorScheme.surfaceContainer,
                             borderRadius: BorderRadius.circular(18),
                           ),
                           child: ClipRRect(
@@ -139,7 +179,8 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
                                 'assets/images/dinosaurs/${cleanName}_normal',
                               ),
                               builder: (context, snapshot) {
-                                if (snapshot.hasData && snapshot.data != null) {
+                                if (snapshot.hasData &&
+                                    snapshot.data != null) {
                                   return Image.asset(
                                     snapshot.data!,
                                     fit: BoxFit.cover,
@@ -147,10 +188,10 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
                                   );
                                 }
 
-                                return const Icon(
+                                return Icon(
                                   Icons.pets,
                                   size: 90,
-                                  color: Color(0xFF3E2A1F),
+                                  color: colorScheme.primary,
                                 );
                               },
                             ),
@@ -162,9 +203,10 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
                         Text(
                           dinosaur.name,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 30,
                             fontWeight: FontWeight.bold,
+                            color: colorScheme.onSurface,
                           ),
                         ),
 
@@ -172,9 +214,9 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
 
                         Text(
                           dinosaur.periodName,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 17,
-                            color: Colors.black54,
+                            color: colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -182,6 +224,7 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
                   ),
 
                   const SizedBox(height: 20),
+
 
                   Row(
                     children: [
@@ -192,7 +235,9 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
                           value: dinosaur.country,
                         ),
                       ),
+
                       const SizedBox(width: 12),
+
                       Expanded(
                         child: infoCard(
                           icon: Icons.place,
@@ -216,7 +261,9 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
                               : dinosaur.length,
                         ),
                       ),
+
                       const SizedBox(width: 12),
+
                       Expanded(
                         child: infoCard(
                           icon: Icons.monitor_weight,
@@ -240,7 +287,9 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
                           value: dinosaur.periodName,
                         ),
                       ),
+
                       const SizedBox(width: 12),
+
                       Expanded(
                         child: infoCard(
                           icon: Icons.calendar_month,
@@ -255,10 +304,11 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
 
                   const SizedBox(height: 22),
 
+
                   sectionCard(
                     title: 'Scientific Information',
                     text:
-                        'Status: ${emptyText(dinosaur.status)}\n'
+                    'Status: ${emptyText(dinosaur.status)}\n'
                         'Author: ${emptyText(dinosaur.author)}\n'
                         'Formation: ${emptyText(dinosaur.formation)}\n'
                         'Time: ${emptyText(dinosaur.time1)} - ${emptyText(dinosaur.time2)}',
@@ -273,6 +323,7 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
 
                   const SizedBox(height: 24),
 
+
                   GridView.count(
                     crossAxisCount: 2,
                     shrinkWrap: true,
@@ -284,23 +335,43 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
                       optionButton(
                         icon: Icons.info_outline,
                         text: 'About',
-                        onTap: () => sendToLg(context, 'About'),
+                        onTap: () {
+                          sendToLg(
+                            context,
+                            'About',
+                          );
+                        },
                       ),
+
                       optionButton(
                         icon: Icons.groups,
                         text: 'See Comparison',
-                        onTap: () => sendToLg(context, 'Comparison'),
+                        onTap: () {
+                          sendToLg(
+                            context,
+                            'Comparison',
+                          );
+                        },
                       ),
+
                       optionButton(
                         icon: Icons.view_in_ar,
                         text: 'Skeleton',
-                        onTap: () => sendToLg(context, 'Skeleton'),
+                        onTap: () {
+                          sendToLg(
+                            context,
+                            'Skeleton',
+                          );
+                        },
                       ),
+
                       optionButton(
                         icon: Icons.volume_up,
                         text: 'Narration',
                         onTap: () async {
-                          await AudioService().playDinosaurAudio(dinosaur.name);
+                          await AudioService().playDinosaurAudio(
+                            dinosaur.name,
+                          );
 
                           if (!context.mounted) return;
 
@@ -320,16 +391,21 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
 
                   if (isNarrationPlaying) ...[
                     const SizedBox(height: 16),
+
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         onPressed: stopNarration,
                         icon: const Icon(Icons.stop),
-                        label: const Text('Stop Narration'),
+                        label: const Text(
+                          'Stop Narration',
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.orange,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 16,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(18),
                           ),
@@ -344,9 +420,11 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
                     width: double.infinity,
                     child: ElevatedButton.icon(
                       onPressed: () async {
-                        final lgService = context.read<LgService>();
+                        final lgService =
+                        context.read<LgService>();
 
-                        final ok = await lgService.closeChromiumOnAllScreens();
+                        final ok =
+                        await lgService.closeChromiumOnAllScreens();
 
                         await AudioService().stop();
 
@@ -364,12 +442,18 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
                           success: ok,
                         );
                       },
-                      icon: const Icon(Icons.arrow_back),
-                      label: const Text('Return Back'),
+                      icon: const Icon(
+                        Icons.arrow_back,
+                      ),
+                      label: const Text(
+                        'Return Back',
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 16,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(18),
                         ),
@@ -388,10 +472,17 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
   }
 
   String emptyText(String value) {
-    return value.trim().isEmpty ? 'Unknown' : value;
+    return value.trim().isEmpty
+        ? 'Unknown'
+        : value;
   }
 
-  Widget sectionCard({required String title, required String text}) {
+  Widget sectionCard({
+    required String title,
+    required String text,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
@@ -401,10 +492,23 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
         children: [
           Text(
             title,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
+            ),
           ),
+
           const SizedBox(height: 12),
-          Text(text, style: const TextStyle(fontSize: 16, height: 1.35)),
+
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 16,
+              height: 1.35,
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
         ],
       ),
     );
@@ -415,25 +519,38 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
     required String title,
     required String value,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: cardDecoration(),
       child: Column(
         children: [
-          Icon(icon, color: Colors.brown, size: 28),
+          Icon(
+            icon,
+            color: colorScheme.primary,
+            size: 28,
+          ),
+
           const SizedBox(height: 8),
+
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: Colors.black54,
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
+
           const SizedBox(height: 6),
+
           Text(
             emptyText(value),
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 15),
+            style: TextStyle(
+              fontSize: 15,
+              color: colorScheme.onSurface,
+            ),
           ),
         ],
       ),
@@ -445,24 +562,35 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
     required String text,
     required VoidCallback onTap,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return ElevatedButton(
       onPressed: onTap,
       style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFF3E2A1F),
-        foregroundColor: Colors.white,
+        backgroundColor: colorScheme.primary,
+        foregroundColor: colorScheme.onPrimary,
         elevation: 5,
         padding: const EdgeInsets.all(12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+        ),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 30),
+          Icon(
+            icon,
+            size: 30,
+          ),
+
           const SizedBox(height: 8),
+
           Text(
             text,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontWeight: FontWeight.bold),
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),
@@ -470,122 +598,20 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
   }
 
   BoxDecoration cardDecoration() {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return BoxDecoration(
-      color: Colors.white,
+      color: colorScheme.surfaceContainerHighest,
       borderRadius: BorderRadius.circular(22),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withValues(alpha: 0.08),
+          color: colorScheme.shadow.withValues(
+            alpha: 0.12,
+          ),
           blurRadius: 10,
           offset: const Offset(0, 4),
         ),
       ],
-    );
-  }
-
-  Widget buildDrawer(BuildContext context, bool isLgConnected) {
-    return Drawer(
-      backgroundColor: const Color(0xFFF7F4EF),
-      child: SafeArea(
-        child: Column(
-          children: [
-            const SizedBox(height: 28),
-            const CircleAvatar(
-              radius: 38,
-              backgroundColor: Color(0xFF3E2A1F),
-              child: Icon(Icons.public, size: 42, color: Colors.white),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'GeoSaurio',
-              style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
-            ),
-            const Text(
-              'For Liquid Galaxy',
-              style: TextStyle(color: Colors.black54),
-            ),
-            const SizedBox(height: 22),
-            drawerTile(
-              icon: Icons.home,
-              title: 'Main Menu',
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.popUntil(context, (route) => route.isFirst);
-              },
-            ),
-            drawerTile(
-              icon: Icons.info,
-              title: 'Information',
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const AboutScreen()),
-                );
-              },
-            ),
-            drawerTile(
-              icon: Icons.settings,
-              title: 'LG Settings',
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const LgSettingsScreen(),
-                  ),
-                );
-              },
-            ),
-            const Spacer(),
-            Container(
-              margin: const EdgeInsets.all(18),
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.circle,
-                    color: isLgConnected ? Colors.green : Colors.red,
-                    size: 14,
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    isLgConnected ? 'LG connected' : 'LG disconnected',
-                    style: const TextStyle(fontWeight: FontWeight.w500),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget drawerTile({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-      child: Material(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        child: ListTile(
-          leading: Icon(icon, color: Colors.brown),
-          title: Text(
-            title,
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-          trailing: const Icon(Icons.chevron_right, size: 20),
-          onTap: onTap,
-        ),
-      ),
     );
   }
 }
