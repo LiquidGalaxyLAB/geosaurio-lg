@@ -9,7 +9,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/dinosaur.dart';
-import 'dinosaur_service.dart';
 
 class LgConnectionModel {
   String username;
@@ -81,13 +80,6 @@ class LgService extends ChangeNotifier {
   bool _isConnected = false;
   int _currentConnectionAttempts = 0;
 
-  // Prevents two SSH authentication attempts from running at the same time.
-  Future<bool?>? _connectionInProgress;
-
-  // Prevents the automatic logo/marker setup from recursively starting again
-  // when execute() has to reconnect.
-  bool _initializingAfterConnection = false;
-
   static const int _maxConnectionAttempts = 5;
   static const Duration _connectionTimeout = Duration(seconds: 10);
 
@@ -129,126 +121,42 @@ class LgService extends ChangeNotifier {
     }
   }
 
-  Future<bool?> connectToLG({
-    bool initializeAfterConnect = true,
-  }) async {
-    // Reuse the same pending authentication instead of opening another socket.
-    final pendingConnection = _connectionInProgress;
-    if (pendingConnection != null) {
-      final connected = await pendingConnection;
-
-      if (connected == true &&
-          initializeAfterConnect &&
-          !_initializingAfterConnection) {
-        await _initializeLiquidGalaxyContent();
-      }
-
-      return connected;
-    }
-
-    if (_client != null && _isConnected) {
-      if (initializeAfterConnect && !_initializingAfterConnection) {
-        await _initializeLiquidGalaxyContent();
-      }
-
-      return true;
-    }
-
-    final future = _openSshConnection();
-    _connectionInProgress = future;
-
-    try {
-      final connected = await future;
-
-      if (connected == true &&
-          initializeAfterConnect &&
-          !_initializingAfterConnection) {
-        await _initializeLiquidGalaxyContent();
-      }
-
-      return connected;
-    } finally {
-      if (identical(_connectionInProgress, future)) {
-        _connectionInProgress = null;
-      }
-    }
-  }
-
-  Future<bool?> _openSshConnection() async {
+  Future<bool?> connectToLG() async {
     if (_currentConnectionAttempts >= _maxConnectionAttempts) {
       _currentConnectionAttempts = 0;
       notifyListeners();
       return false;
     }
 
-    SSHClient? newClient;
-
     try {
-      debugPrint('Opening SSH connection...');
-
       final socket = await SSHSocket.connect(
         _lgConnectionModel.ip,
         _lgConnectionModel.port,
       ).timeout(_connectionTimeout);
 
-      newClient = SSHClient(
+      _client = SSHClient(
         socket,
         username: _lgConnectionModel.username,
         onPasswordRequest: () => _lgConnectionModel.password,
         keepAliveInterval: const Duration(seconds: 10),
       );
 
-      // SSHClient authenticates lazily. Running a harmless command here forces
-      // authentication to finish before SFTP, logos or markers are started.
-      await newClient.run('true').timeout(_connectionTimeout);
-
-      _client?.close();
-      _client = newClient;
       _isConnected = true;
       _currentConnectionAttempts = 0;
-
-      debugPrint('SSH authentication completed');
       notifyListeners();
+
+      Future.delayed(const Duration(seconds: 2), () async {
+        await sendLogo();
+      });
+
       return true;
-    } catch (e, stackTrace) {
-      debugPrint('Connection/authentication error: $e');
-      debugPrint('$stackTrace');
-
-      newClient?.close();
-
-      _client = null;
-      _isConnected = false;
+    } catch (e) {
+      debugPrint('Connection error: $e');
       _currentConnectionAttempts++;
-      notifyListeners();
-
-      return false;
-    }
-  }
-
-  Future<void> _initializeLiquidGalaxyContent() async {
-    if (_initializingAfterConnection || !_isConnected || _client == null) {
-      return;
     }
 
-    _initializingAfterConnection = true;
-
-    try {
-      await Future.delayed(const Duration(seconds: 2));
-
-      debugPrint('Sending logo');
-      final logoSent = await sendLogo();
-      debugPrint('Logo result: $logoSent');
-
-      debugPrint('Starting all dinosaur markers');
-      await showAllDinosaurMarkers();
-
-      debugPrint('Connection initialization completed');
-    } catch (e, stackTrace) {
-      debugPrint('Error initializing Liquid Galaxy content: $e');
-      debugPrint('$stackTrace');
-    } finally {
-      _initializingAfterConnection = false;
-    }
+    notifyListeners();
+    return false;
   }
 
   void disconnect() {
@@ -261,12 +169,9 @@ class LgService extends ChangeNotifier {
   Future<dynamic> execute(String command, String successMessage) async {
     if (_client == null || !_isConnected) {
       debugPrint('SSH client not connected. Trying reconnect...');
+      final connected = await connectToLG();
 
-      final connected = await connectToLG(
-        initializeAfterConnect: false,
-      );
-
-      if (connected != true || _client == null) {
+      if (connected != true) {
         debugPrint('Reconnect failed');
         return null;
       }
@@ -276,36 +181,28 @@ class LgService extends ChangeNotifier {
       final result = await _client!.execute(command);
       debugPrint(successMessage);
       return result;
-    } catch (e, stackTrace) {
+    } catch (e) {
       debugPrint('Command error: $e');
-      debugPrint('$stackTrace');
 
-      final failedClient = _client;
+      _client?.close();
       _client = null;
       _isConnected = false;
-      failedClient?.close();
       notifyListeners();
 
       debugPrint('Trying reconnect after command error...');
+      final connected = await connectToLG();
 
-      final connected = await connectToLG(
-        initializeAfterConnect: false,
-      );
-
-      if (connected != true || _client == null) {
-        debugPrint('Reconnect after command error failed');
-        return null;
+      if (connected == true) {
+        try {
+          final retryResult = await _client!.execute(command);
+          debugPrint('$successMessage after reconnect');
+          return retryResult;
+        } catch (retryError) {
+          debugPrint('Retry command error: $retryError');
+        }
       }
 
-      try {
-        final retryResult = await _client!.execute(command);
-        debugPrint('$successMessage after reconnect');
-        return retryResult;
-      } catch (retryError, retryStackTrace) {
-        debugPrint('Retry command error: $retryError');
-        debugPrint('$retryStackTrace');
-        return null;
-      }
+      return null;
     }
   }
 
@@ -375,15 +272,6 @@ class LgService extends ChangeNotifier {
     required String fileName,
   }) async {
     try {
-      final connected = await connectToLG(
-        initializeAfterConnect: false,
-      );
-
-      if (connected != true || _client == null) {
-        debugPrint('Cannot upload $fileName: SSH is not connected');
-        return false;
-      }
-
       final bytes = await rootBundle.load(assetPath);
       final tempDir = await getTemporaryDirectory();
       final file = File('${tempDir.path}/$fileName');
@@ -395,9 +283,9 @@ class LgService extends ChangeNotifier {
       final remoteFile = await sftp.open(
         '/var/www/html/$fileName',
         mode:
-        SftpFileOpenMode.create |
-        SftpFileOpenMode.truncate |
-        SftpFileOpenMode.write,
+            SftpFileOpenMode.create |
+            SftpFileOpenMode.truncate |
+            SftpFileOpenMode.write,
       );
 
       await remoteFile.write(
@@ -407,9 +295,8 @@ class LgService extends ChangeNotifier {
       await remoteFile.close();
 
       return true;
-    } catch (e, stackTrace) {
-      debugPrint('Error uploading $assetPath as $fileName: $e');
-      debugPrint('$stackTrace');
+    } catch (e) {
+      debugPrint('Error subiendo imagen: $e');
       return false;
     }
   }
@@ -419,23 +306,14 @@ class LgService extends ChangeNotifier {
     required String fileName,
   }) async {
     try {
-      final connected = await connectToLG(
-        initializeAfterConnect: false,
-      );
-
-      if (connected != true || _client == null) {
-        debugPrint('Cannot upload $fileName: SSH is not connected');
-        return false;
-      }
-
       final sftp = await _client!.sftp();
 
       final remoteFile = await sftp.open(
         '/var/www/html/$fileName',
         mode:
-        SftpFileOpenMode.create |
-        SftpFileOpenMode.truncate |
-        SftpFileOpenMode.write,
+            SftpFileOpenMode.create |
+            SftpFileOpenMode.truncate |
+            SftpFileOpenMode.write,
       );
 
       await remoteFile.write(Stream.value(bytes));
@@ -459,294 +337,86 @@ class LgService extends ChangeNotifier {
         .trim();
   }
 
-  String _escapeHtml(String value) {
-    return value
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#39;')
-        .trim();
-  }
-
-  Future<bool> showDinosaurAboutBalloon(Dinosaur dinosaur) async {
+  Future<Uint8List?> createDinosaurInfoImage(Dinosaur dinosaur) async {
     try {
-      if (dinosaur.latitude == 0 || dinosaur.longitude == 0) {
-        debugPrint('Cannot show balloon: invalid dinosaur coordinates');
-        return false;
-      }
+      const double width = 900;
+      const double height = 620;
 
-      final cleanName = cleanDinosaurImageName(dinosaur.name);
+      final recorder = ui.PictureRecorder();
+      final canvas = ui.Canvas(recorder);
 
-      final assetPath = await getExistingImagePath(
-        'assets/images/dinosaurs/${cleanName}_normal',
+      final backgroundPaint = ui.Paint()..color = const ui.Color(0xEEFFFFFF);
+
+      canvas.drawRRect(
+        ui.RRect.fromRectAndRadius(
+          const ui.Rect.fromLTWH(0, 0, width, height),
+          const ui.Radius.circular(26),
+        ),
+        backgroundPaint,
       );
 
-      String imageHtml = '';
+      final titleStyle = ui.TextStyle(
+        color: const ui.Color(0xFF111111),
+        fontSize: 42,
+        fontWeight: ui.FontWeight.bold,
+      );
 
-      if (assetPath != null) {
-        final extension = assetPath.split('.').last;
-        final imageFileName = '${cleanName}_normal.$extension';
+      final bodyStyle = ui.TextStyle(
+        color: const ui.Color(0xFF111111),
+        fontSize: 28,
+      );
 
-        final uploadedImage = await uploadAssetToLG(
-          assetPath: assetPath,
-          fileName: imageFileName,
-        );
+      final titleBuilder =
+          ui.ParagraphBuilder(
+              ui.ParagraphStyle(maxLines: 2, textAlign: ui.TextAlign.left),
+            )
+            ..pushStyle(titleStyle)
+            ..addText(_cleanText(dinosaur.name));
 
-        if (uploadedImage) {
-          imageHtml = '''
-<img
-  src="http://lg1:81/$imageFileName"
-  style="
-    display: block;
-    width: 100%;
-    max-height: 280px;
-    object-fit: contain;
-    margin: 0 auto 18px auto;
-  "
-/>
+      final titleParagraph = titleBuilder.build()
+        ..layout(const ui.ParagraphConstraints(width: width - 60));
+
+      canvas.drawParagraph(titleParagraph, const ui.Offset(30, 28));
+
+      final info =
+          '''
+Period: ${_cleanText(dinosaur.periodName)}
+Time: ${_cleanText(dinosaur.time1)} - ${_cleanText(dinosaur.time2)}
+Diet: ${_cleanText(dinosaur.diet)}
+Length: ${_cleanText(dinosaur.length)}
+Weight: ${_cleanText(dinosaur.weight)}
+Country: ${_cleanText(dinosaur.country)}
+Region: ${_cleanText(dinosaur.region)}
+Formation: ${_cleanText(dinosaur.formation)}
+Habitat: ${_cleanText(dinosaur.habitat)}
+
+${_cleanText(dinosaur.generalInfo)}
 ''';
-        }
-      }
 
-      final name = _escapeHtml(dinosaur.name);
-      final period = _escapeHtml(dinosaur.periodName);
-      final time1 = _escapeHtml(dinosaur.time1);
-      final time2 = _escapeHtml(dinosaur.time2);
-      final diet = _escapeHtml(dinosaur.diet);
-      final length = _escapeHtml(dinosaur.length);
-      final weight = _escapeHtml(dinosaur.weight);
-      final country = _escapeHtml(dinosaur.country);
-      final region = _escapeHtml(dinosaur.region);
-      final formation = _escapeHtml(dinosaur.formation);
-      final habitat = _escapeHtml(dinosaur.habitat);
-      final description = _escapeHtml(dinosaur.generalInfo);
+      final bodyBuilder =
+          ui.ParagraphBuilder(
+              ui.ParagraphStyle(maxLines: 14, textAlign: ui.TextAlign.left),
+            )
+            ..pushStyle(bodyStyle)
+            ..addText(info);
 
-      final balloonKml = '''<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2">
-  <Document>
-    <name>Selected Dinosaur Balloon</name>
+      final bodyParagraph = bodyBuilder.build()
+        ..layout(const ui.ParagraphConstraints(width: width - 60));
 
-    <Style id="selectedDinosaurStyle">
-      <IconStyle>
-        <scale>0</scale>
-      </IconStyle>
+      canvas.drawParagraph(bodyParagraph, const ui.Offset(30, 125));
 
-      <LabelStyle>
-        <scale>0</scale>
-      </LabelStyle>
+      final picture = recorder.endRecording();
 
-      <BalloonStyle>
-        <bgColor>fff7f4ef</bgColor>
-        <textColor>ff111111</textColor>
+      final image = await picture.toImage(width.toInt(), height.toInt());
 
-        <text><![CDATA[
-          <div style="
-            width: 520px;
-            padding: 20px;
-            box-sizing: border-box;
-            font-family: Arial, sans-serif;
-            color: #111111;
-          ">
-            <h1 style="
-              margin: 0;
-              font-size: 30px;
-              text-align: center;
-            ">
-              $name
-            </h1>
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
 
-            <p style="
-              margin: 7px 0 18px 0;
-              text-align: center;
-              font-size: 16px;
-              color: #666666;
-            ">
-              $period · $time1 - $time2
-            </p>
+      if (byteData == null) return null;
 
-            $imageHtml
-
-            <table style="
-              width: 100%;
-              border-collapse: collapse;
-              font-size: 16px;
-            ">
-              <tr>
-                <td style="
-                  padding: 8px;
-                  font-weight: bold;
-                  border-bottom: 1px solid #dddddd;
-                ">
-                  Diet
-                </td>
-
-                <td style="
-                  padding: 8px;
-                  border-bottom: 1px solid #dddddd;
-                ">
-                  $diet
-                </td>
-              </tr>
-
-              <tr>
-                <td style="
-                  padding: 8px;
-                  font-weight: bold;
-                  border-bottom: 1px solid #dddddd;
-                ">
-                  Length
-                </td>
-
-                <td style="
-                  padding: 8px;
-                  border-bottom: 1px solid #dddddd;
-                ">
-                  $length
-                </td>
-              </tr>
-
-              <tr>
-                <td style="
-                  padding: 8px;
-                  font-weight: bold;
-                  border-bottom: 1px solid #dddddd;
-                ">
-                  Weight
-                </td>
-
-                <td style="
-                  padding: 8px;
-                  border-bottom: 1px solid #dddddd;
-                ">
-                  $weight
-                </td>
-              </tr>
-
-              <tr>
-                <td style="
-                  padding: 8px;
-                  font-weight: bold;
-                  border-bottom: 1px solid #dddddd;
-                ">
-                  Country
-                </td>
-
-                <td style="
-                  padding: 8px;
-                  border-bottom: 1px solid #dddddd;
-                ">
-                  $country
-                </td>
-              </tr>
-
-              <tr>
-                <td style="
-                  padding: 8px;
-                  font-weight: bold;
-                  border-bottom: 1px solid #dddddd;
-                ">
-                  Region
-                </td>
-
-                <td style="
-                  padding: 8px;
-                  border-bottom: 1px solid #dddddd;
-                ">
-                  $region
-                </td>
-              </tr>
-
-              <tr>
-                <td style="
-                  padding: 8px;
-                  font-weight: bold;
-                  border-bottom: 1px solid #dddddd;
-                ">
-                  Formation
-                </td>
-
-                <td style="
-                  padding: 8px;
-                  border-bottom: 1px solid #dddddd;
-                ">
-                  $formation
-                </td>
-              </tr>
-
-              <tr>
-                <td style="
-                  padding: 8px;
-                  font-weight: bold;
-                ">
-                  Habitat
-                </td>
-
-                <td style="padding: 8px;">
-                  $habitat
-                </td>
-              </tr>
-            </table>
-
-            <p style="
-              margin: 20px 0 0 0;
-              font-size: 16px;
-              line-height: 1.45;
-              text-align: justify;
-            ">
-              $description
-            </p>
-          </div>
-        ]]></text>
-      </BalloonStyle>
-    </Style>
-
-    <Placemark id="selectedDinosaur">
-      <name>$name</name>
-      <styleUrl>#selectedDinosaurStyle</styleUrl>
-
-      <Point>
-        <altitudeMode>clampToGround</altitudeMode>
-        <coordinates>${dinosaur.longitude},${dinosaur.latitude},0</coordinates>
-      </Point>
-    </Placemark>
-  </Document>
-</kml>''';
-
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final balloonFileName = 'selected_dinosaur_$timestamp.kml';
-
-      final uploadedKml = await uploadBytesToLG(
-        bytes: Uint8List.fromList(balloonKml.codeUnits),
-        fileName: balloonFileName,
-      );
-
-      if (!uploadedKml) {
-        debugPrint('Could not upload dinosaur balloon KML');
-        return false;
-      }
-
-      final loadResult = await execute(
-        "echo 'http://lg1:81/$balloonFileName' > /var/www/html/kmls.txt",
-        'Dinosaur balloon KML loaded',
-      );
-
-      if (loadResult == null) {
-        return false;
-      }
-
-      await Future.delayed(const Duration(seconds: 1));
-
-      final balloonResult = await execute(
-        "echo 'balloon=selectedDinosaur' > /tmp/query.txt",
-        'Dinosaur balloon opened',
-      );
-
-      return balloonResult != null;
-    } catch (e, stackTrace) {
-      debugPrint('Error showing dinosaur balloon: $e');
-      debugPrint('$stackTrace');
-      return false;
+      return byteData.buffer.asUint8List();
+    } catch (e) {
+      debugPrint('Error creating dinosaur info image: $e');
+      return null;
     }
   }
 
@@ -826,13 +496,13 @@ class LgService extends ChangeNotifier {
           validDinosaurs
               .map((dinosaur) => dinosaur.latitude)
               .reduce((a, b) => a + b) /
-              validDinosaurs.length;
+          validDinosaurs.length;
 
       final longitude =
           validDinosaurs
               .map((dinosaur) => dinosaur.longitude)
               .reduce((a, b) => a + b) /
-              validDinosaurs.length;
+          validDinosaurs.length;
 
       final range = validDinosaurs.length <= 1 ? 250000 : 900000;
 
@@ -859,8 +529,135 @@ class LgService extends ChangeNotifier {
     }
   }
 
+
+  Future<bool> showDinosaurMarker(Dinosaur dinosaur) async {
+    try {
+      if (dinosaur.latitude == 0 || dinosaur.longitude == 0) {
+        debugPrint('No valid dinosaur coordinates');
+        return false;
+      }
+
+      final uploaded = await uploadAssetToLG(
+        assetPath: 'assets/images/markers/dinosaur_marker.png',
+        fileName: 'dinosaur_marker.png',
+      );
+
+      if (!uploaded) {
+        debugPrint('Could not upload dinosaur marker');
+        return false;
+      }
+
+      final markerPosition = calculateMarkerPosition(dinosaur);
+      final markerLat = markerPosition[0];
+      final markerLon = markerPosition[1];
+
+      final name = _cleanText(dinosaur.name);
+      final description = _cleanText(
+        '${dinosaur.periodName}\n'
+            '${dinosaur.country}, ${dinosaur.region}\n'
+            'Diet: ${dinosaur.diet}\n'
+            'Length: ${dinosaur.length}\n'
+            'Weight: ${dinosaur.weight}',
+      );
+
   Future<bool> showCountryMarkers(List<Dinosaur> dinosaurs) async {
-    return showDinosaurMarkers(dinosaurs);
+    try {
+      final Map<String, List<Dinosaur>> groupedByCountry = {};
+
+      for (final dinosaur in dinosaurs) {
+        if (dinosaur.latitude == 0 || dinosaur.longitude == 0) continue;
+
+        groupedByCountry.putIfAbsent(dinosaur.country, () => []);
+        groupedByCountry[dinosaur.country]!.add(dinosaur);
+      }
+
+      await uploadAssetToLG(
+        assetPath: 'assets/images/markers/dino_marker.png',
+        fileName: 'dino_marker.png',
+      );
+
+      final placemarks = groupedByCountry.entries
+          .map((entry) {
+            final country = _cleanText(entry.key);
+            final countryDinosaurs = entry.value;
+
+            final latitude =
+                countryDinosaurs
+                    .map((dinosaur) => dinosaur.latitude)
+                    .reduce((a, b) => a + b) /
+                countryDinosaurs.length;
+
+            final longitude =
+                countryDinosaurs
+                    .map((dinosaur) => dinosaur.longitude)
+                    .reduce((a, b) => a + b) /
+                countryDinosaurs.length;
+
+            return '''
+<Placemark>
+  <name>$country</name>
+  <description>${countryDinosaurs.length} dinosaurs found</description>
+  <Style>
+    <IconStyle>
+      <scale>1.4</scale>
+      <Icon>
+         <href>http://lg1:81/dino_marker.png</href>
+      </Icon>
+    </IconStyle>
+  </Style>
+  <Point>
+    <coordinates>$longitude,$latitude,0</coordinates>
+  </Point>
+</Placemark>
+''';
+          })
+      final kml =
+          '''<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Dinosaur Marker</name>
+
+    <Placemark>
+      <name>$name</name>
+      <description>$description</description>
+
+      <Style>
+        <IconStyle>
+          <scale>8.0</scale>
+          <Icon>
+            <href>http://lg1:81/dinosaur_marker.png</href>
+          </Icon>
+          <hotSpot x="0.5" y="0" xunits="fraction" yunits="fraction"/>
+        </IconStyle>
+        <LabelStyle>
+          <scale>2.0</scale>
+        </LabelStyle>
+      </Style>
+
+      <Point>
+        <altitudeMode>clampToGround</altitudeMode>
+        <coordinates>$markerLon,$markerLat,0</coordinates>
+      </Point>
+    </Placemark>
+
+    <name>Country Markers</name>
+    $placemarks
+>>>>>>> parent of 6812104 (Merge branch 'comments')
+  </Document>
+</kml>''';
+
+      final result = await execute(
+        "echo '$kml' > /var/www/html/kml/slave_1.kml",
+        'Dinosaur marker sent',
+
+        'Country markers sent',
+      );
+
+      return result != null;
+    } catch (e) {
+      debugPrint('Error showing country markers: $e');
+      return false;
+    }
   }
 
   Future<bool> flyToEarth() async {
@@ -888,39 +685,23 @@ class LgService extends ChangeNotifier {
     }
   }
 
-  Future<void> showAllDinosaurMarkers() async {
-    try {
-      final dinosaurs = await DinosaurService.loadDinosaurs();
-      await showDinosaurMarkers(dinosaurs);
-    } catch (e) {
-      debugPrint('Error showing all dinosaur markers: $e');
-    }
-  }
-
   Future<bool> showDinosaurMarkers(List<Dinosaur> dinosaurs) async {
     try {
-      debugPrint('1. showDinosaurMarkers started');
-      debugPrint('Dinosaurs received: ${dinosaurs.length}');
-
       final validDinosaurs = dinosaurs.where((dinosaur) {
         return dinosaur.latitude != 0 && dinosaur.longitude != 0;
       }).toList();
-
-      debugPrint('2. Valid dinosaurs: ${validDinosaurs.length}');
 
       if (validDinosaurs.isEmpty) {
         debugPrint('No valid dinosaur coordinates');
         return false;
       }
 
-      final markerUploaded = await uploadAssetToLG(
+      final uploaded = await uploadAssetToLG(
         assetPath: 'assets/images/markers/dino_marker.png',
         fileName: 'dino_marker.png',
       );
 
-      debugPrint('3. Marker image uploaded: $markerUploaded');
-
-      if (!markerUploaded) {
+      if (!uploaded) {
         debugPrint('Could not upload dino marker');
         return false;
       }
@@ -930,36 +711,35 @@ class LgService extends ChangeNotifier {
         final country = _cleanText(dinosaur.country);
         final region = _cleanText(dinosaur.region);
 
-        debugPrint(
-          'Creating marker: ${dinosaur.name} '
-              'lat=${dinosaur.latitude}, lon=${dinosaur.longitude}',
-        );
+        final markerPosition = dinosaur.getMarkerCoordinates();
+        final markerLat = markerPosition['latitude'];
+        final markerLon = markerPosition['longitude'];
 
         return '''
 <Placemark>
   <name>$name</name>
   <description>$country - $region</description>
+
   <Style>
     <IconStyle>
-      <scale>1.5</scale>
+      <scale>6.0</scale>
       <Icon>
         <href>http://lg1:81/dino_marker.png</href>
       </Icon>
       <hotSpot x="0.5" y="0" xunits="fraction" yunits="fraction"/>
     </IconStyle>
     <LabelStyle>
-      <scale>0.8</scale>
+      <scale>2.0</scale>
     </LabelStyle>
   </Style>
+
   <Point>
     <altitudeMode>clampToGround</altitudeMode>
-    <coordinates>${dinosaur.longitude},${dinosaur.latitude},0</coordinates>
+    <coordinates>$markerLon,$markerLat,0</coordinates>
   </Point>
 </Placemark>
 ''';
       }).join('\n');
-
-      debugPrint('4. Placemarks generated');
 
       final markersKml = '''<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
@@ -969,59 +749,80 @@ class LgService extends ChangeNotifier {
   </Document>
 </kml>''';
 
-      final markersUploaded = await uploadBytesToLG(
-        bytes: Uint8List.fromList(markersKml.codeUnits),
-        fileName: 'geosaurio_markers.kml',
-      );
-
-      debugPrint('5. Marker KML uploaded: $markersUploaded');
-
-      if (!markersUploaded) {
-        debugPrint('KML upload failed');
-        return false;
-      }
-
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-
       final networkLinkKml = '''<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
-    <name>GeoSaurio Markers Loader</name>
+    <name>GeoSaurio Markers Link</name>
     <NetworkLink>
-      <name>Dinosaur Markers</name>
-      <open>1</open>
+      <name>GeoSaurio Dinosaur Markers</name>
       <Link>
-        <href>http://lg1:81/geosaurio_markers.kml?v=$timestamp</href>
+        <href>http://lg1:81/geosaurio_markers.kml</href>
         <refreshMode>onInterval</refreshMode>
-        <refreshInterval>2</refreshInterval>
-        <viewRefreshMode>never</viewRefreshMode>
+        <refreshInterval>1</refreshInterval>
       </Link>
     </NetworkLink>
   </Document>
 </kml>''';
 
-      final loaderUploaded = await uploadBytesToLG(
-        bytes: Uint8List.fromList(networkLinkKml.codeUnits),
-        fileName: 'kml/slave_1.kml',
+      await execute(
+        "echo '$markersKml' > /var/www/html/geosaurio_markers.kml",
+        'Markers KML file sent',
       );
 
-      debugPrint('6. NetworkLink loader uploaded: $loaderUploaded');
+      final result = await execute(
+        "echo '$networkLinkKml' > /var/www/html/kml/slave_1.kml",
+        'Markers NetworkLink sent',
+>>>>>>> parent of 6812104 (Merge branch 'comments')
+      );
 
-      if (!loaderUploaded) {
-        debugPrint('Could not write NetworkLink to slave_1.kml');
-        return false;
-      }
-
-      debugPrint('7. showDinosaurMarkers finished');
-      return true;
-    } catch (e, stackTrace) {
-      debugPrint('Error showing dinosaur markers: $e');
-      debugPrint('$stackTrace');
+      return result != null;
+    } catch (e) {
+      debugPrint('Error showing dinosaur marker: $e');
       return false;
     }
   }
 
+<<<<<<< HEAD
+  List<double> calculateMarkerPosition(Dinosaur dinosaur) {
+    const earthRadius = 6371000.0;
+
+    final startLat = dinosaur.latitude * math.pi / 180.0;
+    final startLon = dinosaur.longitude * math.pi / 180.0;
+    final heading = dinosaur.heading * math.pi / 180.0;
+
+    final baseRange = dinosaur.range == 0 ? 8000.0 : dinosaur.range;
+
+    // Ajusta esto si quieres el marker más cerca o más lejos del centro visual
+    final distance = (baseRange * 0.25).clamp(400.0, 5000.0);
+
+    final angularDistance = distance / earthRadius;
+
+    final markerLat = math.asin(
+      math.sin(startLat) * math.cos(angularDistance) +
+          math.cos(startLat) *
+              math.sin(angularDistance) *
+              math.cos(heading),
+    );
+
+    final markerLon = startLon +
+        math.atan2(
+          math.sin(heading) *
+              math.sin(angularDistance) *
+              math.cos(startLat),
+          math.cos(angularDistance) -
+              math.sin(startLat) * math.sin(markerLat),
+        );
+
+    return [
+      markerLat * 180.0 / math.pi,
+      markerLon * 180.0 / math.pi,
+    ];
+  }
+
+  Future<bool> sendLogo() async { //Send logo
+=======
   Future<bool> sendLogo() async {
+>>>>>>> parent of 6812104 (Merge branch 'comments')
     try {
       final screen = calculateLeftMostScreen(_lgConnectionModel.screens);
 
@@ -1074,7 +875,7 @@ class LgService extends ChangeNotifier {
       if (!uploaded) return false;
 
       final kml =
-      '''<?xml version="1.0" encoding="UTF-8"?>
+          '''<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
     <ScreenOverlay>
@@ -1102,6 +903,83 @@ class LgService extends ChangeNotifier {
     }
   }
 
+  Future<bool> showDinosaurAboutKml(Dinosaur dinosaur) async {
+    try {
+      final screen = calculateRightMostScreen(_lgConnectionModel.screens);
+      final cleanName = cleanDinosaurImageName(dinosaur.name);
+
+      final assetPath = await getExistingImagePath(
+        'assets/images/dinosaurs/${cleanName}_normal',
+      );
+
+      String? imageFileName;
+
+      if (assetPath != null) {
+        final extension = assetPath.split('.').last;
+        imageFileName = '${cleanName}_normal.$extension';
+
+        await uploadAssetToLG(assetPath: assetPath, fileName: imageFileName);
+      }
+
+      final infoBytes = await createDinosaurInfoImage(dinosaur);
+      if (infoBytes == null) return false;
+
+      final infoFileName = '${cleanName}_info.png';
+
+      final uploadedInfo = await uploadBytesToLG(
+        bytes: infoBytes,
+        fileName: infoFileName,
+      );
+
+      if (!uploadedInfo) return false;
+
+      final imageOverlay = imageFileName == null
+          ? ''
+          : '''
+    <ScreenOverlay>
+      <name>Dinosaur Image</name>
+      <Icon>
+        <href>http://lg1:81/$imageFileName</href>
+      </Icon>
+      <overlayXY x="0.5" y="0.5" xunits="fraction" yunits="fraction"/>
+      <screenXY x="0.5" y="0.72" xunits="fraction" yunits="fraction"/>
+      <size x="620" y="0" xunits="pixels" yunits="pixels"/>
+    </ScreenOverlay>
+''';
+
+      final textY = imageFileName == null ? '0.50' : '0.30';
+      final textSize = imageFileName == null ? '900' : '760';
+
+      final kml =
+          '''<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+$imageOverlay
+    <ScreenOverlay>
+      <name>Dinosaur Info</name>
+      <Icon>
+        <href>http://lg1:81/$infoFileName</href>
+      </Icon>
+      <overlayXY x="0.5" y="0.5" xunits="fraction" yunits="fraction"/>
+      <screenXY x="0.5" y="$textY" xunits="fraction" yunits="fraction"/>
+      <size x="$textSize" y="0" xunits="pixels" yunits="pixels"/>
+    </ScreenOverlay>
+  </Document>
+</kml>''';
+
+      await cleanRightScreenKml();
+
+      final result = await execute(
+        "echo '$kml' > /var/www/html/kml/slave_$screen.kml",
+        'Dinosaur about KML sent',
+      );
+
+      return result != null;
+    } catch (e) {
+      debugPrint('Error showing dinosaur about KML: $e');
+      return false;
+    }
+  }
 
 
   Future<bool> cleanKmlKeepingLogos() async {
@@ -1116,18 +994,13 @@ class LgService extends ChangeNotifier {
 </kml>''';
 
       for (var i = 1; i <= _lgConnectionModel.screens; i++) {
-        if (i == 1 || i == logoScreen) continue;
+        if (i == logoScreen) continue;
 
         await execute(
           "echo '$blankKml' > /var/www/html/kml/slave_$i.kml",
           'Cleaned KML screen $i',
         );
       }
-
-      await execute(
-        "echo '' > /var/www/html/kmls.txt",
-        'Loaded geographic KMLs cleaned',
-      );
 
       await execute(
         "echo '' > /tmp/query.txt",
@@ -1164,6 +1037,27 @@ class LgService extends ChangeNotifier {
     }
   }
 
+  Future<bool> showDinosaurAboutBalloon(Dinosaur dinosaur) async {
+    return await showDinosaurAboutKml(dinosaur);
+  }
+
+  Future<bool> showDinosaurNormalOverlay(Dinosaur dinosaur) async {
+    final cleanName = cleanDinosaurImageName(dinosaur.name);
+
+    final assetPath = await getExistingImagePath(
+      'assets/images/dinosaurs/${cleanName}_normal',
+    );
+
+    if (assetPath == null) return false;
+
+    final extension = assetPath.split('.').last;
+
+    return await showRightScreenImage(
+      assetPath: assetPath,
+      fileName: '${cleanName}_normal.$extension',
+    );
+  }
+
   Future<bool> showDinosaurSkeletonImage(Dinosaur dinosaur) async {
     final cleanName = cleanDinosaurImageName(dinosaur.name);
 
@@ -1171,10 +1065,7 @@ class LgService extends ChangeNotifier {
       'assets/images/dinosaurs/${cleanName}_skeleton',
     );
 
-    if (assetPath == null) {
-      debugPrint('Skeleton image not found for ${dinosaur.name}');
-      return false;
-    }
+    if (assetPath == null) return false;
 
     final extension = assetPath.split('.').last;
     final imageFileName = '${cleanName}_skeleton.$extension';
@@ -1195,9 +1086,7 @@ class LgService extends ChangeNotifier {
 
     if (!uploadedHtml) return false;
 
-    return openChromiumOnAllScreens(
-      'http://lg1:81/skeleton.html',
-    );
+    return await openChromiumOnAllScreens('http://lg1:81/skeleton.html');
   }
 
   Future<bool> showDinosaurComparisonImage(Dinosaur dinosaur) async {
@@ -1237,7 +1126,7 @@ class LgService extends ChangeNotifier {
         final fullUrl = '$url?screen=$i&total=${_lgConnectionModel.screens}';
 
         final command =
-        '''
+            '''
 sshpass -p ${_lgConnectionModel.password} ssh -t lg$i "DISPLAY=:0 chromium-browser --kiosk --no-first-run --disable-infobars '$fullUrl' > /dev/null 2>&1 &"
 ''';
 
@@ -1257,7 +1146,7 @@ sshpass -p ${_lgConnectionModel.password} ssh -t lg$i "DISPLAY=:0 chromium-brows
     try {
       for (var i = 1; i <= _lgConnectionModel.screens; i++) {
         final command =
-        '''
+            '''
 sshpass -p ${_lgConnectionModel.password} ssh -t lg$i "
 pkill -f chromium-browser || true
 pkill -f chromium || true
@@ -1292,24 +1181,6 @@ DISPLAY=:0 xdotool key F11 || true
     }
   }
 
-  Future<bool> uploadBytesToKml(String kml, String fileName) async {
-    try {
-      final sftp = await _client!.sftp();
-      final remoteFile = await sftp.open(
-        '/var/www/html/$fileName',
-        mode: SftpFileOpenMode.create |
-        SftpFileOpenMode.truncate |
-        SftpFileOpenMode.write,
-      );
-      await remoteFile.write(Stream.value(Uint8List.fromList(kml.codeUnits)));
-      await remoteFile.close();
-      return true;
-    } catch (e) {
-      debugPrint('Error uploading KML: $e');
-      return false;
-    }
-  }
-
   Future<bool> uploadHtmlToLG({
     required String htmlFileName,
     required String imageFileName,
@@ -1318,7 +1189,7 @@ DISPLAY=:0 xdotool key F11 || true
   }) async {
     try {
       final html =
-      '''
+          '''
 <!DOCTYPE html>
 <html>
 <head>
@@ -1430,9 +1301,9 @@ img.onload = () => {
       final remoteFile = await sftp.open(
         '/var/www/html/$htmlFileName',
         mode:
-        SftpFileOpenMode.create |
-        SftpFileOpenMode.truncate |
-        SftpFileOpenMode.write,
+            SftpFileOpenMode.create |
+            SftpFileOpenMode.truncate |
+            SftpFileOpenMode.write,
       );
 
       await remoteFile.write(Stream.value(Uint8List.fromList(html.codeUnits)));
@@ -1480,7 +1351,7 @@ img.onload = () => {
       final logoScreen = calculateLeftMostScreen(_lgConnectionModel.screens);
 
       for (var i = 1; i <= _lgConnectionModel.screens; i++) {
-        if (i == 1 || i == logoScreen) {
+        if (i == logoScreen) {
           continue;
         }
 
@@ -1540,52 +1411,9 @@ img.onload = () => {
     }
   }
 
-  Future<bool> flyToMapPosition({
-    required double latitude,
-    required double longitude,
-    required double zoom,
-    double bearing = 0,
-  }) async {
-    try {
-      final range = _mapZoomToRange(zoom);
-
-      final lookAt =
-          '<LookAt>'
-          '<longitude>$longitude</longitude>'
-          '<latitude>$latitude</latitude>'
-          '<altitude>0</altitude>'
-          '<heading>$bearing</heading>'
-          '<tilt>0</tilt>'
-          '<range>$range</range>'
-          '<altitudeMode>relativeToGround</altitudeMode>'
-          '</LookAt>';
-
-      debugPrint(
-        'Sending map position: '
-            'lat=$latitude, lon=$longitude, zoom=$zoom, range=$range',
-      );
-
-      final result = await execute(
-        "echo 'flytoview=$lookAt' > /tmp/query.txt",
-        'Map position sent to Liquid Galaxy',
-      );
-
-      return result != null;
-    } catch (e) {
-      debugPrint('Error synchronizing map with Liquid Galaxy: $e');
-      return false;
-    }
-  }
-
-  double _mapZoomToRange(double zoom) {
-    final calculatedRange = 40000000.0 / math.pow(2, zoom);
-
-    return calculatedRange.clamp(300.0, 20000000.0).toDouble();
-  }
-
   Future<bool> relaunchLG() async {
     final relaunchCmd =
-    '''
+        '''
 RELAUNCH_CMD="\\
 if [ -f /etc/init/lxdm.conf ];
 then
@@ -1609,4 +1437,354 @@ fi
 
     return result != null;
   }
+<<<<<<< HEAD
+
+  List<double> calculateModelPositionInFrontOfCamera(
+      Dinosaur dinosaur, {
+        double positionFactor = 0.0,
+      }) {
+    const earthRadius = 6371000.0;
+
+    final range = dinosaur.range == 0 ? 8000.0 : dinosaur.range;
+    final tiltRadians = dinosaur.tilt * math.pi / 180.0;
+    final horizontalDistance = range * math.sin(tiltRadians);
+
+    final factor = positionFactor.clamp(0.0, 1.0).toDouble();
+    final displacement = horizontalDistance * factor;
+
+    if (displacement == 0) {
+      return [
+        dinosaur.latitude,
+        dinosaur.longitude,
+      ];
+    }
+
+    final startLatitude =
+        dinosaur.latitude * math.pi / 180.0;
+
+    final startLongitude =
+        dinosaur.longitude * math.pi / 180.0;
+
+    final bearing =
+        (dinosaur.heading + 180.0) * math.pi / 180.0;
+
+    final angularDistance = displacement / earthRadius;
+
+    final destinationLatitude = math.asin(
+      math.sin(startLatitude) * math.cos(angularDistance) +
+          math.cos(startLatitude) *
+              math.sin(angularDistance) *
+              math.cos(bearing),
+    );
+
+    final destinationLongitude = startLongitude +
+        math.atan2(
+          math.sin(bearing) *
+              math.sin(angularDistance) *
+              math.cos(startLatitude),
+          math.cos(angularDistance) -
+              math.sin(startLatitude) *
+                  math.sin(destinationLatitude),
+        );
+
+    return [
+      destinationLatitude * 180.0 / math.pi,
+      destinationLongitude * 180.0 / math.pi,
+    ];
+  }
+
+  Future<bool> showDinosaurModel(
+      Dinosaur dinosaur, {
+        double scale = 100,
+        double altitude = 1,
+        double headingOffset = 0,
+        double tilt = 0,
+        double roll = 0,
+      }) async {
+    try {
+      if (dinosaur.latitude == 0 || dinosaur.longitude == 0) {
+        debugPrint('No valid dinosaur coordinates');
+        return false;
+      }
+
+      final uploadedModel = await uploadAssetToLG(
+        assetPath: 'assets/models/dinosaur_skull.dae',
+        fileName: 'dinosaur_skull.dae',
+      );
+
+      if (!uploadedModel) {
+        debugPrint('Could not upload dinosaur model');
+        return false;
+      }
+
+      // Coordinates obtained directly from the database.
+      final modelLatitude = dinosaur.latitude;
+      final modelLongitude = dinosaur.longitude;
+
+      final modelHeading =
+          (dinosaur.heading + headingOffset) % 360.0;
+
+      final name = _cleanText(dinosaur.name);
+
+      final kml = '''<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>$name 3D Model</name>
+
+    <Placemark>
+      <name>$name</name>
+
+      <Model>
+        <altitudeMode>relativeToGround</altitudeMode>
+
+        <Location>
+          <longitude>$modelLongitude</longitude>
+          <latitude>$modelLatitude</latitude>
+          <altitude>$altitude</altitude>
+        </Location>
+
+        <Orientation>
+          <heading>$modelHeading</heading>
+          <tilt>$tilt</tilt>
+          <roll>$roll</roll>
+        </Orientation>
+
+        <Scale>
+          <x>$scale</x>
+          <y>$scale</y>
+          <z>$scale</z>
+        </Scale>
+
+        <Link>
+          <href>http://lg1:81/dinosaur_skull.dae</href>
+        </Link>
+      </Model>
+    </Placemark>
+  </Document>
+</kml>''';
+
+      final result = await execute(
+        "echo '$kml' > /var/www/html/kml/slave_1.kml",
+        'Dinosaur 3D model sent',
+      );
+
+      return result != null;
+    } catch (e) {
+      debugPrint('Error showing dinosaur model: $e');
+      return false;
+    }
+  }
+
+  Future<bool> showAllDinosaurModels(
+      List<Dinosaur> dinosaurs, {
+        double scale = 100,
+        double altitude = 1,
+        double headingOffset = 0,
+      }) async {
+    try {
+      final validDinosaurs = dinosaurs.where((dinosaur) {
+        return dinosaur.latitude != 0 && dinosaur.longitude != 0;
+      }).toList();
+
+      if (validDinosaurs.isEmpty) {
+        debugPrint('No dinosaurs with valid coordinates');
+        return false;
+      }
+
+      final uploadedModel = await uploadAssetToLG(
+        assetPath: 'assets/models/dinosaur_skull.dae',
+        fileName: 'dinosaur_skull.dae',
+      );
+
+      if (!uploadedModel) {
+        debugPrint('Could not upload dinosaur model');
+        return false;
+      }
+
+      final placemarks = validDinosaurs.map((dinosaur) {
+        final name = _cleanText(dinosaur.name);
+
+        final modelHeading =
+            (dinosaur.heading + headingOffset) % 360.0;
+
+        return '''
+    <Placemark>
+      <name>$name</name>
+
+      <Model>
+        <altitudeMode>relativeToGround</altitudeMode>
+
+        <Location>
+          <longitude>${dinosaur.longitude}</longitude>
+          <latitude>${dinosaur.latitude}</latitude>
+          <altitude>$altitude</altitude>
+        </Location>
+
+        <Orientation>
+          <heading>$modelHeading</heading>
+          <tilt>0</tilt>
+          <roll>0</roll>
+        </Orientation>
+
+        <Scale>
+          <x>$scale</x>
+          <y>$scale</y>
+          <z>$scale</z>
+        </Scale>
+
+        <Link>
+          <href>http://lg1:81/dinosaur_skull.dae</href>
+        </Link>
+      </Model>
+    </Placemark>
+''';
+      }).join('\n');
+
+      final kml = '''<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>GeoSaurio 3D Models</name>
+
+$placemarks
+
+  </Document>
+</kml>''';
+
+      final result = await execute(
+        "cat > /var/www/html/kml/slave_1.kml <<'EOF'\n"
+            "$kml\n"
+            "EOF",
+        '${validDinosaurs.length} dinosaur models sent',
+      );
+
+      debugPrint(
+        '${validDinosaurs.length} dinosaur models placed at database coordinates',
+      );
+
+      return result != null;
+    } catch (e) {
+      debugPrint('Error showing all dinosaur models: $e');
+      return false;
+    }
+  }
+
+  Future<Uint8List?> createDinosaurStatsImage(List<Dinosaur> dinosaurs) async { //Create statistics image
+    try {
+      const double width = 900;
+      const double height = 260;
+
+      final validDinosaurs = dinosaurs.where((d) => d.name.isNotEmpty).toList();
+
+      final countries = validDinosaurs
+          .map((d) => d.country)
+          .where((value) => value.isNotEmpty)
+          .toSet();
+
+      final continents = validDinosaurs
+          .map((d) => d.area)
+          .where((value) => value.isNotEmpty)
+          .toSet();
+
+      final regions = validDinosaurs
+          .map((d) => d.region)
+          .where((value) => value.isNotEmpty)
+          .toSet();
+
+      final triassic = validDinosaurs
+          .where((d) => d.period == DinosaurPeriod.triassic)
+          .length;
+
+      final jurassic = validDinosaurs
+          .where((d) => d.period == DinosaurPeriod.jurassic)
+          .length;
+
+      final cretaceous = validDinosaurs
+          .where((d) => d.period == DinosaurPeriod.cretaceous)
+          .length;
+
+      final recorder = ui.PictureRecorder();
+      final canvas = ui.Canvas(recorder);
+
+      final backgroundPaint = ui.Paint()
+        ..color = const ui.Color(0xEEFFFFFF);
+
+      canvas.drawRRect(
+        ui.RRect.fromRectAndRadius(
+          const ui.Rect.fromLTWH(0, 0, width, height),
+          const ui.Radius.circular(24),
+        ),
+        backgroundPaint,
+      );
+
+      final titleStyle = ui.TextStyle(
+        color: const ui.Color(0xFF111111),
+        fontSize: 34,
+        fontWeight: ui.FontWeight.bold,
+      );
+
+      final bodyStyle = ui.TextStyle(
+        color: const ui.Color(0xFF111111),
+        fontSize: 25,
+      );
+
+      final titleBuilder = ui.ParagraphBuilder(
+        ui.ParagraphStyle(maxLines: 1),
+      )
+        ..pushStyle(titleStyle)
+        ..addText('GeoSaurio Statistics');
+
+      final titleParagraph = titleBuilder.build()
+        ..layout(
+          const ui.ParagraphConstraints(width: width - 60),
+        );
+
+      canvas.drawParagraph(
+        titleParagraph,
+        const ui.Offset(30, 22),
+      );
+
+      final stats = '''
+Dinosaurs: ${validDinosaurs.length}
+Countries: ${countries.length}  |  Continents: ${continents.length}  |  Regions: ${regions.length}
+Triassic: $triassic  |  Jurassic: $jurassic  |  Cretaceous: $cretaceous
+''';
+
+      final bodyBuilder = ui.ParagraphBuilder(
+        ui.ParagraphStyle(maxLines: 4),
+      )
+        ..pushStyle(bodyStyle)
+        ..addText(stats);
+
+      final bodyParagraph = bodyBuilder.build()
+        ..layout(
+          const ui.ParagraphConstraints(width: width - 60),
+        );
+
+      canvas.drawParagraph(
+        bodyParagraph,
+        const ui.Offset(30, 85),
+      );
+
+      final picture = recorder.endRecording();
+
+      final image = await picture.toImage(
+        width.toInt(),
+        height.toInt(),
+      );
+
+      final byteData = await image.toByteData(
+        format: ui.ImageByteFormat.png,
+      );
+
+      if (byteData == null) return null;
+
+      return byteData.buffer.asUint8List();
+    } catch (e) {
+      debugPrint('Error creating dinosaur stats image: $e');
+      return null;
+    }
+  }
 }
+=======
+}
+>>>>>>> parent of 6812104 (Merge branch 'comments')

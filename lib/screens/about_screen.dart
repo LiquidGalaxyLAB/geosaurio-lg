@@ -1,34 +1,28 @@
-// Imports the main Flutter widgets.
 import 'package:flutter/material.dart';
 
-// Imports the main application screen.
 import 'home_screen.dart';
-
-// Imports the Liquid Galaxy settings screen.
 import 'lg_settings_screen.dart';
 
-// Information screen about the project.
 class AboutScreen extends StatelessWidget {
-  // Constant constructor for the screen.
   const AboutScreen({super.key});
 
-  // Builds the visual interface of the screen.
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F4EF),
-
       drawer: buildDrawer(context),
-
       body: SafeArea(
         child: Builder(
           builder: (context) {
+<<<<<<< HEAD
+=======
+            // Allows scrolling if the content exceeds the screen size.
+>>>>>>> parent of 6812104 (Merge branch 'comments')
             return SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
                 children: [
                   const SizedBox(height: 10),
-
                   Row(
                     children: [
                       IconButton(
@@ -50,27 +44,18 @@ class AboutScreen extends StatelessWidget {
                       const SizedBox(width: 48),
                     ],
                   ),
-
                   const SizedBox(height: 20),
-
+                  Image.asset('assets/images/GeoSaurio.png', height: 140),
+                  const SizedBox(height: 12),
                   const Text(
                     'GEOSAURIO',
                     style: TextStyle(
-                      fontSize: 24,
+                      fontSize: 22,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-
                   const SizedBox(height: 6),
-
-                  const Text(
-                    'FOR LIQUID GALAXY',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.black54,
-                    ),
-                  ),
-
+                  const Text('FOR LIQUID GALAXY'),
                   const SizedBox(height: 30),
 
                   const Text(
@@ -80,25 +65,11 @@ class AboutScreen extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-
                   const SizedBox(height: 10),
-
                   const Text(
                     'Josep Miquel Sert Esteban',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 16),
                   ),
-
-                  const SizedBox(height: 6),
-
-                  const Text(
-                    'Google Summer of Code 2026',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.black54,
-                    ),
-                  ),
-
                   const SizedBox(height: 30),
 
                   const Text(
@@ -108,47 +79,39 @@ class AboutScreen extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-
                   const SizedBox(height: 12),
-
                   const Text(
-                    'GeoSaurio is an educational application developed for '
-                        'the Liquid Galaxy platform during Google Summer of Code '
-                        '2026. It allows users to explore dinosaurs through '
-                        'interactive maps, geological periods and detailed '
-                        'scientific information synchronized with Google Earth.',
+                    'GeoSaurio is an educational Flutter application created '
+                        'for Liquid Galaxy. The app allows users to explore '
+                        'dinosaurs by geological period, continent, country and '
+                        'species. When a dinosaur is selected, Liquid Galaxy flies '
+                        'to its location and displays visual information, images, '
+                        'facts and multimedia content to create an immersive '
+                        'learning experience.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(height: 1.4),
+                    style: TextStyle(fontSize: 16, height: 1.4),
                   ),
 
                   const SizedBox(height: 30),
-
-                  const Divider(
-                    thickness: 1,
-                    indent: 40,
-                    endIndent: 40,
-                  ),
-
-                  const SizedBox(height: 20),
-
                   const Text(
-                    'Developed in collaboration with',
+                    'Main Features',
                     style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.black54,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-
-                  const SizedBox(height: 20),
-
-                  Image.asset(
-                    'assets/images/logos.png',
-                    width: double.infinity,
-                    height: 130,
-                    fit: BoxFit.contain,
+                  const SizedBox(height: 12),
+                  const Text(
+                    '• Explore dinosaurs by period, continent and country\n'
+                        '• Fly through Earth using Liquid Galaxy\n'
+                        '• Display dinosaur images and information panels\n'
+                        '• Use audio and visual resources for learning\n'
+                        '• Designed for interactive educational demonstrations',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 16, height: 1.5),
                   ),
 
-                  const SizedBox(height: 35),
+                  const SizedBox(height: 30),
                 ],
               ),
             );
@@ -158,43 +121,50 @@ class AboutScreen extends StatelessWidget {
     );
   }
 
+<<<<<<< HEAD
+=======
   // Builds the side navigation drawer for this screen.
+>>>>>>> parent of 6812104 (Merge branch 'comments')
   Widget buildDrawer(BuildContext context) {
     return Drawer(
       child: SafeArea(
         child: Column(
           children: [
             const SizedBox(height: 25),
-
             const Text(
               'GeoSaurio',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
+<<<<<<< HEAD
+=======
 
+            // Space between title and menu options.
+>>>>>>> parent of 6812104 (Merge branch 'comments')
             const SizedBox(height: 25),
-
             ListTile(
               leading: const Icon(Icons.home),
               title: const Text('Main Menu'),
               onTap: () {
+<<<<<<< HEAD
+=======
+                // Navigates to HomeScreen and removes previous screens.
+>>>>>>> parent of 6812104 (Merge branch 'comments')
                 Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(
-                    builder: (context) => const HomeScreen(),
-                  ),
+                  MaterialPageRoute(builder: (context) => const HomeScreen()),
                       (route) => false,
                 );
               },
             ),
+<<<<<<< HEAD
+=======
 
+            // Option to open the Liquid Galaxy settings screen.
+>>>>>>> parent of 6812104 (Merge branch 'comments')
             ListTile(
               leading: const Icon(Icons.settings),
               title: const Text('LG Settings'),
               onTap: () {
                 Navigator.pop(context);
-
                 Navigator.push(
                   context,
                   MaterialPageRoute(
