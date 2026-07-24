@@ -529,7 +529,7 @@ ${_cleanText(dinosaur.generalInfo)}
     }
   }
 
-
+<<<<<<< HEAD
   Future<bool> showDinosaurMarker(Dinosaur dinosaur) async {
     try {
       if (dinosaur.latitude == 0 || dinosaur.longitude == 0) {
@@ -559,7 +559,7 @@ ${_cleanText(dinosaur.generalInfo)}
             'Length: ${dinosaur.length}\n'
             'Weight: ${dinosaur.weight}',
       );
-
+=======
   Future<bool> showCountryMarkers(List<Dinosaur> dinosaurs) async {
     try {
       final Map<String, List<Dinosaur>> groupedByCountry = {};
@@ -611,10 +611,14 @@ ${_cleanText(dinosaur.generalInfo)}
 </Placemark>
 ''';
           })
+          .join('\n');
+>>>>>>> parent of 6812104 (Merge branch 'comments')
+
       final kml =
           '''<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
+<<<<<<< HEAD
     <name>Dinosaur Marker</name>
 
     <Placemark>
@@ -639,7 +643,7 @@ ${_cleanText(dinosaur.generalInfo)}
         <coordinates>$markerLon,$markerLat,0</coordinates>
       </Point>
     </Placemark>
-
+=======
     <name>Country Markers</name>
     $placemarks
 >>>>>>> parent of 6812104 (Merge branch 'comments')
@@ -648,8 +652,9 @@ ${_cleanText(dinosaur.generalInfo)}
 
       final result = await execute(
         "echo '$kml' > /var/www/html/kml/slave_1.kml",
+<<<<<<< HEAD
         'Dinosaur marker sent',
-
+=======
         'Country markers sent',
       );
 
