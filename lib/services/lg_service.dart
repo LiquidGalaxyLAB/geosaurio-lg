@@ -225,26 +225,114 @@ class LgService extends ChangeNotifier {
     }
   }
 
+  Future<void> _setRefreshInterval(
+      int screenNumber,
+      int interval,
+      ) async {
+    try {
+      final search =
+          '<href>##LG_PHPIFACE##kml\\/slave_$screenNumber.kml<\\/href>';
+
+      final replace =
+          '<href>##LG_PHPIFACE##kml\\/slave_$screenNumber.kml<\\/href>'
+          '<refreshMode>onInterval<\\/refreshMode>'
+          '<refreshInterval>$interval<\\/refreshInterval>';
+
+      final command =
+          'echo ${_lgConnectionModel.password} | sudo -S '
+          'sed -i "s|$search|$replace|" '
+          '~/earth/kml/slave/myplaces.kml';
+
+      await execute(
+        'sshpass -p ${_lgConnectionModel.password} '
+            'ssh -t lg$screenNumber \'$command\'',
+        'Added refresh interval to screen $screenNumber',
+      );
+    } catch (e) {
+      debugPrint(
+        'Error setting refresh interval: $e',
+      );
+    }
+  }
+
+  Future<void> _removeRefreshInterval(
+      int screenNumber,
+      ) async {
+    try {
+      final search =
+          '<href>##LG_PHPIFACE##kml\\/slave_$screenNumber.kml<\\/href>'
+          '<refreshMode>onInterval<\\/refreshMode>'
+          '<refreshInterval>[0-9]+<\\/refreshInterval>';
+
+      final replace =
+          '<href>##LG_PHPIFACE##kml\\/slave_$screenNumber.kml<\\/href>';
+
+      final command =
+          'echo ${_lgConnectionModel.password} | sudo -S '
+          'sed -i "s|$search|$replace|" '
+          '~/earth/kml/slave/myplaces.kml';
+
+      await execute(
+        'sshpass -p ${_lgConnectionModel.password} '
+            'ssh -t lg$screenNumber \'$command\'',
+        'Removed refresh interval from screen $screenNumber',
+      );
+    } catch (e) {
+      debugPrint(
+        'Error removing refresh interval: $e',
+      );
+    }
+  }
+
+  Future<void> _forceRefresh(
+      int screenNumber,
+      ) async {
+    try {
+      await _setRefreshInterval(
+        screenNumber,
+        2,
+      );
+
+      await _removeRefreshInterval(
+        screenNumber,
+      );
+    } catch (e) {
+      debugPrint(
+        'Error during force refresh: $e',
+      );
+    }
+  }
+
   Future<void> _initializeLiquidGalaxyContent() async {
-    if (_initializingAfterConnection || !_isConnected || _client == null) {
+    if (_initializingAfterConnection ||
+        !_isConnected ||
+        _client == null) {
       return;
     }
 
     _initializingAfterConnection = true;
 
     try {
-      await Future.delayed(const Duration(seconds: 2));
+      await Future.delayed(
+        const Duration(seconds: 2),
+      );
 
       debugPrint('Sending logo');
+
       final logoSent = await sendLogo();
-      debugPrint('Logo result: $logoSent');
 
-      debugPrint('Starting all dinosaur markers');
-      await showAllDinosaurMarkers();
+      debugPrint(
+        'Logo result: $logoSent',
+      );
 
-      debugPrint('Connection initialization completed');
+      debugPrint(
+        'Connection initialization completed',
+      );
     } catch (e, stackTrace) {
-      debugPrint('Error initializing Liquid Galaxy content: $e');
+      debugPrint(
+        'Error initializing Liquid Galaxy content: $e',
+      );
+
       debugPrint('$stackTrace');
     } finally {
       _initializingAfterConnection = false;
@@ -329,6 +417,32 @@ class LgService extends ChangeNotifier {
         .replaceAll('__', '_');
   }
 
+  Future<bool> writeSoloKml(
+      int machineNo,
+      String kml,
+      ) async {
+    final result = await execute(
+      "echo '$kml' > /var/www/html/kml/slave_$machineNo.kml",
+      'Solo KML written to slave_$machineNo.kml',
+    );
+
+    return result != null;
+  }
+
+  Future<bool> notifySoloKmlChanged(
+      int machineNo,
+      ) async {
+    try {
+      await _forceRefresh(machineNo);
+      return true;
+    } catch (e) {
+      debugPrint(
+        'Error notifying Solo KML change: $e',
+      );
+      return false;
+    }
+  }
+
   Future<String?> getExistingImagePath(String basePath) async {
     final extensions = ['.png', '.jpg', '.jpeg'];
 
@@ -380,20 +494,44 @@ class LgService extends ChangeNotifier {
       );
 
       if (connected != true || _client == null) {
-        debugPrint('Cannot upload $fileName: SSH is not connected');
+        debugPrint(
+          'Cannot upload $fileName: SSH is not connected',
+        );
         return false;
       }
 
       final bytes = await rootBundle.load(assetPath);
-      final tempDir = await getTemporaryDirectory();
-      final file = File('${tempDir.path}/$fileName');
 
-      await file.writeAsBytes(bytes.buffer.asUint8List());
+      // Local temporary file.
+      // We only use the final filename locally so paths such as
+      // "kml/dino_marker.png" do not require creating temporary folders.
+      final tempDir = await getTemporaryDirectory();
+
+      final localFileName = fileName.split('/').last;
+
+      final file = File(
+        '${tempDir.path}/$localFileName',
+      );
+
+      await file.writeAsBytes(
+        bytes.buffer.asUint8List(),
+      );
 
       final sftp = await _client!.sftp();
 
+      // Remote path CAN contain folders.
+      // Example:
+      // fileName = kml/dino_marker.png
+      // ->
+      // /var/www/html/kml/dino_marker.png
+      final remotePath = '/var/www/html/$fileName';
+
+      debugPrint(
+        'Uploading $assetPath to $remotePath',
+      );
+
       final remoteFile = await sftp.open(
-        '/var/www/html/$fileName',
+        remotePath,
         mode:
         SftpFileOpenMode.create |
         SftpFileOpenMode.truncate |
@@ -401,15 +539,27 @@ class LgService extends ChangeNotifier {
       );
 
       await remoteFile.write(
-        Stream.value(Uint8List.fromList(await file.readAsBytes())),
+        Stream.value(
+          Uint8List.fromList(
+            await file.readAsBytes(),
+          ),
+        ),
       );
 
       await remoteFile.close();
 
+      debugPrint(
+        'Asset uploaded successfully to $remotePath',
+      );
+
       return true;
     } catch (e, stackTrace) {
-      debugPrint('Error uploading $assetPath as $fileName: $e');
+      debugPrint(
+        'Error uploading $assetPath as $fileName: $e',
+      );
+
       debugPrint('$stackTrace');
+
       return false;
     }
   }
@@ -1141,133 +1291,139 @@ class LgService extends ChangeNotifier {
 
   Future<void> showAllDinosaurMarkers() async {
     try {
+      debugPrint('========== SHOW ALL DINOSAUR MARKERS ==========');
+
       final dinosaurs = await DinosaurService.loadDinosaurs();
-      await showDinosaurMarkers(dinosaurs);
-    } catch (e) {
-      debugPrint('Error showing all dinosaur markers: $e');
+
+      debugPrint(
+        'CSV loaded for markers. Dinosaurs: ${dinosaurs.length}',
+      );
+
+      final ok = await showDinosaurMarkers(dinosaurs);
+
+      debugPrint(
+        'FINAL RESULT showDinosaurMarkers: $ok',
+      );
+    } catch (e, stackTrace) {
+      debugPrint(
+        'Error showing all dinosaur markers: $e',
+      );
+      debugPrint('$stackTrace');
     }
   }
 
   Future<bool> showDinosaurMarkers(List<Dinosaur> dinosaurs) async {
     try {
-      debugPrint('1. showDinosaurMarkers started');
-      debugPrint('Dinosaurs received: ${dinosaurs.length}');
-
       final validDinosaurs = dinosaurs.where((dinosaur) {
-        return dinosaur.latitude != 0 && dinosaur.longitude != 0;
+        return dinosaur.latitude != 0 &&
+            dinosaur.longitude != 0;
       }).toList();
-
-      debugPrint('2. Valid dinosaurs: ${validDinosaurs.length}');
 
       if (validDinosaurs.isEmpty) {
         debugPrint('No valid dinosaur coordinates');
         return false;
       }
 
-      final markerUploaded = await uploadAssetToLG(
-        assetPath: 'assets/images/markers/dino_marker.png',
-        fileName: 'dino_marker.png',
-      );
-
-      debugPrint('3. Marker image uploaded: $markerUploaded');
-
-      if (!markerUploaded) {
-        debugPrint('Could not upload dino marker');
-        return false;
-      }
+      const double radius = 0.01;
+      const double altitude = 1500.0;
 
       final placemarks = validDinosaurs.map((dinosaur) {
-        final name = _cleanText(dinosaur.name);
-        final country = _cleanText(dinosaur.country);
-        final region = _cleanText(dinosaur.region);
+        final target = dinosaur.getMarkerCoordinates();
+
+        final lat = target['latitude']!;
+        final lon = target['longitude']!;
+
+        final north = lat + radius;
+        final south = lat - radius;
+        final east = lon + radius;
+        final west = lon - radius;
 
         debugPrint(
-          'Creating marker: ${dinosaur.name} '
-              'lat=${dinosaur.latitude}, lon=${dinosaur.longitude}',
+          '${dinosaur.name} -> camera: '
+              '${dinosaur.latitude},${dinosaur.longitude} '
+              'target: $lat,$lon',
         );
 
         return '''
 <Placemark>
-  <name>$name</name>
-  <description>$country - $region</description>
+  <name>${_cleanText(dinosaur.name)}</name>
+  <visibility>1</visibility>
+
   <Style>
-    <IconStyle>
-      <scale>1.5</scale>
-      <Icon>
-        <href>http://lg1:81/dino_marker.png</href>
-      </Icon>
-      <hotSpot x="0.5" y="0" xunits="fraction" yunits="fraction"/>
-    </IconStyle>
-    <LabelStyle>
-      <scale>0.8</scale>
-    </LabelStyle>
+    <PolyStyle>
+      <color>cc0000ff</color>
+      <fill>1</fill>
+      <outline>1</outline>
+    </PolyStyle>
+
+    <LineStyle>
+      <color>ff0000ff</color>
+      <width>5</width>
+    </LineStyle>
   </Style>
-  <Point>
-    <altitudeMode>clampToGround</altitudeMode>
-    <coordinates>${dinosaur.longitude},${dinosaur.latitude},0</coordinates>
-  </Point>
+
+  <Polygon>
+    <extrude>1</extrude>
+    <altitudeMode>relativeToGround</altitudeMode>
+
+    <outerBoundaryIs>
+      <LinearRing>
+        <coordinates>
+          $west,$north,$altitude
+          $east,$north,$altitude
+          $east,$south,$altitude
+          $west,$south,$altitude
+          $west,$north,$altitude
+        </coordinates>
+      </LinearRing>
+    </outerBoundaryIs>
+
+  </Polygon>
 </Placemark>
 ''';
       }).join('\n');
 
-      debugPrint('4. Placemarks generated');
-
-      final markersKml = '''<?xml version="1.0" encoding="UTF-8"?>
+      final kml = '''
+<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
+
   <Document>
-    <name>GeoSaurio Dinosaur Markers</name>
+    <name>GeoSaurio 3D Test</name>
+
     $placemarks
+
   </Document>
-</kml>''';
 
-      final markersUploaded = await uploadBytesToLG(
-        bytes: Uint8List.fromList(markersKml.codeUnits),
-        fileName: 'geosaurio_markers.kml',
-      );
+</kml>
+''';
 
-      debugPrint('5. Marker KML uploaded: $markersUploaded');
+      for (int screen = 1;
+      screen <= _lgConnectionModel.screens;
+      screen++) {
 
-      if (!markersUploaded) {
-        debugPrint('KML upload failed');
-        return false;
+        final result = await execute(
+          "echo '$kml' > /var/www/html/kml/slave_$screen.kml",
+          '3D test KML sent to LG$screen',
+        );
+
+        if (result == null) {
+          return false;
+        }
+
+        await _forceRefresh(screen);
       }
 
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-
-      final networkLinkKml = '''<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2">
-  <Document>
-    <name>GeoSaurio Markers Loader</name>
-    <NetworkLink>
-      <name>Dinosaur Markers</name>
-      <open>1</open>
-      <Link>
-        <href>http://lg1:81/geosaurio_markers.kml?v=$timestamp</href>
-        <refreshMode>onInterval</refreshMode>
-        <refreshInterval>2</refreshInterval>
-        <viewRefreshMode>never</viewRefreshMode>
-      </Link>
-    </NetworkLink>
-  </Document>
-</kml>''';
-
-      final loaderUploaded = await uploadBytesToLG(
-        bytes: Uint8List.fromList(networkLinkKml.codeUnits),
-        fileName: 'kml/slave_1.kml',
+      debugPrint(
+        '${validDinosaurs.length} 3D test objects sent',
       );
 
-      debugPrint('6. NetworkLink loader uploaded: $loaderUploaded');
-
-      if (!loaderUploaded) {
-        debugPrint('Could not write NetworkLink to slave_1.kml');
-        return false;
-      }
-
-      debugPrint('7. showDinosaurMarkers finished');
       return true;
     } catch (e, stackTrace) {
-      debugPrint('Error showing dinosaur markers: $e');
+      debugPrint(
+        'Error showing 3D test objects: $e',
+      );
       debugPrint('$stackTrace');
+
       return false;
     }
   }

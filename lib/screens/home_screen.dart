@@ -134,7 +134,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> selectContinent(String continent) async {
-    //Flies to the selected continent and shows country markers
     setState(() {
       selectedContinent = continent;
       selectedCountry = null;
@@ -147,7 +146,10 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!lgService.isConnected) return;
 
     await lgService.flyToContinent(continent);
-    await lgService.showCountryMarkers(dinosaursInSelectedContinent);
+
+    await lgService.showDinosaurMarkers(
+      dinosaursInSelectedContinent,
+    );
   }
 
   Future<void> selectCountry(String country) async {
