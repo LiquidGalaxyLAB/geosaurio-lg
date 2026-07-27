@@ -7,7 +7,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'dart:convert';
+import 'dart:typed_data';
 import '../models/dinosaur.dart';
 import 'dinosaur_service.dart';
 
@@ -1339,8 +1340,8 @@ class LgService extends ChangeNotifier {
         final west = lon - radius;
 
         debugPrint(
-          '${dinosaur.name} -> camera: '
-              '${dinosaur.latitude},${dinosaur.longitude} '
+          '${dinosaur.name} -> '
+              'camera: ${dinosaur.latitude},${dinosaur.longitude} '
               'target: $lat,$lon',
         );
 
@@ -1377,7 +1378,6 @@ class LgService extends ChangeNotifier {
         </coordinates>
       </LinearRing>
     </outerBoundaryIs>
-
   </Polygon>
 </Placemark>
 ''';
@@ -1388,7 +1388,7 @@ class LgService extends ChangeNotifier {
 <kml xmlns="http://www.opengis.net/kml/2.2">
 
   <Document>
-    <name>GeoSaurio 3D Test</name>
+    <name>GeoSaurio 3D Dinosaur Areas</name>
 
     $placemarks
 
@@ -1397,31 +1397,72 @@ class LgService extends ChangeNotifier {
 </kml>
 ''';
 
-      for (int screen = 1;
-      screen <= _lgConnectionModel.screens;
-      screen++) {
+      final totalScreens = _lgConnectionModel.screens;
 
+      for (int screen = 2; screen <= totalScreens; screen++) {
         final result = await execute(
           "echo '$kml' > /var/www/html/kml/slave_$screen.kml",
-          '3D test KML sent to LG$screen',
+          '3D KML sent to LG$screen',
         );
 
         if (result == null) {
+          debugPrint(
+            'Could not send 3D KML to LG$screen',
+          );
           return false;
         }
 
         await _forceRefresh(screen);
+
+        debugPrint(
+          '3D KML refreshed on LG$screen',
+        );
       }
 
+      final masterUploaded = await uploadBytesToLG(
+        bytes: Uint8List.fromList(
+          kml.codeUnits,
+        ),
+        fileName: 'geosaurio_3d.kml',
+      );
+
+      if (!masterUploaded) {
+        debugPrint(
+          'Could not upload geosaurio_3d.kml',
+        );
+        return false;
+      }
+
+      final masterResult = await execute(
+        "echo 'http://lg1:81/geosaurio_3d.kml' "
+            "> /var/www/html/kmls.txt",
+        '3D KML linked to master',
+      );
+
+      if (masterResult == null) {
+        debugPrint(
+          'Could not load 3D KML on master',
+        );
+        return false;
+      }
+
+      await _forceRefresh(1);
+
       debugPrint(
-        '${validDinosaurs.length} 3D test objects sent',
+        '3D KML refreshed on LG1',
+      );
+
+      debugPrint(
+        '${validDinosaurs.length} 3D dinosaur areas '
+            'sent successfully',
       );
 
       return true;
     } catch (e, stackTrace) {
       debugPrint(
-        'Error showing 3D test objects: $e',
+        'Error showing 3D dinosaur areas: $e',
       );
+
       debugPrint('$stackTrace');
 
       return false;
