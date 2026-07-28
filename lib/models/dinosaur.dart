@@ -113,7 +113,7 @@ class Dinosaur {
   }
 
   /// Calculates the projected marker position based on the camera LookAt.
-  Map<String, double> getMarkerCoordinates() {
+  Map<String, double> getMarkerCoordinates() { //construirlo como un objeto
     if (latitude == 0 && longitude == 0) {
       return {
         'latitude': 0,

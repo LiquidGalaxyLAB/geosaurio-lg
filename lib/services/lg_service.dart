@@ -1315,156 +1315,333 @@ class LgService extends ChangeNotifier {
 
   Future<bool> showDinosaurMarkers(List<Dinosaur> dinosaurs) async {
     try {
-      final validDinosaurs = dinosaurs.where((dinosaur) {
-        return dinosaur.latitude != 0 &&
-            dinosaur.longitude != 0;
-      }).toList();
+      if (_client == null) {
+        debugPrint('SSH client is not connected');
+        return false;
+      }
 
-      if (validDinosaurs.isEmpty) {
-        debugPrint('No valid dinosaur coordinates');
+      if (dinosaurs.isEmpty) {
+        debugPrint('No dinosaurs received');
         return false;
       }
 
       const double radius = 0.01;
       const double altitude = 1500.0;
 
-      final placemarks = validDinosaurs.map((dinosaur) {
-        final target = dinosaur.getMarkerCoordinates();
+      final List<String> placemarks = [];
 
-        final lat = target['latitude']!;
-        final lon = target['longitude']!;
+      for (final dinosaur in dinosaurs) {
+        final coordinates = dinosaur.getMarkerCoordinates();
 
-        final north = lat + radius;
-        final south = lat - radius;
-        final east = lon + radius;
-        final west = lon - radius;
+        final double? latitude = coordinates['latitude'];
+        final double? longitude = coordinates['longitude'];
 
-        debugPrint(
-          '${dinosaur.name} -> '
-              'camera: ${dinosaur.latitude},${dinosaur.longitude} '
-              'target: $lat,$lon',
-        );
+        if (latitude == null || longitude == null) {
+          debugPrint(
+            'Invalid coordinates for ${dinosaur.name}',
+          );
+          continue;
+        }
 
-        return '''
-<Placemark>
-  <name>${_cleanText(dinosaur.name)}</name>
-  <visibility>1</visibility>
+        final double north = latitude + radius;
+        final double south = latitude - radius;
+        final double east = longitude + radius;
+        final double west = longitude - radius;
 
-  <Style>
-    <PolyStyle>
-      <color>cc0000ff</color>
-      <fill>1</fill>
-      <outline>1</outline>
-    </PolyStyle>
+        final String safeName = _cleanText(dinosaur.name);
 
-    <LineStyle>
-      <color>ff0000ff</color>
-      <width>5</width>
-    </LineStyle>
-  </Style>
+        placemarks.add('''
+    <Placemark>
+      <name>$safeName</name>
+      <description>$safeName</description>
+      <styleUrl>#dinosaurCube</styleUrl>
 
-  <Polygon>
-    <extrude>1</extrude>
-    <altitudeMode>relativeToGround</altitudeMode>
+      <Polygon>
+        <extrude>1</extrude>
+        <altitudeMode>relativeToGround</altitudeMode>
 
-    <outerBoundaryIs>
-      <LinearRing>
-        <coordinates>
-          $west,$north,$altitude
-          $east,$north,$altitude
-          $east,$south,$altitude
-          $west,$south,$altitude
-          $west,$north,$altitude
-        </coordinates>
-      </LinearRing>
-    </outerBoundaryIs>
-  </Polygon>
-</Placemark>
-''';
-      }).join('\n');
+        <outerBoundaryIs>
+          <LinearRing>
+            <coordinates>
+              $west,$north,$altitude
+              $east,$north,$altitude
+              $east,$south,$altitude
+              $west,$south,$altitude
+              $west,$north,$altitude
+            </coordinates>
+          </LinearRing>
+        </outerBoundaryIs>
+      </Polygon>
+    </Placemark>
+''');
+      }
 
-      final kml = '''
+      if (placemarks.isEmpty) {
+        debugPrint('No valid dinosaur markers generated');
+        return false;
+      }
+
+      final String kmlContent = '''
 <?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
-
   <Document>
-    <name>GeoSaurio 3D Dinosaur Areas</name>
+    <name>GeoSaurio Dinosaur Cubes</name>
 
-    $placemarks
+    <Style id="dinosaurCube">
+      <LineStyle>
+        <color>ff0000ff</color>
+        <width>5</width>
+      </LineStyle>
 
+      <PolyStyle>
+        <color>cc0000ff</color>
+        <fill>1</fill>
+        <outline>1</outline>
+      </PolyStyle>
+    </Style>
+
+    ${placemarks.join('\n')}
   </Document>
-
 </kml>
 ''';
 
-      final totalScreens = _lgConnectionModel.screens;
+      final int logoScreen =
+      calculateLeftMostScreen(_lgConnectionModel.screens);
 
-      for (int screen = 2; screen <= totalScreens; screen++) {
-        final result = await execute(
-          "echo '$kml' > /var/www/html/kml/slave_$screen.kml",
-          '3D KML sent to LG$screen',
-        );
-
-        if (result == null) {
-          debugPrint(
-            'Could not send 3D KML to LG$screen',
-          );
-          return false;
-        }
-
-        await _forceRefresh(screen);
-
-        debugPrint(
-          '3D KML refreshed on LG$screen',
-        );
-      }
-
-      final masterUploaded = await uploadBytesToLG(
-        bytes: Uint8List.fromList(
-          kml.codeUnits,
-        ),
-        fileName: 'geosaurio_3d.kml',
+      // 1. Vaciar la lista anterior de KML.
+      final clearResult = await execute(
+        '> /var/www/html/kmls.txt',
+        'Previous KML list cleared',
       );
 
-      if (!masterUploaded) {
-        debugPrint(
-          'Could not upload geosaurio_3d.kml',
-        );
+      if (clearResult == null) {
         return false;
       }
 
+      // 2. Escribir los cubos en master.kml.
+      final String masterWriteCommand = '''
+cat > /var/www/html/kml/master.kml << 'EOFKML'
+$kmlContent
+EOFKML
+''';
+
       final masterResult = await execute(
-        "echo 'http://lg1:81/geosaurio_3d.kml' "
-            "> /var/www/html/kmls.txt",
-        '3D KML linked to master',
+        masterWriteCommand,
+        'Dinosaur cubes written in master.kml',
       );
 
       if (masterResult == null) {
-        debugPrint(
-          'Could not load 3D KML on master',
-        );
         return false;
       }
 
-      await _forceRefresh(1);
-
-      debugPrint(
-        '3D KML refreshed on LG1',
+      // 3. Registrar master.kml.
+      final registerMasterResult = await execute(
+        'echo "http://lg1:81/kml/master.kml" '
+            '>> /var/www/html/kmls.txt',
+        'master.kml registered',
       );
 
+      if (registerMasterResult == null) {
+        return false;
+      }
+
+      // 4. Escribir los cubos en todos los slaves,
+      // excepto en la pantalla reservada para el logo.
+      for (
+      int screen = 1;
+      screen <= _lgConnectionModel.screens;
+      screen++
+      ) {
+        if (screen == logoScreen) {
+          debugPrint(
+            'Skipping slave_$screen.kml because it contains the logo',
+          );
+          continue;
+        }
+
+        final String slaveWriteCommand = '''
+cat > /var/www/html/kml/slave_$screen.kml << 'EOFKML'
+$kmlContent
+EOFKML
+''';
+
+        final slaveResult = await execute(
+          slaveWriteCommand,
+          'Dinosaur cubes written in slave_$screen.kml',
+        );
+
+        if (slaveResult == null) {
+          return false;
+        }
+
+        final registerSlaveResult = await execute(
+          'echo "http://lg1:81/kml/slave_$screen.kml" '
+              '>> /var/www/html/kmls.txt',
+          'slave_$screen.kml registered',
+        );
+
+        if (registerSlaveResult == null) {
+          return false;
+        }
+      }
+
+      await Future.delayed(
+        const Duration(milliseconds: 500),
+      );
+
+      // 5. Cargar la lista de KML en el master.
+      final refreshResult = await execute(
+        'echo "search=http://lg1:81/kmls.txt" > /tmp/query.txt',
+        'Dinosaur cubes displayed',
+      );
+
+      if (refreshResult == null) {
+        return false;
+      }
+
+      // 6. Refrescar los slaves,
+      // excepto la pantalla del logo.
+      for (
+      int screen = 2;
+      screen <= _lgConnectionModel.screens;
+      screen++
+      ) {
+        if (screen == logoScreen) {
+          continue;
+        }
+
+        await _forceRefresh(screen);
+      }
+
       debugPrint(
-        '${validDinosaurs.length} 3D dinosaur areas '
-            'sent successfully',
+        '${placemarks.length} dinosaur cubes displayed successfully',
       );
 
       return true;
     } catch (e, stackTrace) {
-      debugPrint(
-        'Error showing 3D dinosaur areas: $e',
+      debugPrint('Error showing dinosaur markers: $e');
+      debugPrint('$stackTrace');
+      return false;
+    }
+  }
+
+  Future<bool> cleanDinosaurMarkers() async {
+    try {
+      if (_client == null) {
+        debugPrint('SSH client is not connected');
+        return false;
+      }
+
+      const String emptyKml = '''
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Empty GeoSaurio KML</name>
+  </Document>
+</kml>
+''';
+
+      // 1. Reemplazar master.kml por un documento vacío.
+      final String clearMasterCommand = '''
+cat > /var/www/html/kml/master.kml << 'EOFKML'
+$emptyKml
+EOFKML
+''';
+
+      final masterResult = await execute(
+        clearMasterCommand,
+        'master.kml cleaned',
       );
 
-      debugPrint('$stackTrace');
+      if (masterResult == null) {
+        return false;
+      }
 
+      // 2. Reemplazar todos los archivos slave por documentos vacíos.
+      for (
+      int screen = 1;
+      screen <= _lgConnectionModel.screens;
+      screen++
+      ) {
+        final String clearSlaveCommand = '''
+cat > /var/www/html/kml/slave_$screen.kml << 'EOFKML'
+$emptyKml
+EOFKML
+''';
+
+        final slaveResult = await execute(
+          clearSlaveCommand,
+          'slave_$screen.kml cleaned',
+        );
+
+        if (slaveResult == null) {
+          return false;
+        }
+      }
+
+      // 3. Reconstruir kmls.txt con los archivos vacíos.
+      final clearListResult = await execute(
+        '> /var/www/html/kmls.txt',
+        'KML list cleared',
+      );
+
+      if (clearListResult == null) {
+        return false;
+      }
+
+      final registerMasterResult = await execute(
+        'echo "http://lg1:81/kml/master.kml" '
+            '>> /var/www/html/kmls.txt',
+        'Empty master.kml registered',
+      );
+
+      if (registerMasterResult == null) {
+        return false;
+      }
+
+      for (
+      int screen = 1;
+      screen <= _lgConnectionModel.screens;
+      screen++
+      ) {
+        final registerSlaveResult = await execute(
+          'echo "http://lg1:81/kml/slave_$screen.kml" '
+              '>> /var/www/html/kmls.txt',
+          'Empty slave_$screen.kml registered',
+        );
+
+        if (registerSlaveResult == null) {
+          return false;
+        }
+      }
+
+      await Future.delayed(
+        const Duration(milliseconds: 500),
+      );
+
+      // 4. Hacer que el master abra la lista que ahora contiene KML vacíos.
+      final refreshResult = await execute(
+        'echo "search=http://lg1:81/kmls.txt" > /tmp/query.txt',
+        'Empty KML loaded on master',
+      );
+
+      if (refreshResult == null) {
+        return false;
+      }
+
+      for (
+      int screen = 2;
+      screen <= _lgConnectionModel.screens;
+      screen++
+      ) {
+        await _forceRefresh(screen);
+      }
+
+      debugPrint('Dinosaur cubes cleaned successfully');
+      return true;
+    } catch (e, stackTrace) {
+      debugPrint('Error cleaning dinosaur markers: $e');
+      debugPrint('$stackTrace');
       return false;
     }
   }
@@ -1924,38 +2101,65 @@ img.onload = () => {
     try {
       await closeChromiumOnAllScreens();
 
-      const blankKml = '''<?xml version="1.0" encoding="UTF-8"?>
+      final dinosaurMarkersCleaned =
+      await cleanDinosaurMarkers();
+
+      if (!dinosaurMarkersCleaned) {
+        debugPrint('Could not clean dinosaur markers');
+      }
+
+      const blankKml = '''
+<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
     <name>Empty</name>
   </Document>
 </kml>''';
 
-      final logoScreen = calculateLeftMostScreen(_lgConnectionModel.screens);
+      final logoScreen =
+      calculateLeftMostScreen(_lgConnectionModel.screens);
 
-      for (var i = 1; i <= _lgConnectionModel.screens; i++) {
-        if (i == 1 || i == logoScreen) {
+      for (var i = 2; i <= _lgConnectionModel.screens; i++) {
+        if (i == logoScreen) {
           continue;
         }
 
         await execute(
-          "echo '$blankKml' > /var/www/html/kml/slave_$i.kml",
+          '''
+cat > /var/www/html/kml/slave_$i.kml << 'EOFKML'
+$blankKml
+EOFKML
+''',
           'Cleaned screen $i',
         );
+
+        await _forceRefresh(i);
       }
 
-      await execute("echo 'exittour=true' > /tmp/query.txt", 'Stop tour');
+      await execute(
+        "echo 'exittour=true' > /tmp/query.txt",
+        'Stop tour',
+      );
 
-      await execute("echo '' > /tmp/query.txt", 'Clean query');
+      await Future.delayed(
+        const Duration(milliseconds: 300),
+      );
 
       await execute(
-        "rm -f /var/www/html/skeleton.html /var/www/html/comparison.html",
+        "echo '' > /tmp/query.txt",
+        'Clean query',
+      );
+
+      await execute(
+        'rm -f '
+            '/var/www/html/skeleton.html '
+            '/var/www/html/comparison.html',
         'Chromium HTML cleaned',
       );
 
       await sendLogo();
 
-      return true;
+      return dinosaurMarkersCleaned;
     } catch (e) {
       debugPrint('Error cleaning all: $e');
       return false;
