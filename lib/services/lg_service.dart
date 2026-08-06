@@ -92,6 +92,44 @@ class LgService extends ChangeNotifier {
   static const int _maxConnectionAttempts = 5;
   static const Duration _connectionTimeout = Duration(seconds: 10);
 
+  final Map<String, List<double>> _continentViews = {
+    'Africa': [
+      20.0,       // longitude
+      2.0,        // latitude
+      9000000.0,  // range
+    ],
+    'Asia': [
+      100.0,
+      34.0,
+      11000000.0,
+    ],
+    'Europe': [
+      15.0,
+      54.0,
+      6500000.0,
+    ],
+    'North America': [
+      -100.0,
+      45.0,
+      9000000.0,
+    ],
+    'South America': [
+      -60.0,
+      -15.0,
+      9000000.0,
+    ],
+    'Oceania': [
+      135.0,
+      -25.0,
+      8000000.0,
+    ],
+    'Antarctica': [
+      0.0,
+      -82.0,
+      9000000.0,
+    ],
+  };
+
   LgConnectionModel get connectionModel => _lgConnectionModel;
 
   bool get isConnected => _isConnected;
@@ -1154,44 +1192,49 @@ class LgService extends ChangeNotifier {
 
   Future<bool> flyToDinosaur(Dinosaur dinosaur) async {
     try {
-      if (dinosaur.longitude == 0 || dinosaur.latitude == 0) return false;
+      if (_client == null) {
+        debugPrint('SSH client is not connected');
+        return false;
+      }
+
+      const double fixedAltitude = 0.0;
+      const double fixedTilt = 65.0;
+      const double fixedRange = 1800.0;
 
       final lookAt =
           '<LookAt>'
           '<longitude>${dinosaur.longitude}</longitude>'
           '<latitude>${dinosaur.latitude}</latitude>'
-          '<altitude>${dinosaur.altitude}</altitude>'
+          '<altitude>$fixedAltitude</altitude>'
           '<heading>${dinosaur.heading}</heading>'
-          '<tilt>${dinosaur.tilt}</tilt>'
-          '<range>${dinosaur.range == 0 ? 8000 : dinosaur.range}</range>'
-          '<altitudeMode>${dinosaur.altitudeMode}</altitudeMode>'
+          '<tilt>$fixedTilt</tilt>'
+          '<range>$fixedRange</range>'
+          '<altitudeMode>relativeToGround</altitudeMode>'
           '</LookAt>';
 
-      final command = "echo 'flytoview=$lookAt' > /tmp/query.txt";
-      final result = await execute(command, 'FlyTo sent');
+      await execute(
+        'echo "flytoview=$lookAt" > /tmp/query.txt',
+        'Flying to ${dinosaur.name}',
+      );
 
-      return result != null;
+      return true;
     } catch (e) {
-      debugPrint('Error flying to dinosaur: $e');
+      debugPrint(
+        'Error flying to dinosaur ${dinosaur.name}: $e',
+      );
+
       return false;
     }
   }
-
-  final Map<String, List<double>> _continentViews = {
-    'Africa': [20.0, 0.0, 7000000],
-    'Asia': [95.0, 35.0, 8000000],
-    'Europe': [15.0, 50.0, 5000000],
-    'North America': [-100.0, 45.0, 7000000],
-    'South America': [-60.0, -15.0, 7000000],
-    'Oceania': [135.0, -25.0, 6000000],
-    'Antarctica': [0.0, -82.0, 6000000],
-  };
 
   Future<bool> flyToContinent(String continent) async {
     try {
       final view = _continentViews[continent];
 
-      if (view == null) return false;
+      if (view == null) {
+        debugPrint('Continent view not found: $continent');
+        return false;
+      }
 
       final lookAt =
           '<LookAt>'
@@ -1262,7 +1305,7 @@ class LgService extends ChangeNotifier {
   }
 
   Future<bool> showCountryMarkers(List<Dinosaur> dinosaurs) async {
-    return showDinosaurMarkers(dinosaurs);
+    return cleanDinosaurMarkers();
   }
 
   Future<bool> flyToEarth() async {
@@ -1290,217 +1333,282 @@ class LgService extends ChangeNotifier {
     }
   }
 
-  Future<void> showAllDinosaurMarkers() async {
-    try {
-      debugPrint('========== SHOW ALL DINOSAUR MARKERS ==========');
 
-      final dinosaurs = await DinosaurService.loadDinosaurs();
+  Map<String, double> _calculateCubePosition(
+      Dinosaur dinosaur,
+      ) {
+    const double earthRadius = 6378137.0;
 
-      debugPrint(
-        'CSV loaded for markers. Dinosaurs: ${dinosaurs.length}',
-      );
+    /*
+   * Distancia que adelantamos el cubo desde el punto
+   * al que está mirando la cámara.
+   *
+   * Se adapta al range, pero nunca será menor de 400 m
+   * ni mayor de 3000 m.
+   */
+    final double forwardDistance = (
+        dinosaur.range * 0.35
+    ).clamp(
+      400.0,
+      3000.0,
+    );
 
-      final ok = await showDinosaurMarkers(dinosaurs);
+    /*
+   * El heading indica hacia dónde está orientada la vista.
+   * Movemos el cubo desde la posición del dinosaurio
+   * en esa misma dirección.
+   */
+    final double headingRadians =
+        dinosaur.heading * math.pi / 180.0;
 
-      debugPrint(
-        'FINAL RESULT showDinosaurMarkers: $ok',
-      );
-    } catch (e, stackTrace) {
-      debugPrint(
-        'Error showing all dinosaur markers: $e',
-      );
-      debugPrint('$stackTrace');
-    }
+    final double latitudeRadians =
+        dinosaur.latitude * math.pi / 180.0;
+
+    final double longitudeRadians =
+        dinosaur.longitude * math.pi / 180.0;
+
+    final double angularDistance =
+        forwardDistance / earthRadius;
+
+    final double newLatitudeRadians = math.asin(
+      math.sin(latitudeRadians) *
+          math.cos(angularDistance) +
+          math.cos(latitudeRadians) *
+              math.sin(angularDistance) *
+              math.cos(headingRadians),
+    );
+
+    final double newLongitudeRadians =
+        longitudeRadians +
+            math.atan2(
+              math.sin(headingRadians) *
+                  math.sin(angularDistance) *
+                  math.cos(latitudeRadians),
+              math.cos(angularDistance) -
+                  math.sin(latitudeRadians) *
+                      math.sin(newLatitudeRadians),
+            );
+
+    final double newLatitude =
+        newLatitudeRadians * 180.0 / math.pi;
+
+    final double newLongitude =
+        newLongitudeRadians * 180.0 / math.pi;
+
+    debugPrint(
+      'Cube moved forward for ${dinosaur.name}: '
+          'original=(${dinosaur.latitude}, ${dinosaur.longitude}), '
+          'cube=($newLatitude, $newLongitude), '
+          'forwardDistance=${forwardDistance.toStringAsFixed(0)}m, '
+          'heading=${dinosaur.heading}',
+    );
+
+    return {
+      'latitude': newLatitude,
+      'longitude': newLongitude,
+    };
   }
 
-  Future<bool> showDinosaurMarkers(List<Dinosaur> dinosaurs) async {
+  Future<bool> showSelectedDinosaurCube(
+      Dinosaur dinosaur,
+      ) async {
     try {
       if (_client == null) {
         debugPrint('SSH client is not connected');
         return false;
       }
 
-      if (dinosaurs.isEmpty) {
-        debugPrint('No dinosaurs received');
+      if (dinosaur.latitude == 0 ||
+          dinosaur.longitude == 0) {
+        debugPrint(
+          'Invalid coordinates for ${dinosaur.name}',
+        );
         return false;
       }
 
-      const double radius = 0.01;
-      const double altitude = 1500.0;
+      const double radius = 0.0025;
+      const double altitude = 400.0;
 
-      final List<String> placemarks = [];
+      final cubePosition =
+      _calculateCubePosition(dinosaur);
 
-      for (final dinosaur in dinosaurs) {
-        final coordinates = dinosaur.getMarkerCoordinates();
+      final double latitude =
+      cubePosition['latitude']!;
 
-        final double? latitude = coordinates['latitude'];
-        final double? longitude = coordinates['longitude'];
+      final double longitude =
+      cubePosition['longitude']!;
 
-        if (latitude == null || longitude == null) {
-          debugPrint(
-            'Invalid coordinates for ${dinosaur.name}',
-          );
-          continue;
-        }
+      final double north = latitude + radius;
+      final double south = latitude - radius;
+      final double east = longitude + radius;
+      final double west = longitude - radius;
 
-        final double north = latitude + radius;
-        final double south = latitude - radius;
-        final double east = longitude + radius;
-        final double west = longitude - radius;
+      final safeName =
+      _cleanText(dinosaur.name);
 
-        final String safeName = _cleanText(dinosaur.name);
+      final kml = '''
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document>
 
-        placemarks.add('''
-    <Placemark>
-      <name>$safeName</name>
-      <description>$safeName</description>
-      <styleUrl>#dinosaurCube</styleUrl>
+  <Style id="cube">
+    <LineStyle>
+      <color>ff0000ff</color>
+      <width>5</width>
+    </LineStyle>
 
+    <PolyStyle>
+      <color>cc0000ff</color>
+      <fill>1</fill>
+      <outline>1</outline>
+    </PolyStyle>
+  </Style>
+
+  <Placemark>
+    <name>$safeName</name>
+    <styleUrl>#cube</styleUrl>
+
+    <MultiGeometry>
+
+      <!-- Pared norte -->
       <Polygon>
-        <extrude>1</extrude>
+        <extrude>0</extrude>
         <altitudeMode>relativeToGround</altitudeMode>
 
         <outerBoundaryIs>
           <LinearRing>
             <coordinates>
-              $west,$north,$altitude
-              $east,$north,$altitude
-              $east,$south,$altitude
-              $west,$south,$altitude
-              $west,$north,$altitude
+$west,$north,0
+$east,$north,0
+$east,$north,$altitude
+$west,$north,$altitude
+$west,$north,0
             </coordinates>
           </LinearRing>
         </outerBoundaryIs>
       </Polygon>
-    </Placemark>
-''');
-      }
 
-      if (placemarks.isEmpty) {
-        debugPrint('No valid dinosaur markers generated');
-        return false;
-      }
+      <!-- Pared sur -->
+      <Polygon>
+        <extrude>0</extrude>
+        <altitudeMode>relativeToGround</altitudeMode>
 
-      final String kmlContent = '''
-<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2">
-  <Document>
-    <name>GeoSaurio Dinosaur Cubes</name>
+        <outerBoundaryIs>
+          <LinearRing>
+            <coordinates>
+$east,$south,0
+$west,$south,0
+$west,$south,$altitude
+$east,$south,$altitude
+$east,$south,0
+            </coordinates>
+          </LinearRing>
+        </outerBoundaryIs>
+      </Polygon>
 
-    <Style id="dinosaurCube">
-      <LineStyle>
-        <color>ff0000ff</color>
-        <width>5</width>
-      </LineStyle>
+      <!-- Pared este -->
+      <Polygon>
+        <extrude>0</extrude>
+        <altitudeMode>relativeToGround</altitudeMode>
 
-      <PolyStyle>
-        <color>cc0000ff</color>
-        <fill>1</fill>
-        <outline>1</outline>
-      </PolyStyle>
-    </Style>
+        <outerBoundaryIs>
+          <LinearRing>
+            <coordinates>
+$east,$north,0
+$east,$south,0
+$east,$south,$altitude
+$east,$north,$altitude
+$east,$north,0
+            </coordinates>
+          </LinearRing>
+        </outerBoundaryIs>
+      </Polygon>
 
-    ${placemarks.join('\n')}
-  </Document>
+      <!-- Pared oeste -->
+      <Polygon>
+        <extrude>0</extrude>
+        <altitudeMode>relativeToGround</altitudeMode>
+
+        <outerBoundaryIs>
+          <LinearRing>
+            <coordinates>
+$west,$south,0
+$west,$north,0
+$west,$north,$altitude
+$west,$south,$altitude
+$west,$south,0
+            </coordinates>
+          </LinearRing>
+        </outerBoundaryIs>
+      </Polygon>
+
+    </MultiGeometry>
+  </Placemark>
+
+</Document>
 </kml>
 ''';
 
-      final int logoScreen =
-      calculateLeftMostScreen(_lgConnectionModel.screens);
+      final logoScreen =
+      calculateLeftMostScreen(
+        _lgConnectionModel.screens,
+      );
 
-      // 1. Vaciar la lista anterior de KML.
-      final clearResult = await execute(
+      await execute(
         '> /var/www/html/kmls.txt',
-        'Previous KML list cleared',
+        'Old cube removed',
       );
 
-      if (clearResult == null) {
-        return false;
-      }
-
-      // 2. Escribir los cubos en master.kml.
-      final String masterWriteCommand = '''
+      await execute(
+        '''
 cat > /var/www/html/kml/master.kml << 'EOFKML'
-$kmlContent
+$kml
 EOFKML
-''';
-
-      final masterResult = await execute(
-        masterWriteCommand,
-        'Dinosaur cubes written in master.kml',
+''',
+        'Master cube written',
       );
 
-      if (masterResult == null) {
-        return false;
-      }
-
-      // 3. Registrar master.kml.
-      final registerMasterResult = await execute(
+      await execute(
         'echo "http://lg1:81/kml/master.kml" '
             '>> /var/www/html/kmls.txt',
-        'master.kml registered',
+        'Master registered',
       );
 
-      if (registerMasterResult == null) {
-        return false;
-      }
-
-      // 4. Escribir los cubos en todos los slaves,
-      // excepto en la pantalla reservada para el logo.
       for (
       int screen = 1;
       screen <= _lgConnectionModel.screens;
       screen++
       ) {
         if (screen == logoScreen) {
-          debugPrint(
-            'Skipping slave_$screen.kml because it contains the logo',
-          );
           continue;
         }
 
-        final String slaveWriteCommand = '''
+        await execute(
+          '''
 cat > /var/www/html/kml/slave_$screen.kml << 'EOFKML'
-$kmlContent
+$kml
 EOFKML
-''';
-
-        final slaveResult = await execute(
-          slaveWriteCommand,
-          'Dinosaur cubes written in slave_$screen.kml',
+''',
+          'Slave cube written',
         );
 
-        if (slaveResult == null) {
-          return false;
-        }
-
-        final registerSlaveResult = await execute(
+        await execute(
           'echo "http://lg1:81/kml/slave_$screen.kml" '
               '>> /var/www/html/kmls.txt',
-          'slave_$screen.kml registered',
+          'Slave registered',
         );
-
-        if (registerSlaveResult == null) {
-          return false;
-        }
       }
 
       await Future.delayed(
         const Duration(milliseconds: 500),
       );
 
-      // 5. Cargar la lista de KML en el master.
-      final refreshResult = await execute(
-        'echo "search=http://lg1:81/kmls.txt" > /tmp/query.txt',
-        'Dinosaur cubes displayed',
+      await execute(
+        'echo "search=http://lg1:81/kmls.txt" '
+            '> /tmp/query.txt',
+        'Cube refreshed',
       );
 
-      if (refreshResult == null) {
-        return false;
-      }
-
-      // 6. Refrescar los slaves,
-      // excepto la pantalla del logo.
       for (
       int screen = 2;
       screen <= _lgConnectionModel.screens;
@@ -1514,16 +1622,21 @@ EOFKML
       }
 
       debugPrint(
-        '${placemarks.length} dinosaur cubes displayed successfully',
+        'Open cube shown for ${dinosaur.name}',
       );
 
       return true;
     } catch (e, stackTrace) {
-      debugPrint('Error showing dinosaur markers: $e');
+      debugPrint(
+        'Error showing selected cube: $e',
+      );
+
       debugPrint('$stackTrace');
+
       return false;
     }
   }
+
 
   Future<bool> cleanDinosaurMarkers() async {
     try {

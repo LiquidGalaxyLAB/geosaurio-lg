@@ -100,15 +100,6 @@ class _HomeScreenState extends State<HomeScreen> {
     return list;
   }
 
-  List<Dinosaur> get dinosaursInSelectedContinent {
-    if (selectedContinent == null) return [];
-
-    return dinosaurs.where((dinosaur) {
-      return dinosaur.period == selectedPeriod &&
-          dinosaur.area == selectedContinent;
-    }).toList();
-  }
-
   String getPeriodName(DinosaurPeriod period) {
     switch (period) {
       case DinosaurPeriod.triassic:
@@ -123,7 +114,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> selectPeriod(DinosaurPeriod period) async {
-    //change geological period
     setState(() {
       selectedPeriod = period;
       selectedContinent = null;
@@ -131,6 +121,14 @@ class _HomeScreenState extends State<HomeScreen> {
       selectedDinosaur = null;
       searchController.clear();
     });
+
+    final lgService = context.read<LgService>();
+
+    if (!lgService.isConnected) {
+      return;
+    }
+
+    await lgService.cleanDinosaurMarkers();
   }
 
   Future<void> selectContinent(String continent) async {
@@ -143,13 +141,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final lgService = context.read<LgService>();
 
-    if (!lgService.isConnected) return;
+    if (!lgService.isConnected) {
+      return;
+    }
+
+    await lgService.cleanDinosaurMarkers();
 
     await lgService.flyToContinent(continent);
-
-    await lgService.showDinosaurMarkers(
-      dinosaursInSelectedContinent,
-    );
   }
 
   Future<void> selectCountry(String country) async {
@@ -161,10 +159,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final lgService = context.read<LgService>();
 
-    if (!lgService.isConnected) return;
+    if (!lgService.isConnected) {
+      return;
+    }
 
-    await lgService.flyToCountry(country, availableDinosaurs);
-    await lgService.showDinosaurMarkers(availableDinosaurs);
+    await lgService.cleanDinosaurMarkers();
+
+    await lgService.flyToCountry(
+      country,
+      availableDinosaurs,
+    );
   }
 
   Future<void> selectDinosaur(Dinosaur dinosaur) async {
@@ -175,42 +179,112 @@ class _HomeScreenState extends State<HomeScreen> {
     final lgService = context.read<LgService>();
 
     if (lgService.isConnected) {
-      final flyOk = await lgService.flyToDinosaur(dinosaur);
+      debugPrint(
+        'Selected dinosaur: ${dinosaur.name} | '
+            'Latitude: ${dinosaur.latitude} | '
+            'Longitude: ${dinosaur.longitude}',
+      );
+
+      final bool flyOk =
+      await lgService.flyToDinosaur(dinosaur);
+
+      debugPrint(
+        flyOk
+            ? 'FlyTo completed for ${dinosaur.name}'
+            : 'FlyTo failed for ${dinosaur.name}',
+      );
 
       if (flyOk) {
-        await lgService.showDinosaurAboutColumn(dinosaur);
+        /*
+       * Esperamos a que el movimiento de cámara empiece
+       * antes de generar el cubo correspondiente.
+       */
+        await Future.delayed(
+          const Duration(milliseconds: 800),
+        );
+
+        final bool cubeOk =
+        await lgService.showSelectedDinosaurCube(
+          dinosaur,
+        );
+
+        debugPrint(
+          cubeOk
+              ? 'Cube displayed for ${dinosaur.name}'
+              : 'Cube could not be displayed for ${dinosaur.name}',
+        );
+
+        /*
+       * Después mostramos la información en la pantalla derecha.
+       */
+        await Future.delayed(
+          const Duration(milliseconds: 500),
+        );
+
+        await lgService.showDinosaurAboutColumn(
+          dinosaur,
+        );
       }
+    } else {
+      debugPrint(
+        'Liquid Galaxy is not connected',
+      );
     }
 
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
 
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) =>
-            DinosaurDetailScreen(
-              dinosaur: dinosaur,
-            ),
+        builder: (context) => DinosaurDetailScreen(
+          dinosaur: dinosaur,
+        ),
       ),
     );
   }
 
-  void goBackToContinents() {
-    //Returns to the continent selection
+  Future<void> goBackToContinents() async {
     setState(() {
       selectedContinent = null;
       selectedCountry = null;
       selectedDinosaur = null;
       searchController.clear();
     });
+
+    final lgService = context.read<LgService>();
+
+    if (!lgService.isConnected) {
+      return;
+    }
+
+    await lgService.cleanDinosaurMarkers();
+    await lgService.cleanRightScreenKml();
   }
 
-  void goBackToCountries() {
+  Future<void> goBackToCountries() async {
     setState(() {
       selectedCountry = null;
       selectedDinosaur = null;
       searchController.clear();
     });
+
+    final lgService = context.read<LgService>();
+
+    if (!lgService.isConnected) {
+      return;
+    }
+
+    await lgService.cleanDinosaurMarkers();
+    await lgService.cleanRightScreenKml();
+
+    if (selectedCountry != null) {
+      await lgService.flyToCountry(
+        selectedCountry!,
+        availableDinosaurs,
+      );
+    }
   }
 
   List<String> filteredContinents() {
