@@ -235,14 +235,49 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
-    Navigator.push(
+    await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => DinosaurDetailScreen(
-          dinosaur: dinosaur,
-        ),
+        builder: (detailContext) {
+          return DinosaurDetailScreen(
+            dinosaur: dinosaur,
+
+            onBackToDinosaurSelection: () async {
+              final lgService =
+              context.read<LgService>();
+
+              // Detener una posible órbita.
+              await lgService.stopDinosaurOrbit();
+
+              // Limpiar el cubo.
+              await lgService.cleanDinosaurMarkers();
+
+              // Limpiar la información de la pantalla derecha.
+              await lgService.cleanRightScreenKml();
+
+              // Volver a la vista general del país seleccionado.
+              if (selectedCountry != null) {
+                await lgService.flyToCountry(
+                  selectedCountry!,
+                  availableDinosaurs,
+                );
+              }
+
+              // Restaurar el logo.
+              await lgService.sendLogo();
+            },
+          );
+        },
       ),
     );
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      selectedDinosaur = null;
+    });
   }
 
   Future<void> goBackToContinents() async {

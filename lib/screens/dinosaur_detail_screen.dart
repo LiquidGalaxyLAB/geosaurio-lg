@@ -2,16 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/dinosaur.dart';
-import '../services/lg_service.dart';
 import '../services/audio_service.dart';
-import '../widgets/drawer_menu.dart';
+import '../services/lg_service.dart';
 
 class DinosaurDetailScreen extends StatefulWidget {
   final Dinosaur dinosaur;
 
+  /*
+   * Este callback se recibe desde HomeScreen.
+   *
+   * Se encarga de:
+   * - limpiar el KML del cubo;
+   * - limpiar la pantalla derecha;
+   * - devolver Google Earth al país;
+   * - restaurar el logo.
+   */
+  final Future<void> Function() onBackToDinosaurSelection;
+
   const DinosaurDetailScreen({
     super.key,
     required this.dinosaur,
+    required this.onBackToDinosaurSelection,
   });
 
   @override
@@ -19,8 +30,10 @@ class DinosaurDetailScreen extends StatefulWidget {
       _DinosaurDetailScreenState();
 }
 
-class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
+class _DinosaurDetailScreenState
+    extends State<DinosaurDetailScreen> {
   bool isNarrationPlaying = false;
+  bool isReturningToSelection = false;
 
   Dinosaur get dinosaur => widget.dinosaur;
 
@@ -32,10 +45,68 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: success ? Colors.green : Colors.red,
+        backgroundColor:
+        success ? Colors.green : Colors.red,
         behavior: SnackBarBehavior.floating,
       ),
     );
+  }
+
+  Future<void> backToDinosaurSelection() async {
+    if (isReturningToSelection) {
+      return;
+    }
+
+    setState(() {
+      isReturningToSelection = true;
+    });
+
+    final lgService = context.read<LgService>();
+
+    try {
+      // Detener la narración.
+      await AudioService().stop();
+
+      // Detener la órbita si sigue activa.
+      await lgService.stopDinosaurOrbit();
+
+      /*
+       * Cerrar Chromium por si se estaba mostrando
+       * Skeleton o Comparison.
+       */
+      await lgService.closeChromiumOnAllScreens();
+
+      /*
+       * El callback limpia los KML y devuelve
+       * Google Earth a la vista del país.
+       */
+      await widget.onBackToDinosaurSelection();
+
+      if (!mounted) {
+        return;
+      }
+
+      Navigator.pop(context);
+    } catch (e, stackTrace) {
+      debugPrint(
+        'Error returning to dinosaur selection: $e',
+      );
+      debugPrint('$stackTrace');
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        isReturningToSelection = false;
+      });
+
+      showSnack(
+        context,
+        'Could not return to dinosaur selection',
+        success: false,
+      );
+    }
   }
 
   Future<void> sendToLg(
@@ -55,17 +126,57 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
 
     bool ok = false;
 
-    await lgService.flyToDinosaur(dinosaur);
+    if (action == 'Orbit') {
+      /*
+       * startDinosaurOrbit controla el movimiento
+       * y lo detiene automáticamente tras 30 segundos.
+       */
+      ok = await lgService.startDinosaurOrbit(
+        dinosaur,
+      );
+    } else {
+      /*
+       * Comparison y Skeleton deben detener primero
+       * una posible órbita.
+       */
+      await lgService.stopDinosaurOrbit();
 
-    if (action == 'About') {
-      ok = await lgService.showDinosaurAboutColumn(dinosaur);
-    } else if (action == 'Comparison') {
-      ok = await lgService.showDinosaurComparisonImage(dinosaur);
-    } else if (action == 'Skeleton') {
-      ok = await lgService.showDinosaurSkeletonImage(dinosaur);
+      /*
+       * Recuperar la vista normal del dinosaurio antes
+       * de abrir Chromium.
+       */
+      await lgService.flyToDinosaur(
+        dinosaur,
+      );
+
+      if (action == 'Comparison') {
+        ok = await lgService.showDinosaurComparisonImage(
+          dinosaur,
+        );
+      } else if (action == 'Skeleton') {
+        ok = await lgService.showDinosaurSkeletonImage(
+          dinosaur,
+        );
+      }
     }
 
-    if (!context.mounted) return;
+    if (!context.mounted) {
+      return;
+    }
+
+    if (action == 'Orbit') {
+      showSnack(
+        context,
+        ok
+            ? 'Orbit started for 30 seconds'
+            : lgService.isDinosaurOrbiting
+            ? 'The orbit is already running'
+            : 'Could not start the orbit',
+        success: ok,
+      );
+
+      return;
+    }
 
     showSnack(
       context,
@@ -76,10 +187,32 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
     );
   }
 
+  Future<void> startNarration() async {
+    await AudioService().playDinosaurAudio(
+      dinosaur.name,
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      isNarrationPlaying = true;
+    });
+
+    showSnack(
+      context,
+      'Narration started',
+      success: true,
+    );
+  }
+
   Future<void> stopNarration() async {
     await AudioService().stop();
 
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
 
     setState(() {
       isNarrationPlaying = false;
@@ -92,380 +225,446 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
     );
   }
 
+  Future<void> returnToGoogleEarth() async {
+    final lgService = context.read<LgService>();
+
+    await lgService.stopDinosaurOrbit();
+
+    final ok =
+    await lgService.closeChromiumOnAllScreens();
+
+    await AudioService().stop();
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      isNarrationPlaying = false;
+    });
+
+    showSnack(
+      context,
+      ok
+          ? 'Returned to Google Earth'
+          : 'Could not close Chromium',
+      success: ok,
+    );
+  }
+
   @override
   void dispose() {
     AudioService().stop();
+
+    /*
+     * No se puede usar await dentro de dispose,
+     * pero stopDinosaurOrbit cancela los Timer
+     * inmediatamente.
+     */
+    LgService().stopDinosaurOrbit();
+
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final lgService = context.watch<LgService>();
-    final colorScheme = Theme.of(context).colorScheme;
+    final colorScheme =
+        Theme.of(context).colorScheme;
 
-    final cleanName = lgService.cleanDinosaurImageName(
+    final cleanName =
+    lgService.cleanDinosaurImageName(
       dinosaur.name,
     );
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-
-      drawer: AppDrawer(
-        isLgConnected: lgService.isConnected,
-      ),
+      backgroundColor:
+      Theme.of(context).scaffoldBackgroundColor,
 
       body: SafeArea(
-        child: Builder(
-          builder: (context) {
-            return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24,
-              ),
-              child: Column(
-                children: [
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 24,
+          ),
+          child: Column(
+            children: [
+              const SizedBox(height: 4),
 
-                  Row(
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          color: colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(14),
+              // --------------------------------------------------
+              // CABECERA
+              // --------------------------------------------------
+
+              Row(
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      color:
+                      colorScheme.surfaceContainerHighest,
+                      borderRadius:
+                      BorderRadius.circular(14),
+                    ),
+                    child: IconButton(
+                      tooltip:
+                      'Back to dinosaur selection',
+                      icon: isReturningToSelection
+                          ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child:
+                        CircularProgressIndicator(
+                          strokeWidth: 2.5,
                         ),
-                        child: IconButton(
-                          icon: const Icon(
-                            Icons.menu,
-                            size: 32,
+                      )
+                          : const Icon(
+                        Icons.arrow_back,
+                        size: 30,
+                      ),
+                      onPressed:
+                      isReturningToSelection
+                          ? null
+                          : backToDinosaurSelection,
+                    ),
+                  ),
+
+                  const Expanded(
+                    child: Text(
+                      'Dinosaur Information',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+
+                  /*
+                   * Compensa el ancho del botón izquierdo
+                   * para mantener el título centrado.
+                   */
+                  const SizedBox(width: 48),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+
+              // --------------------------------------------------
+              // TARJETA PRINCIPAL
+              // --------------------------------------------------
+
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: cardDecoration(),
+                child: Column(
+                  children: [
+                    Container(
+                      height: 180,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color:
+                        colorScheme.surfaceContainer,
+                        borderRadius:
+                        BorderRadius.circular(18),
+                      ),
+                      child: ClipRRect(
+                        borderRadius:
+                        BorderRadius.circular(18),
+                        child: FutureBuilder<String?>(
+                          future:
+                          lgService.getExistingImagePath(
+                            'assets/images/dinosaurs/'
+                                '${cleanName}_normal',
                           ),
-                          onPressed: () {
-                            Scaffold.of(context).openDrawer();
+                          builder: (context, snapshot) {
+                            if (snapshot.hasData &&
+                                snapshot.data != null) {
+                              return Image.asset(
+                                snapshot.data!,
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                              );
+                            }
+
+                            return Icon(
+                              Icons.pets,
+                              size: 90,
+                              color: colorScheme.primary,
+                            );
                           },
                         ),
                       ),
-
-                      const Expanded(
-                        child: Text(
-                          'Dinosaur Information',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(width: 48),
-                    ],
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: cardDecoration(),
-                    child: Column(
-                      children: [
-                        Container(
-                          height: 180,
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            color: colorScheme.surfaceContainer,
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(18),
-                            child: FutureBuilder<String?>(
-                              future: lgService.getExistingImagePath(
-                                'assets/images/dinosaurs/${cleanName}_normal',
-                              ),
-                              builder: (context, snapshot) {
-                                if (snapshot.hasData &&
-                                    snapshot.data != null) {
-                                  return Image.asset(
-                                    snapshot.data!,
-                                    fit: BoxFit.cover,
-                                    width: double.infinity,
-                                  );
-                                }
-
-                                return Icon(
-                                  Icons.pets,
-                                  size: 90,
-                                  color: colorScheme.primary,
-                                );
-                              },
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 18),
-
-                        Text(
-                          dinosaur.name,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 30,
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.onSurface,
-                          ),
-                        ),
-
-                        const SizedBox(height: 10),
-
-                        Text(
-                          dinosaur.periodName,
-                          style: TextStyle(
-                            fontSize: 17,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
                     ),
-                  ),
 
-                  const SizedBox(height: 20),
+                    const SizedBox(height: 18),
 
-
-                  Row(
-                    children: [
-                      Expanded(
-                        child: infoCard(
-                          icon: Icons.public,
-                          title: 'Country',
-                          value: dinosaur.country,
-                        ),
+                    Text(
+                      dinosaur.name,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface,
                       ),
+                    ),
 
-                      const SizedBox(width: 12),
+                    const SizedBox(height: 10),
 
-                      Expanded(
-                        child: infoCard(
-                          icon: Icons.place,
-                          title: 'Region',
-                          value: dinosaur.region,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  Row(
-                    children: [
-                      Expanded(
-                        child: infoCard(
-                          icon: Icons.straighten,
-                          title: 'Length',
-                          value: dinosaur.length.isEmpty
-                              ? 'Unknown'
-                              : dinosaur.length,
-                        ),
-                      ),
-
-                      const SizedBox(width: 12),
-
-                      Expanded(
-                        child: infoCard(
-                          icon: Icons.monitor_weight,
-                          title: 'Weight',
-                          value: dinosaur.weight.isEmpty
-                              ? 'Unknown'
-                              : dinosaur.weight,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  Row(
-                    children: [
-                      Expanded(
-                        child: infoCard(
-                          icon: Icons.timeline,
-                          title: 'Period',
-                          value: dinosaur.periodName,
-                        ),
-                      ),
-
-                      const SizedBox(width: 12),
-
-                      Expanded(
-                        child: infoCard(
-                          icon: Icons.calendar_month,
-                          title: 'Year',
-                          value: dinosaur.year.isEmpty
-                              ? 'Unknown'
-                              : dinosaur.year,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 22),
-
-
-                  sectionCard(
-                    title: 'Scientific Information',
-                    text:
-                    'Status: ${emptyText(dinosaur.status)}\n'
-                        'Author: ${emptyText(dinosaur.author)}\n'
-                        'Formation: ${emptyText(dinosaur.formation)}\n'
-                        'Time: ${emptyText(dinosaur.time1)} - ${emptyText(dinosaur.time2)}',
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  sectionCard(
-                    title: 'Fossil Material',
-                    text: emptyText(dinosaur.material),
-                  ),
-
-                  const SizedBox(height: 24),
-
-
-                  GridView.count(
-                    crossAxisCount: 2,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    crossAxisSpacing: 14,
-                    mainAxisSpacing: 14,
-                    childAspectRatio: 1.45,
-                    children: [
-                      optionButton(
-                        icon: Icons.info_outline,
-                        text: 'About',
-                        onTap: () {
-                          sendToLg(
-                            context,
-                            'About',
-                          );
-                        },
-                      ),
-
-                      optionButton(
-                        icon: Icons.groups,
-                        text: 'See Comparison',
-                        onTap: () {
-                          sendToLg(
-                            context,
-                            'Comparison',
-                          );
-                        },
-                      ),
-
-                      optionButton(
-                        icon: Icons.view_in_ar,
-                        text: 'Skeleton',
-                        onTap: () {
-                          sendToLg(
-                            context,
-                            'Skeleton',
-                          );
-                        },
-                      ),
-
-                      optionButton(
-                        icon: Icons.volume_up,
-                        text: 'Narration',
-                        onTap: () async {
-                          await AudioService().playDinosaurAudio(
-                            dinosaur.name,
-                          );
-
-                          if (!context.mounted) return;
-
-                          setState(() {
-                            isNarrationPlaying = true;
-                          });
-
-                          showSnack(
-                            context,
-                            'Narration started',
-                            success: true,
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-
-                  if (isNarrationPlaying) ...[
-                    const SizedBox(height: 16),
-
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: stopNarration,
-                        icon: const Icon(Icons.stop),
-                        label: const Text(
-                          'Stop Narration',
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 16,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                        ),
+                    Text(
+                      dinosaur.periodName,
+                      style: TextStyle(
+                        fontSize: 17,
+                        color:
+                        colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
+                ),
+              ),
 
-                  const SizedBox(height: 16),
+              const SizedBox(height: 20),
 
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () async {
-                        final lgService =
-                        context.read<LgService>();
+              // --------------------------------------------------
+              // PAÍS Y REGIÓN
+              // --------------------------------------------------
 
-                        final ok =
-                        await lgService.closeChromiumOnAllScreens();
-
-                        await AudioService().stop();
-
-                        if (!context.mounted) return;
-
-                        setState(() {
-                          isNarrationPlaying = false;
-                        });
-
-                        showSnack(
-                          context,
-                          ok
-                              ? 'Returned to Liquid Galaxy'
-                              : 'Could not close Chromium',
-                          success: ok,
-                        );
-                      },
-                      icon: const Icon(
-                        Icons.arrow_back,
-                      ),
-                      label: const Text(
-                        'Return Back',
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 16,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                      ),
+              Row(
+                children: [
+                  Expanded(
+                    child: infoCard(
+                      icon: Icons.public,
+                      title: 'Country',
+                      value: dinosaur.country,
                     ),
                   ),
 
-                  const SizedBox(height: 30),
+                  const SizedBox(width: 12),
+
+                  Expanded(
+                    child: infoCard(
+                      icon: Icons.place,
+                      title: 'Region',
+                      value: dinosaur.region,
+                    ),
+                  ),
                 ],
               ),
-            );
-          },
+
+              const SizedBox(height: 12),
+
+              // --------------------------------------------------
+              // LONGITUD Y PESO
+              // --------------------------------------------------
+
+              Row(
+                children: [
+                  Expanded(
+                    child: infoCard(
+                      icon: Icons.straighten,
+                      title: 'Length',
+                      value: dinosaur.length.isEmpty
+                          ? 'Unknown'
+                          : dinosaur.length,
+                    ),
+                  ),
+
+                  const SizedBox(width: 12),
+
+                  Expanded(
+                    child: infoCard(
+                      icon: Icons.monitor_weight,
+                      title: 'Weight',
+                      value: dinosaur.weight.isEmpty
+                          ? 'Unknown'
+                          : dinosaur.weight,
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 12),
+
+              // --------------------------------------------------
+              // PERIODO Y AÑO
+              // --------------------------------------------------
+
+              Row(
+                children: [
+                  Expanded(
+                    child: infoCard(
+                      icon: Icons.timeline,
+                      title: 'Period',
+                      value: dinosaur.periodName,
+                    ),
+                  ),
+
+                  const SizedBox(width: 12),
+
+                  Expanded(
+                    child: infoCard(
+                      icon: Icons.calendar_month,
+                      title: 'Year',
+                      value: dinosaur.year.isEmpty
+                          ? 'Unknown'
+                          : dinosaur.year,
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 22),
+
+              sectionCard(
+                title: 'Scientific Information',
+                text:
+                'Status: ${emptyText(dinosaur.status)}\n'
+                    'Author: ${emptyText(dinosaur.author)}\n'
+                    'Formation: ${emptyText(dinosaur.formation)}\n'
+                    'Time: ${emptyText(dinosaur.time1)}'
+                    ' - ${emptyText(dinosaur.time2)}',
+              ),
+
+              const SizedBox(height: 16),
+
+              sectionCard(
+                title: 'Fossil Material',
+                text: emptyText(dinosaur.material),
+              ),
+
+              const SizedBox(height: 24),
+
+              // --------------------------------------------------
+              // ACCIONES DE LIQUID GALAXY
+              // --------------------------------------------------
+
+              GridView.count(
+                crossAxisCount: 2,
+                shrinkWrap: true,
+                physics:
+                const NeverScrollableScrollPhysics(),
+                crossAxisSpacing: 14,
+                mainAxisSpacing: 14,
+                childAspectRatio: 1.45,
+                children: [
+                  /*
+                   * About ha sido sustituido por Orbit.
+                   */
+                  optionButton(
+                    icon: lgService.isDinosaurOrbiting
+                        ? Icons.sync
+                        : Icons.threesixty,
+                    text: lgService.isDinosaurOrbiting
+                        ? 'Orbiting...'
+                        : 'Orbit',
+                    onTap: () {
+                      if (lgService
+                          .isDinosaurOrbiting) {
+                        showSnack(
+                          context,
+                          'The orbit is already running',
+                          success: false,
+                        );
+                        return;
+                      }
+
+                      sendToLg(
+                        context,
+                        'Orbit',
+                      );
+                    },
+                  ),
+
+                  optionButton(
+                    icon: Icons.groups,
+                    text: 'See Comparison',
+                    onTap: () {
+                      sendToLg(
+                        context,
+                        'Comparison',
+                      );
+                    },
+                  ),
+
+                  optionButton(
+                    icon: Icons.view_in_ar,
+                    text: 'Skeleton',
+                    onTap: () {
+                      sendToLg(
+                        context,
+                        'Skeleton',
+                      );
+                    },
+                  ),
+
+                  optionButton(
+                    icon: Icons.volume_up,
+                    text: 'Narration',
+                    onTap: startNarration,
+                  ),
+                ],
+              ),
+
+              if (isNarrationPlaying) ...[
+                const SizedBox(height: 16),
+
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: stopNarration,
+                    icon: const Icon(Icons.stop),
+                    label: const Text(
+                      'Stop Narration',
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      foregroundColor: Colors.white,
+                      padding:
+                      const EdgeInsets.symmetric(
+                        vertical: 16,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius:
+                        BorderRadius.circular(18),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 16),
+
+              /*
+               * Este botón únicamente cierra Chromium.
+               * Para volver a la selección se utiliza
+               * la flecha superior.
+               */
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: returnToGoogleEarth,
+                  icon: const Icon(
+                    Icons.desktop_windows,
+                  ),
+                  label: const Text(
+                    'Return to Google Earth',
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                    padding:
+                    const EdgeInsets.symmetric(
+                      vertical: 16,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius:
+                      BorderRadius.circular(18),
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 30),
+            ],
+          ),
         ),
       ),
     );
@@ -481,14 +680,16 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
     required String title,
     required String text,
   }) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final colorScheme =
+        Theme.of(context).colorScheme;
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: cardDecoration(),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment:
+        CrossAxisAlignment.start,
         children: [
           Text(
             title,
@@ -506,7 +707,8 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
             style: TextStyle(
               fontSize: 16,
               height: 1.35,
-              color: colorScheme.onSurfaceVariant,
+              color:
+              colorScheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -519,7 +721,8 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
     required String title,
     required String value,
   }) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final colorScheme =
+        Theme.of(context).colorScheme;
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -538,7 +741,8 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
             title,
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: colorScheme.onSurfaceVariant,
+              color:
+              colorScheme.onSurfaceVariant,
             ),
           ),
 
@@ -562,7 +766,8 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
     required String text,
     required VoidCallback onTap,
   }) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final colorScheme =
+        Theme.of(context).colorScheme;
 
     return ElevatedButton(
       onPressed: onTap,
@@ -572,11 +777,13 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
         elevation: 5,
         padding: const EdgeInsets.all(12),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius:
+          BorderRadius.circular(18),
         ),
       ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment:
+        MainAxisAlignment.center,
         children: [
           Icon(
             icon,
@@ -598,10 +805,12 @@ class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
   }
 
   BoxDecoration cardDecoration() {
-    final colorScheme = Theme.of(context).colorScheme;
+    final colorScheme =
+        Theme.of(context).colorScheme;
 
     return BoxDecoration(
-      color: colorScheme.surfaceContainerHighest,
+      color:
+      colorScheme.surfaceContainerHighest,
       borderRadius: BorderRadius.circular(22),
       boxShadow: [
         BoxShadow(

@@ -82,11 +82,20 @@ class LgService extends ChangeNotifier {
   bool _isConnected = false;
   int _currentConnectionAttempts = 0;
 
-  // Prevents two SSH authentication attempts from running at the same time.
+// Dinosaur orbit.
+  Timer? _dinosaurOrbitTimer;
+  Timer? _dinosaurOrbitStopTimer;
+
+  bool _isDinosaurOrbiting = false;
+  bool _orbitCommandRunning = false;
+
+  bool get isDinosaurOrbiting => _isDinosaurOrbiting;
+
+// Prevents two SSH authentication attempts from running at the same time.
   Future<bool?>? _connectionInProgress;
 
-  // Prevents the automatic logo/marker setup from recursively starting again
-  // when execute() has to reconnect.
+// Prevents the automatic logo/marker setup from recursively starting again
+// when execute() has to reconnect.
   bool _initializingAfterConnection = false;
 
   static const int _maxConnectionAttempts = 5;
@@ -379,9 +388,19 @@ class LgService extends ChangeNotifier {
   }
 
   void disconnect() {
+    _dinosaurOrbitTimer?.cancel();
+    _dinosaurOrbitTimer = null;
+
+    _dinosaurOrbitStopTimer?.cancel();
+    _dinosaurOrbitStopTimer = null;
+
+    _isDinosaurOrbiting = false;
+    _orbitCommandRunning = false;
+
     _client?.close();
     _client = null;
     _isConnected = false;
+
     notifyListeners();
   }
 
@@ -664,7 +683,7 @@ class LgService extends ChangeNotifier {
       ) async {
     try {
       const double width = 1000;
-      const double height = 1900;
+      const double height = 2100;
       const double padding = 70;
 
       final recorder = ui.PictureRecorder();
@@ -672,7 +691,7 @@ class LgService extends ChangeNotifier {
 
       // Background
       final backgroundPaint = ui.Paint()
-        ..color = const ui.Color(0xFF181818);
+        ..color = const ui.Color(0xFF173B3F);
 
       canvas.drawRRect(
         ui.RRect.fromRectAndRadius(
@@ -742,7 +761,7 @@ class LgService extends ChangeNotifier {
 
       currentY += drawText(
         text: dinosaur.name.toUpperCase(),
-        fontSize: 60,
+        fontSize: 62,
         y: currentY,
         fontWeight: ui.FontWeight.bold,
         textAlign: ui.TextAlign.center,
@@ -752,7 +771,7 @@ class LgService extends ChangeNotifier {
 
       // Separator
       final separatorPaint = ui.Paint()
-        ..color = const ui.Color(0xFF8D6E63)
+        ..color = const ui.Color(0xFFE9C46A)
         ..strokeWidth = 5;
 
       canvas.drawLine(
@@ -865,7 +884,7 @@ class LgService extends ChangeNotifier {
 
       currentY += drawText(
         text: 'Period',
-        fontSize: 32,
+        fontSize: 34,
         y: currentY,
         fontWeight: ui.FontWeight.bold,
         color: const ui.Color(0xFFD7CCC8),
@@ -875,7 +894,7 @@ class LgService extends ChangeNotifier {
 
       currentY += drawText(
         text: dinosaur.periodName,
-        fontSize: 38,
+        fontSize: 40,
         y: currentY,
       );
 
@@ -887,7 +906,7 @@ class LgService extends ChangeNotifier {
 
       currentY += drawText(
         text: 'Diet',
-        fontSize: 32,
+        fontSize: 34,
         y: currentY,
         fontWeight: ui.FontWeight.bold,
         color: const ui.Color(0xFFD7CCC8),
@@ -899,7 +918,7 @@ class LgService extends ChangeNotifier {
         text: dinosaur.diet.isEmpty
             ? 'Unknown'
             : dinosaur.diet,
-        fontSize: 38,
+        fontSize: 40,
         y: currentY,
       );
 
@@ -911,7 +930,7 @@ class LgService extends ChangeNotifier {
 
       currentY += drawText(
         text: 'Length',
-        fontSize: 32,
+        fontSize: 34,
         y: currentY,
         fontWeight: ui.FontWeight.bold,
         color: const ui.Color(0xFFD7CCC8),
@@ -923,7 +942,7 @@ class LgService extends ChangeNotifier {
         text: dinosaur.length.isEmpty
             ? 'Unknown'
             : dinosaur.length,
-        fontSize: 38,
+        fontSize: 40,
         y: currentY,
       );
 
@@ -935,7 +954,7 @@ class LgService extends ChangeNotifier {
 
       currentY += drawText(
         text: 'Weight',
-        fontSize: 32,
+        fontSize: 34,
         y: currentY,
         fontWeight: ui.FontWeight.bold,
         color: const ui.Color(0xFFD7CCC8),
@@ -947,7 +966,7 @@ class LgService extends ChangeNotifier {
         text: dinosaur.weight.isEmpty
             ? 'Unknown'
             : dinosaur.weight,
-        fontSize: 38,
+        fontSize: 40,
         y: currentY,
       );
 
@@ -959,7 +978,7 @@ class LgService extends ChangeNotifier {
 
       currentY += drawText(
         text: 'Habitat',
-        fontSize: 32,
+        fontSize: 34,
         y: currentY,
         fontWeight: ui.FontWeight.bold,
         color: const ui.Color(0xFFD7CCC8),
@@ -971,7 +990,7 @@ class LgService extends ChangeNotifier {
         text: dinosaur.habitat.isEmpty
             ? 'Unknown'
             : dinosaur.habitat,
-        fontSize: 36,
+        fontSize: 38,
         y: currentY,
       );
 
@@ -983,7 +1002,7 @@ class LgService extends ChangeNotifier {
 
       currentY += drawText(
         text: 'Location',
-        fontSize: 32,
+        fontSize: 34,
         y: currentY,
         fontWeight: ui.FontWeight.bold,
         color: const ui.Color(0xFFD7CCC8),
@@ -1004,7 +1023,7 @@ class LgService extends ChangeNotifier {
         text: location.isEmpty
             ? 'Unknown'
             : location,
-        fontSize: 36,
+        fontSize: 38,
         y: currentY,
       );
 
@@ -1034,7 +1053,7 @@ class LgService extends ChangeNotifier {
 
       currentY += drawText(
         text: 'About',
-        fontSize: 38,
+        fontSize: 40,
         y: currentY,
         fontWeight: ui.FontWeight.bold,
         color: const ui.Color(0xFFD7CCC8),
@@ -1046,7 +1065,7 @@ class LgService extends ChangeNotifier {
         text: dinosaur.generalInfo.isEmpty
             ? 'No additional information available.'
             : dinosaur.generalInfo,
-        fontSize: 31,
+        fontSize: 33,
         y: currentY,
         lineHeight: 1.4,
       );
@@ -1116,6 +1135,265 @@ class LgService extends ChangeNotifier {
       return false;
     }
   }
+
+  String _buildDinosaurOrbitTour(
+      Dinosaur dinosaur,
+      ) {
+    final cubePosition =
+    _calculateCubePosition(dinosaur);
+
+    final double cubeLatitude =
+    cubePosition['latitude']!;
+
+    final double cubeLongitude =
+    cubePosition['longitude']!;
+
+    /*
+   * Configuración fija de la cámara.
+   *
+   * La cámara no sube, no baja, no se acerca
+   * y no se aleja durante la órbita.
+   */
+    const double orbitAltitude = 160.0;
+    const double orbitTilt = 72.0;
+    const double orbitRange = 600.0;
+
+    /*
+   * 72 movimientos de 5 grados:
+   * 72 × 5 = 360 grados.
+   *
+   * 72 × 0.42 segundos ≈ 30 segundos.
+   */
+    const int totalSteps = 72;
+    const double degreesPerStep = 5.0;
+    const double durationPerStep = 0.30;
+
+    final StringBuffer flyToSteps =
+    StringBuffer();
+
+    for (
+    int step = 0;
+    step <= totalSteps;
+    step++
+    ) {
+      final double heading =
+          (dinosaur.heading +
+              step * degreesPerStep) %
+              360.0;
+
+      flyToSteps.write(
+        '''
+      <gx:FlyTo>
+        <gx:duration>$durationPerStep</gx:duration>
+        <gx:flyToMode>smooth</gx:flyToMode>
+
+        <LookAt>
+          <longitude>$cubeLongitude</longitude>
+          <latitude>$cubeLatitude</latitude>
+          <altitude>$orbitAltitude</altitude>
+          <heading>$heading</heading>
+          <tilt>$orbitTilt</tilt>
+          <range>$orbitRange</range>
+          <altitudeMode>relativeToGround</altitudeMode>
+        </LookAt>
+      </gx:FlyTo>
+''',
+      );
+    }
+
+    return '''
+<?xml version="1.0" encoding="UTF-8"?>
+<kml
+  xmlns="http://www.opengis.net/kml/2.2"
+  xmlns:gx="http://www.google.com/kml/ext/2.2"
+>
+  <Document>
+    <name>GeoSaurio Dinosaur Orbit</name>
+
+    <gx:Tour>
+      <name>DinosaurOrbit</name>
+
+      <gx:Playlist>
+        ${flyToSteps.toString()}
+      </gx:Playlist>
+    </gx:Tour>
+  </Document>
+</kml>
+''';
+  }
+
+  Future<bool> startDinosaurOrbit(
+      Dinosaur dinosaur,
+      ) async {
+    try {
+      if (_client == null || !_isConnected) {
+        debugPrint(
+          'Cannot start dinosaur orbit: '
+              'Liquid Galaxy is not connected',
+        );
+        return false;
+      }
+
+      if (_isDinosaurOrbiting) {
+        debugPrint(
+          'Dinosaur orbit is already running',
+        );
+        return false;
+      }
+
+      _dinosaurOrbitTimer?.cancel();
+      _dinosaurOrbitTimer = null;
+
+      _dinosaurOrbitStopTimer?.cancel();
+      _dinosaurOrbitStopTimer = null;
+
+      // Detener cualquier tour anterior.
+      await execute(
+        'echo "exittour=true" > /tmp/query.txt',
+        'Previous tour stopped',
+      );
+
+      await Future.delayed(
+        const Duration(milliseconds: 500),
+      );
+
+      final String orbitKml =
+      _buildDinosaurOrbitTour(dinosaur);
+
+      // Crear el archivo KML del tour.
+      final String writeTourCommand = '''
+cat > /var/www/html/kml/dinosaur_orbit.kml << 'EOFKML'
+$orbitKml
+EOFKML
+''';
+
+      final writeResult = await execute(
+        writeTourCommand,
+        'Dinosaur orbit KML written',
+      );
+
+      if (writeResult == null) {
+        debugPrint(
+          'Could not write dinosaur_orbit.kml',
+        );
+        return false;
+      }
+
+      /*
+     * Registrar el KML del tour en la lista.
+     * No vaciamos kmls.txt para conservar el cubo.
+     */
+      await execute(
+        'grep -qxF '
+            '"http://lg1:81/kml/dinosaur_orbit.kml" '
+            '/var/www/html/kmls.txt || '
+            'echo "http://lg1:81/kml/dinosaur_orbit.kml" '
+            '>> /var/www/html/kmls.txt',
+        'Orbit KML registered',
+      );
+
+      /*
+     * Recargar la lista completa de KML.
+     * De esta manera se mantienen el cubo y el tour.
+     */
+      final loadResult = await execute(
+        'echo "search=http://lg1:81/kmls.txt" '
+            '> /tmp/query.txt',
+        'Orbit KML list loaded',
+      );
+
+      if (loadResult == null) {
+        debugPrint(
+          'Could not load orbit KML list',
+        );
+        return false;
+      }
+
+      /*
+     * Google Earth necesita tiempo para abrir y registrar
+     * internamente el gx:Tour.
+     */
+      await Future.delayed(
+        const Duration(seconds: 3),
+      );
+
+      debugPrint(
+        'Trying to play tour named DinosaurOrbit',
+      );
+
+      final playResult = await execute(
+        'echo "playtour=DinosaurOrbit" '
+            '> /tmp/query.txt',
+        'Dinosaur orbit play command sent',
+      );
+
+      if (playResult == null) {
+        debugPrint(
+          'Could not send playtour command',
+        );
+        return false;
+      }
+
+      _isDinosaurOrbiting = true;
+      _orbitCommandRunning = false;
+      notifyListeners();
+
+      /*
+     * El Timer no mueve la cámara.
+     * Solo restablece el estado del botón al terminar.
+     */
+      _dinosaurOrbitStopTimer = Timer(
+        const Duration(seconds: 31),
+            () {
+          _isDinosaurOrbiting = false;
+          _orbitCommandRunning = false;
+          _dinosaurOrbitStopTimer = null;
+
+          notifyListeners();
+
+          debugPrint(
+            'Dinosaur orbit completed for '
+                '${dinosaur.name}',
+          );
+        },
+      );
+
+      return true;
+    } catch (e, stackTrace) {
+      debugPrint(
+        'Error starting dinosaur orbit: $e',
+      );
+      debugPrint('$stackTrace');
+
+      await stopDinosaurOrbit();
+      return false;
+    }
+  }
+
+  Future<void> stopDinosaurOrbit() async {
+    _dinosaurOrbitTimer?.cancel();
+    _dinosaurOrbitTimer = null;
+
+    _dinosaurOrbitStopTimer?.cancel();
+    _dinosaurOrbitStopTimer = null;
+
+    _isDinosaurOrbiting = false;
+    _orbitCommandRunning = false;
+
+    notifyListeners();
+
+    try {
+      await execute(
+        'echo "exittour=true" > /tmp/query.txt',
+        'Dinosaur orbit stopped',
+      );
+    } catch (e) {
+      debugPrint(
+        'Error stopping dinosaur orbit: $e',
+      );
+    }
+  }
+
 
   Future<bool> showDinosaurAboutColumn(Dinosaur dinosaur) async {
     try {
@@ -1192,47 +1470,87 @@ class LgService extends ChangeNotifier {
 
   Future<bool> flyToDinosaur(Dinosaur dinosaur) async {
     try {
-      if (_client == null) {
+      if (_client == null || !_isConnected) {
         debugPrint('SSH client is not connected');
         return false;
       }
 
-      const double fixedAltitude = 0.0;
-      const double fixedTilt = 65.0;
-      const double fixedRange = 1800.0;
+      if (dinosaur.latitude == 0 ||
+          dinosaur.longitude == 0) {
+        debugPrint(
+          'Invalid coordinates for ${dinosaur.name}: '
+              '${dinosaur.latitude}, ${dinosaur.longitude}',
+        );
+        return false;
+      }
+
+      /*
+     * El cubo no está en las coordenadas originales
+     * del dinosaurio. Por eso la cámara debe mirar
+     * directamente al centro del cubo.
+     */
+      final cubePosition =
+      _calculateCubePosition(dinosaur);
+
+      final double cubeLatitude =
+      cubePosition['latitude']!;
+
+      final double cubeLongitude =
+      cubePosition['longitude']!;
+
+      /*
+     * El cubo mide 250 metros de alto.
+     * Miramos aproximadamente a su centro vertical.
+     */
+      const double targetAltitude = 160.0;
+      const double fixedTilt = 72.0;
+      const double fixedRange = 600.0;
 
       final lookAt =
           '<LookAt>'
-          '<longitude>${dinosaur.longitude}</longitude>'
-          '<latitude>${dinosaur.latitude}</latitude>'
-          '<altitude>$fixedAltitude</altitude>'
+          '<longitude>$cubeLongitude</longitude>'
+          '<latitude>$cubeLatitude</latitude>'
+          '<altitude>$targetAltitude</altitude>'
           '<heading>${dinosaur.heading}</heading>'
           '<tilt>$fixedTilt</tilt>'
           '<range>$fixedRange</range>'
           '<altitudeMode>relativeToGround</altitudeMode>'
           '</LookAt>';
 
-      await execute(
-        'echo "flytoview=$lookAt" > /tmp/query.txt',
-        'Flying to ${dinosaur.name}',
-      );
-
-      return true;
-    } catch (e) {
       debugPrint(
-        'Error flying to dinosaur ${dinosaur.name}: $e',
+        'FlyTo cube for ${dinosaur.name}: '
+            'cubeLat=$cubeLatitude, '
+            'cubeLon=$cubeLongitude, '
+            'altitude=$targetAltitude, '
+            'tilt=$fixedTilt, '
+            'range=$fixedRange, '
+            'heading=${dinosaur.heading}',
       );
 
+      final result = await execute(
+        'echo "flytoview=$lookAt" > /tmp/query.txt',
+        'FlyTo dinosaur cube sent',
+      );
+
+      return result != null;
+    } catch (e, stackTrace) {
+      debugPrint('Error flying to dinosaur cube: $e');
+      debugPrint('$stackTrace');
       return false;
     }
   }
 
   Future<bool> flyToContinent(String continent) async {
     try {
+      if (_client == null || !_isConnected) {
+        debugPrint('SSH client is not connected');
+        return false;
+      }
+
       final view = _continentViews[continent];
 
       if (view == null) {
-        debugPrint('Continent view not found: $continent');
+        debugPrint('Unknown continent: $continent');
         return false;
       }
 
@@ -1248,24 +1566,39 @@ class LgService extends ChangeNotifier {
           '</LookAt>';
 
       final result = await execute(
-        "echo 'flytoview=$lookAt' > /tmp/query.txt",
-        'FlyTo continent sent',
+        'echo "flytoview=$lookAt" > /tmp/query.txt',
+        'FlyTo continent sent: $continent',
       );
 
       return result != null;
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('Error flying to continent: $e');
+      debugPrint('$stackTrace');
       return false;
     }
   }
 
-  Future<bool> flyToCountry(String country, List<Dinosaur> dinosaurs) async {
+  Future<bool> flyToCountry(
+      String country,
+      List<Dinosaur> dinosaurs,
+      ) async {
     try {
+      if (_client == null || !_isConnected) {
+        debugPrint('SSH client is not connected');
+        return false;
+      }
+
       final validDinosaurs = dinosaurs.where((dinosaur) {
-        return dinosaur.latitude != 0 && dinosaur.longitude != 0;
+        return dinosaur.latitude != 0 &&
+            dinosaur.longitude != 0;
       }).toList();
 
-      if (validDinosaurs.isEmpty) return false;
+      if (validDinosaurs.isEmpty) {
+        debugPrint(
+          'No valid dinosaur coordinates found for $country',
+        );
+        return false;
+      }
 
       final latitude =
           validDinosaurs
@@ -1279,7 +1612,10 @@ class LgService extends ChangeNotifier {
               .reduce((a, b) => a + b) /
               validDinosaurs.length;
 
-      final range = validDinosaurs.length <= 1 ? 250000 : 900000;
+      final range =
+      validDinosaurs.length <= 1
+          ? 250000.0
+          : 900000.0;
 
       final lookAt =
           '<LookAt>'
@@ -1292,120 +1628,44 @@ class LgService extends ChangeNotifier {
           '<altitudeMode>relativeToGround</altitudeMode>'
           '</LookAt>';
 
+      debugPrint(
+        'Sending FlyTo country $country: '
+            'lat=$latitude, lon=$longitude, range=$range',
+      );
+
       final result = await execute(
-        "echo 'flytoview=$lookAt' > /tmp/query.txt",
-        'FlyTo country sent',
+        'echo "flytoview=$lookAt" > /tmp/query.txt',
+        'FlyTo country sent: $country',
       );
 
       return result != null;
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('Error flying to country: $e');
+      debugPrint('$stackTrace');
       return false;
     }
   }
-
-  Future<bool> showCountryMarkers(List<Dinosaur> dinosaurs) async {
-    return cleanDinosaurMarkers();
-  }
-
-  Future<bool> flyToEarth() async {
-    try {
-      const lookAt =
-          '<LookAt>'
-          '<longitude>0</longitude>'
-          '<latitude>20</latitude>'
-          '<altitude>0</altitude>'
-          '<heading>0</heading>'
-          '<tilt>0</tilt>'
-          '<range>20000000</range>'
-          '<altitudeMode>relativeToGround</altitudeMode>'
-          '</LookAt>';
-
-      final result = await execute(
-        "echo 'flytoview=$lookAt' > /tmp/query.txt",
-        'FlyTo Earth sent',
-      );
-
-      return result != null;
-    } catch (e) {
-      debugPrint('Error flying to Earth: $e');
-      return false;
-    }
-  }
-
 
   Map<String, double> _calculateCubePosition(
       Dinosaur dinosaur,
       ) {
-    const double earthRadius = 6378137.0;
-
     /*
-   * Distancia que adelantamos el cubo desde el punto
-   * al que está mirando la cámara.
-   *
-   * Se adapta al range, pero nunca será menor de 400 m
-   * ni mayor de 3000 m.
+   * Distancia a la que queremos colocar el cubo
+   * delante de la cámara.
    */
-    final double forwardDistance = (
-        dinosaur.range * 0.35
-    ).clamp(
-      400.0,
-      3000.0,
-    );
+    const double offset = 0.012;
 
-    /*
-   * El heading indica hacia dónde está orientada la vista.
-   * Movemos el cubo desde la posición del dinosaurio
-   * en esa misma dirección.
-   */
-    final double headingRadians =
+    final heading =
         dinosaur.heading * math.pi / 180.0;
 
-    final double latitudeRadians =
-        dinosaur.latitude * math.pi / 180.0;
-
-    final double longitudeRadians =
-        dinosaur.longitude * math.pi / 180.0;
-
-    final double angularDistance =
-        forwardDistance / earthRadius;
-
-    final double newLatitudeRadians = math.asin(
-      math.sin(latitudeRadians) *
-          math.cos(angularDistance) +
-          math.cos(latitudeRadians) *
-              math.sin(angularDistance) *
-              math.cos(headingRadians),
-    );
-
-    final double newLongitudeRadians =
-        longitudeRadians +
-            math.atan2(
-              math.sin(headingRadians) *
-                  math.sin(angularDistance) *
-                  math.cos(latitudeRadians),
-              math.cos(angularDistance) -
-                  math.sin(latitudeRadians) *
-                      math.sin(newLatitudeRadians),
-            );
-
-    final double newLatitude =
-        newLatitudeRadians * 180.0 / math.pi;
-
-    final double newLongitude =
-        newLongitudeRadians * 180.0 / math.pi;
-
-    debugPrint(
-      'Cube moved forward for ${dinosaur.name}: '
-          'original=(${dinosaur.latitude}, ${dinosaur.longitude}), '
-          'cube=($newLatitude, $newLongitude), '
-          'forwardDistance=${forwardDistance.toStringAsFixed(0)}m, '
-          'heading=${dinosaur.heading}',
-    );
-
     return {
-      'latitude': newLatitude,
-      'longitude': newLongitude,
+      'latitude':
+      dinosaur.latitude +
+          math.cos(heading) * offset,
+
+      'longitude':
+      dinosaur.longitude +
+          math.sin(heading) * offset,
     };
   }
 
@@ -1427,7 +1687,7 @@ class LgService extends ChangeNotifier {
       }
 
       const double radius = 0.0025;
-      const double altitude = 400.0;
+      const double altitude = 250.0;
 
       final cubePosition =
       _calculateCubePosition(dinosaur);
@@ -1453,12 +1713,12 @@ class LgService extends ChangeNotifier {
 
   <Style id="cube">
     <LineStyle>
-      <color>ff0000ff</color>
-      <width>5</width>
+      <color>cc00ffff</color>
+      <width>3</width>
     </LineStyle>
 
     <PolyStyle>
-      <color>cc0000ff</color>
+      <color>4400ffff</color>
       <fill>1</fill>
       <outline>1</outline>
     </PolyStyle>
@@ -1645,6 +1905,11 @@ EOFKML
         return false;
       }
 
+      final int logoScreen =
+      calculateLeftMostScreen(
+        _lgConnectionModel.screens,
+      );
+
       const String emptyKml = '''
 <?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
@@ -1654,7 +1919,6 @@ EOFKML
 </kml>
 ''';
 
-      // 1. Reemplazar master.kml por un documento vacío.
       final String clearMasterCommand = '''
 cat > /var/www/html/kml/master.kml << 'EOFKML'
 $emptyKml
@@ -1670,12 +1934,22 @@ EOFKML
         return false;
       }
 
-      // 2. Reemplazar todos los archivos slave por documentos vacíos.
+      /*
+     * Limpiar todos los slaves excepto el que contiene
+     * el logo.
+     */
       for (
       int screen = 1;
       screen <= _lgConnectionModel.screens;
       screen++
       ) {
+        if (screen == logoScreen) {
+          debugPrint(
+            'Skipping slave_$screen.kml to preserve logo',
+          );
+          continue;
+        }
+
         final String clearSlaveCommand = '''
 cat > /var/www/html/kml/slave_$screen.kml << 'EOFKML'
 $emptyKml
@@ -1692,7 +1966,6 @@ EOFKML
         }
       }
 
-      // 3. Reconstruir kmls.txt con los archivos vacíos.
       final clearListResult = await execute(
         '> /var/www/html/kmls.txt',
         'KML list cleared',
@@ -1712,11 +1985,19 @@ EOFKML
         return false;
       }
 
+      /*
+     * Registrar únicamente los slaves vacíos.
+     * El KML del logo no se añade a esta lista.
+     */
       for (
       int screen = 1;
       screen <= _lgConnectionModel.screens;
       screen++
       ) {
+        if (screen == logoScreen) {
+          continue;
+        }
+
         final registerSlaveResult = await execute(
           'echo "http://lg1:81/kml/slave_$screen.kml" '
               '>> /var/www/html/kmls.txt',
@@ -1732,9 +2013,9 @@ EOFKML
         const Duration(milliseconds: 500),
       );
 
-      // 4. Hacer que el master abra la lista que ahora contiene KML vacíos.
       final refreshResult = await execute(
-        'echo "search=http://lg1:81/kmls.txt" > /tmp/query.txt',
+        'echo "search=http://lg1:81/kmls.txt" '
+            '> /tmp/query.txt',
         'Empty KML loaded on master',
       );
 
@@ -1742,18 +2023,44 @@ EOFKML
         return false;
       }
 
+      /*
+     * Refrescar todas las pantallas salvo la pantalla
+     * del logo.
+     */
       for (
       int screen = 2;
       screen <= _lgConnectionModel.screens;
       screen++
       ) {
+        if (screen == logoScreen) {
+          continue;
+        }
+
         await _forceRefresh(screen);
       }
 
-      debugPrint('Dinosaur cubes cleaned successfully');
+      /*
+     * Restaurar el logo por seguridad, por si Google Earth
+     * hubiera descargado temporalmente el overlay.
+     */
+      final logoSent = await sendLogo();
+
+      if (!logoSent) {
+        debugPrint(
+          'Markers cleaned, but logo could not be restored',
+        );
+      }
+
+      debugPrint(
+        'Dinosaur cubes cleaned successfully '
+            'while preserving logo',
+      );
+
       return true;
     } catch (e, stackTrace) {
-      debugPrint('Error cleaning dinosaur markers: $e');
+      debugPrint(
+        'Error cleaning dinosaur markers: $e',
+      );
       debugPrint('$stackTrace');
       return false;
     }
@@ -2212,6 +2519,7 @@ img.onload = () => {
 
   Future<bool> cleanAll() async {
     try {
+      await stopDinosaurOrbit();
       await closeChromiumOnAllScreens();
 
       final dinosaurMarkersCleaned =
@@ -2337,7 +2645,7 @@ EOFKML
       );
 
       final result = await execute(
-        "echo 'flytoview=$lookAt' > /tmp/query.txt",
+        'echo "flytoview=$lookAt" > /tmp/query.txt',
         'Map position sent to Liquid Galaxy',
       );
 
