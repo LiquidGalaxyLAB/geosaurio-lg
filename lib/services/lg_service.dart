@@ -83,13 +83,11 @@ class LgService extends ChangeNotifier {
   int _currentConnectionAttempts = 0;
 
 // Dinosaur orbit.
-  Timer? _dinosaurOrbitTimer;
-  Timer? _dinosaurOrbitStopTimer;
 
   bool _isDinosaurOrbiting = false;
-  bool _orbitCommandRunning = false;
 
-  bool get isDinosaurOrbiting => _isDinosaurOrbiting;
+  bool get isDinosaurOrbiting =>
+      _isDinosaurOrbiting;
 
 // Prevents two SSH authentication attempts from running at the same time.
   Future<bool?>? _connectionInProgress;
@@ -388,14 +386,7 @@ class LgService extends ChangeNotifier {
   }
 
   void disconnect() {
-    _dinosaurOrbitTimer?.cancel();
-    _dinosaurOrbitTimer = null;
-
-    _dinosaurOrbitStopTimer?.cancel();
-    _dinosaurOrbitStopTimer = null;
-
-    _isDinosaurOrbiting = false;
-    _orbitCommandRunning = false;
+     _isDinosaurOrbiting = false;
 
     _client?.close();
     _client = null;
@@ -403,7 +394,6 @@ class LgService extends ChangeNotifier {
 
     notifyListeners();
   }
-
   Future<dynamic> execute(String command, String successMessage) async {
     if (_client == null || !_isConnected) {
       debugPrint('SSH client not connected. Trying reconnect...');
@@ -683,15 +673,43 @@ class LgService extends ChangeNotifier {
       ) async {
     try {
       const double width = 1000;
-      const double height = 2100;
-      const double padding = 70;
+      const double height = 2600;
+      const double padding = 60;
 
       final recorder = ui.PictureRecorder();
       final canvas = ui.Canvas(recorder);
 
-      // Background
+      // --------------------------------------------------
+      // COLORS
+      // --------------------------------------------------
+
+      const backgroundColor =
+      ui.Color(0xFF102F33);
+
+      const cardColor =
+      ui.Color(0xFF1A464A);
+
+      const secondaryCardColor =
+      ui.Color(0xFF24575B);
+
+      const accentColor =
+      ui.Color(0xFFE9C46A);
+
+      const titleColor =
+      ui.Color(0xFFFFFFFF);
+
+      const labelColor =
+      ui.Color(0xFFB8CFCC);
+
+      const textColor =
+      ui.Color(0xFFF4F7F6);
+
+      // --------------------------------------------------
+      // BACKGROUND
+      // --------------------------------------------------
+
       final backgroundPaint = ui.Paint()
-        ..color = const ui.Color(0xFF173B3F);
+        ..color = backgroundColor;
 
       canvas.drawRRect(
         ui.RRect.fromRectAndRadius(
@@ -701,23 +719,30 @@ class LgService extends ChangeNotifier {
             width,
             height,
           ),
-          const ui.Radius.circular(40),
+          const ui.Radius.circular(45),
         ),
         backgroundPaint,
       );
 
-      double currentY = 60;
+      double currentY = 55;
 
-      // Helper method for wrapped text
+      // --------------------------------------------------
+      // TEXT HELPER
+      // --------------------------------------------------
+
       double drawText({
         required String text,
         required double fontSize,
         required double y,
-        ui.FontWeight fontWeight = ui.FontWeight.normal,
-        ui.Color color = const ui.Color(0xFFFFFFFF),
-        double maxWidth = width - (padding * 2),
-        double lineHeight = 1.3,
-        ui.TextAlign textAlign = ui.TextAlign.left,
+        double x = padding,
+        ui.FontWeight fontWeight =
+            ui.FontWeight.normal,
+        ui.Color color = textColor,
+        double maxWidth =
+            width - (padding * 2),
+        double lineHeight = 1.25,
+        ui.TextAlign textAlign =
+            ui.TextAlign.left,
       }) {
         final builder = ui.ParagraphBuilder(
           ui.ParagraphStyle(
@@ -747,7 +772,7 @@ class LgService extends ChangeNotifier {
         canvas.drawParagraph(
           paragraph,
           ui.Offset(
-            padding,
+            x,
             y,
           ),
         );
@@ -756,23 +781,103 @@ class LgService extends ChangeNotifier {
       }
 
       // --------------------------------------------------
+      // CARD HELPER
+      // --------------------------------------------------
+
+      void drawCard({
+        required double x,
+        required double y,
+        required double cardWidth,
+        required double cardHeight,
+        ui.Color color = cardColor,
+      }) {
+        final paint = ui.Paint()
+          ..color = color;
+
+        canvas.drawRRect(
+          ui.RRect.fromRectAndRadius(
+            ui.Rect.fromLTWH(
+              x,
+              y,
+              cardWidth,
+              cardHeight,
+            ),
+            const ui.Radius.circular(28),
+          ),
+          paint,
+        );
+      }
+
+      // --------------------------------------------------
+      // SMALL INFO CARD HELPER
+      // --------------------------------------------------
+
+      void drawInfoCard({
+        required String label,
+        required String value,
+        required double x,
+        required double y,
+        required double cardWidth,
+        double cardHeight = 135,
+      }) {
+        drawCard(
+          x: x,
+          y: y,
+          cardWidth: cardWidth,
+          cardHeight: cardHeight,
+        );
+
+        drawText(
+          text: label,
+          fontSize: 27,
+          y: y + 20,
+          x: x + 22,
+          maxWidth: cardWidth - 44,
+          fontWeight: ui.FontWeight.bold,
+          color: accentColor,
+        );
+
+        drawText(
+          text: value.trim().isEmpty
+              ? 'Unknown'
+              : value,
+          fontSize: 32,
+          y: y + 60,
+          x: x + 22,
+          maxWidth: cardWidth - 44,
+          color: textColor,
+        );
+      }
+
+      // --------------------------------------------------
       // DINOSAUR NAME
       // --------------------------------------------------
 
       currentY += drawText(
         text: dinosaur.name.toUpperCase(),
-        fontSize: 62,
+        fontSize: 60,
         y: currentY,
         fontWeight: ui.FontWeight.bold,
         textAlign: ui.TextAlign.center,
+        color: titleColor,
       );
 
-      currentY += 30;
+      currentY += 16;
 
-      // Separator
+      currentY += drawText(
+        text: dinosaur.periodName.toUpperCase(),
+        fontSize: 28,
+        y: currentY,
+        fontWeight: ui.FontWeight.bold,
+        textAlign: ui.TextAlign.center,
+        color: accentColor,
+      );
+
+      currentY += 28;
+
       final separatorPaint = ui.Paint()
-        ..color = const ui.Color(0xFFE9C46A)
-        ..strokeWidth = 5;
+        ..color = accentColor
+        ..strokeWidth = 4;
 
       canvas.drawLine(
         ui.Offset(
@@ -789,15 +894,18 @@ class LgService extends ChangeNotifier {
       currentY += 35;
 
       // --------------------------------------------------
-      // OPTIONAL DINOSAUR IMAGE
+      // DINOSAUR IMAGE
       // --------------------------------------------------
 
-      final cleanName = cleanDinosaurImageName(
+      final cleanName =
+      cleanDinosaurImageName(
         dinosaur.name,
       );
 
-      final dinosaurImagePath = await getExistingImagePath(
-        'assets/images/dinosaurs/${cleanName}_normal',
+      final dinosaurImagePath =
+      await getExistingImagePath(
+        'assets/images/dinosaurs/'
+            '${cleanName}_normal',
       );
 
       ui.Image? dinosaurImage;
@@ -808,13 +916,16 @@ class LgService extends ChangeNotifier {
             dinosaurImagePath,
           );
 
-          final bytes = data.buffer.asUint8List();
+          final bytes =
+          data.buffer.asUint8List();
 
-          final codec = await ui.instantiateImageCodec(
+          final codec =
+          await ui.instantiateImageCodec(
             bytes,
           );
 
-          final frame = await codec.getNextFrame();
+          final frame =
+          await codec.getNextFrame();
 
           dinosaurImage = frame.image;
 
@@ -824,14 +935,15 @@ class LgService extends ChangeNotifier {
           );
         } catch (e) {
           debugPrint(
-            'Could not load dinosaur image for column: $e',
+            'Could not load dinosaur image '
+                'for column: $e',
           );
         }
       }
 
       if (dinosaurImage != null) {
-        const double maxImageWidth = 760;
-        const double maxImageHeight = 430;
+        const double maxImageWidth = 780;
+        const double maxImageHeight = 390;
 
         final originalWidth =
         dinosaurImage.width.toDouble();
@@ -853,7 +965,17 @@ class LgService extends ChangeNotifier {
         final imageX =
             (width - imageWidth) / 2;
 
-        final sourceRect = ui.Rect.fromLTWH(
+        // Background card behind image.
+        drawCard(
+          x: imageX - 18,
+          y: currentY - 18,
+          cardWidth: imageWidth + 36,
+          cardHeight: imageHeight + 36,
+          color: secondaryCardColor,
+        );
+
+        final sourceRect =
+        ui.Rect.fromLTWH(
           0,
           0,
           originalWidth,
@@ -875,177 +997,293 @@ class LgService extends ChangeNotifier {
           ui.Paint(),
         );
 
-        currentY += imageHeight + 40;
+        currentY += imageHeight + 55;
       }
 
       // --------------------------------------------------
-      // PERIOD
+      // MAIN INFORMATION TITLE
       // --------------------------------------------------
 
       currentY += drawText(
-        text: 'Period',
-        fontSize: 34,
-        y: currentY,
-        fontWeight: ui.FontWeight.bold,
-        color: const ui.Color(0xFFD7CCC8),
-      );
-
-      currentY += 5;
-
-      currentY += drawText(
-        text: dinosaur.periodName,
-        fontSize: 40,
-        y: currentY,
-      );
-
-      currentY += 25;
-
-      // --------------------------------------------------
-      // DIET
-      // --------------------------------------------------
-
-      currentY += drawText(
-        text: 'Diet',
-        fontSize: 34,
-        y: currentY,
-        fontWeight: ui.FontWeight.bold,
-        color: const ui.Color(0xFFD7CCC8),
-      );
-
-      currentY += 5;
-
-      currentY += drawText(
-        text: dinosaur.diet.isEmpty
-            ? 'Unknown'
-            : dinosaur.diet,
-        fontSize: 40,
-        y: currentY,
-      );
-
-      currentY += 25;
-
-      // --------------------------------------------------
-      // LENGTH
-      // --------------------------------------------------
-
-      currentY += drawText(
-        text: 'Length',
-        fontSize: 34,
-        y: currentY,
-        fontWeight: ui.FontWeight.bold,
-        color: const ui.Color(0xFFD7CCC8),
-      );
-
-      currentY += 5;
-
-      currentY += drawText(
-        text: dinosaur.length.isEmpty
-            ? 'Unknown'
-            : dinosaur.length,
-        fontSize: 40,
-        y: currentY,
-      );
-
-      currentY += 25;
-
-      // --------------------------------------------------
-      // WEIGHT
-      // --------------------------------------------------
-
-      currentY += drawText(
-        text: 'Weight',
-        fontSize: 34,
-        y: currentY,
-        fontWeight: ui.FontWeight.bold,
-        color: const ui.Color(0xFFD7CCC8),
-      );
-
-      currentY += 5;
-
-      currentY += drawText(
-        text: dinosaur.weight.isEmpty
-            ? 'Unknown'
-            : dinosaur.weight,
-        fontSize: 40,
-        y: currentY,
-      );
-
-      currentY += 25;
-
-      // --------------------------------------------------
-      // HABITAT
-      // --------------------------------------------------
-
-      currentY += drawText(
-        text: 'Habitat',
-        fontSize: 34,
-        y: currentY,
-        fontWeight: ui.FontWeight.bold,
-        color: const ui.Color(0xFFD7CCC8),
-      );
-
-      currentY += 5;
-
-      currentY += drawText(
-        text: dinosaur.habitat.isEmpty
-            ? 'Unknown'
-            : dinosaur.habitat,
+        text: 'Overview',
         fontSize: 38,
         y: currentY,
+        fontWeight: ui.FontWeight.bold,
+        color: titleColor,
       );
 
-      currentY += 25;
+      currentY += 18;
+
+      const double gap = 18;
+
+      final double cardWidth =
+          (width -
+              (padding * 2) -
+              gap) /
+              2;
+
+      // --------------------------------------------------
+      // PERIOD / YEAR
+      // --------------------------------------------------
+
+      drawInfoCard(
+        label: 'Period',
+        value: dinosaur.periodName,
+        x: padding,
+        y: currentY,
+        cardWidth: cardWidth,
+      );
+
+      drawInfoCard(
+        label: 'Year',
+        value: dinosaur.year,
+        x: padding + cardWidth + gap,
+        y: currentY,
+        cardWidth: cardWidth,
+      );
+
+      currentY += 153;
+
+      // --------------------------------------------------
+      // DIET / HABITAT
+      // --------------------------------------------------
+
+      drawInfoCard(
+        label: 'Diet',
+        value: dinosaur.diet,
+        x: padding,
+        y: currentY,
+        cardWidth: cardWidth,
+      );
+
+      drawInfoCard(
+        label: 'Habitat',
+        value: dinosaur.habitat,
+        x: padding + cardWidth + gap,
+        y: currentY,
+        cardWidth: cardWidth,
+      );
+
+      currentY += 153;
+
+      // --------------------------------------------------
+      // LENGTH / WEIGHT
+      // --------------------------------------------------
+
+      drawInfoCard(
+        label: 'Length',
+        value: dinosaur.length,
+        x: padding,
+        y: currentY,
+        cardWidth: cardWidth,
+      );
+
+      drawInfoCard(
+        label: 'Weight',
+        value: dinosaur.weight,
+        x: padding + cardWidth + gap,
+        y: currentY,
+        cardWidth: cardWidth,
+      );
+
+      currentY += 170;
 
       // --------------------------------------------------
       // LOCATION
       // --------------------------------------------------
-
-      currentY += drawText(
-        text: 'Location',
-        fontSize: 34,
-        y: currentY,
-        fontWeight: ui.FontWeight.bold,
-        color: const ui.Color(0xFFD7CCC8),
-      );
-
-      currentY += 5;
 
       final location = [
         dinosaur.region,
         dinosaur.country,
       ]
           .where(
-            (value) => value.trim().isNotEmpty,
+            (value) =>
+        value.trim().isNotEmpty,
       )
           .join(', ');
 
-      currentY += drawText(
+      drawCard(
+        x: padding,
+        y: currentY,
+        cardWidth:
+        width - (padding * 2),
+        cardHeight: 125,
+      );
+
+      drawText(
+        text: 'Location',
+        fontSize: 27,
+        y: currentY + 18,
+        x: padding + 22,
+        fontWeight: ui.FontWeight.bold,
+        color: accentColor,
+      );
+
+      drawText(
         text: location.isEmpty
             ? 'Unknown'
             : location,
-        fontSize: 38,
+        fontSize: 32,
+        y: currentY + 58,
+        x: padding + 22,
+        maxWidth:
+        width -
+            (padding * 2) -
+            44,
+      );
+
+      currentY += 165;
+
+      // --------------------------------------------------
+      // SCIENTIFIC INFORMATION
+      // --------------------------------------------------
+
+      currentY += drawText(
+        text: 'Scientific Information',
+        fontSize: 40,
         y: currentY,
+        fontWeight: ui.FontWeight.bold,
+        color: titleColor,
       );
 
-      currentY += 35;
+      currentY += 18;
 
-      // --------------------------------------------------
-      // ABOUT SEPARATOR
-      // --------------------------------------------------
+      const double scientificHeight = 390;
 
-      canvas.drawLine(
-        ui.Offset(
-          padding,
-          currentY,
-        ),
-        ui.Offset(
-          width - padding,
-          currentY,
-        ),
-        separatorPaint,
+      drawCard(
+        x: padding,
+        y: currentY,
+        cardWidth:
+        width - (padding * 2),
+        cardHeight: scientificHeight,
+        color: secondaryCardColor,
       );
 
-      currentY += 35;
+      double scientificY =
+          currentY + 25;
+
+      // STATUS
+
+      drawText(
+        text: 'Status',
+        fontSize: 27,
+        y: scientificY,
+        x: padding + 28,
+        fontWeight: ui.FontWeight.bold,
+        color: accentColor,
+      );
+
+      scientificY += 38;
+
+      scientificY += drawText(
+        text: dinosaur.status.isEmpty
+            ? 'Unknown'
+            : dinosaur.status,
+        fontSize: 31,
+        y: scientificY,
+        x: padding + 28,
+        maxWidth:
+        width -
+            (padding * 2) -
+            56,
+      );
+
+      scientificY += 14;
+
+      // AUTHOR
+
+      drawText(
+        text: 'Author',
+        fontSize: 27,
+        y: scientificY,
+        x: padding + 28,
+        fontWeight: ui.FontWeight.bold,
+        color: accentColor,
+      );
+
+      scientificY += 38;
+
+      scientificY += drawText(
+        text: dinosaur.author.isEmpty
+            ? 'Unknown'
+            : dinosaur.author,
+        fontSize: 31,
+        y: scientificY,
+        x: padding + 28,
+        maxWidth:
+        width -
+            (padding * 2) -
+            56,
+      );
+
+      scientificY += 14;
+
+      // FORMATION
+
+      drawText(
+        text: 'Formation',
+        fontSize: 27,
+        y: scientificY,
+        x: padding + 28,
+        fontWeight: ui.FontWeight.bold,
+        color: accentColor,
+      );
+
+      scientificY += 38;
+
+      scientificY += drawText(
+        text:
+        dinosaur.formation.isEmpty
+            ? 'Unknown'
+            : dinosaur.formation,
+        fontSize: 31,
+        y: scientificY,
+        x: padding + 28,
+        maxWidth:
+        width -
+            (padding * 2) -
+            56,
+      );
+
+      scientificY += 14;
+
+      // TIME
+
+      drawText(
+        text: 'Time',
+        fontSize: 27,
+        y: scientificY,
+        x: padding + 28,
+        fontWeight: ui.FontWeight.bold,
+        color: accentColor,
+      );
+
+      scientificY += 38;
+
+      final timeRange = [
+        dinosaur.time1,
+        dinosaur.time2,
+      ]
+          .where(
+            (value) =>
+        value.trim().isNotEmpty,
+      )
+          .join(' – ');
+
+      drawText(
+        text: timeRange.isEmpty
+            ? 'Unknown'
+            : timeRange,
+        fontSize: 31,
+        y: scientificY,
+        x: padding + 28,
+        maxWidth:
+        width -
+            (padding * 2) -
+            56,
+      );
+
+      currentY += scientificHeight + 45;
 
       // --------------------------------------------------
       // ABOUT
@@ -1056,18 +1294,61 @@ class LgService extends ChangeNotifier {
         fontSize: 40,
         y: currentY,
         fontWeight: ui.FontWeight.bold,
-        color: const ui.Color(0xFFD7CCC8),
+        color: titleColor,
       );
 
-      currentY += 12;
+      currentY += 18;
 
-      drawText(
-        text: dinosaur.generalInfo.isEmpty
-            ? 'No additional information available.'
-            : dinosaur.generalInfo,
-        fontSize: 33,
+      final aboutText =
+      dinosaur.generalInfo.isEmpty
+          ? 'No additional information available.'
+          : dinosaur.generalInfo;
+
+      // Calculate paragraph first so card can fit text.
+      final aboutBuilder =
+      ui.ParagraphBuilder(
+         ui.ParagraphStyle(
+          fontSize: 30,
+          height: 1.4,
+        ),
+      )
+        ..pushStyle(
+           ui.TextStyle(
+            color: textColor,
+            fontSize: 30,
+          ),
+        )
+        ..addText(aboutText);
+
+      final aboutParagraph =
+      aboutBuilder.build();
+
+      aboutParagraph.layout(
+        ui.ParagraphConstraints(
+          width:
+          width -
+              (padding * 2) -
+              56,
+        ),
+      );
+
+      final aboutCardHeight =
+          aboutParagraph.height + 56;
+
+      drawCard(
+        x: padding,
         y: currentY,
-        lineHeight: 1.4,
+        cardWidth:
+        width - (padding * 2),
+        cardHeight: aboutCardHeight,
+      );
+
+      canvas.drawParagraph(
+        aboutParagraph,
+        ui.Offset(
+          padding + 28,
+          currentY + 28,
+        ),
       );
 
       // --------------------------------------------------
@@ -1090,9 +1371,9 @@ class LgService extends ChangeNotifier {
 
       if (byteData == null) {
         debugPrint(
-          'Could not generate dinosaur info column image',
+          'Could not generate dinosaur '
+              'info column image',
         );
-
         return false;
       }
 
@@ -1100,7 +1381,7 @@ class LgService extends ChangeNotifier {
       byteData.buffer.asUint8List();
 
       // --------------------------------------------------
-      // UPLOAD PNG TO LIQUID GALAXY
+      // UPLOAD
       // --------------------------------------------------
 
       final uploaded =
@@ -1111,32 +1392,328 @@ class LgService extends ChangeNotifier {
 
       if (!uploaded) {
         debugPrint(
-          'Could not upload dinosaur info column',
+          'Could not upload dinosaur '
+              'info column',
         );
-
         return false;
       }
 
       debugPrint(
-        'Dinosaur info column created and uploaded: '
-            '$fileName',
+        'Dinosaur info column created '
+            'and uploaded: $fileName',
       );
 
       return true;
     } catch (e, stackTrace) {
       debugPrint(
-        'Error creating dinosaur info column: $e',
+        'Error creating dinosaur '
+            'info column: $e',
       );
 
-      debugPrint(
-        '$stackTrace',
-      );
+      debugPrint('$stackTrace');
 
       return false;
     }
   }
 
-  String _buildDinosaurOrbitTour(
+  Future<bool> showDinosaurSelectionMarkers(
+      List<Dinosaur> dinosaurs,
+      ) async {
+    try {
+      if (_client == null || !_isConnected) {
+        debugPrint(
+          'Cannot show dinosaur markers: '
+              'Liquid Galaxy is not connected',
+        );
+        return false;
+      }
+
+      // --------------------------------------------------
+      // 1. FILTRAR DINOSAURIOS CON COORDENADAS VÁLIDAS
+      // --------------------------------------------------
+
+      final validDinosaurs = dinosaurs.where((dinosaur) {
+        return dinosaur.latitude != 0 &&
+            dinosaur.longitude != 0;
+      }).toList();
+
+      if (validDinosaurs.isEmpty) {
+        debugPrint(
+          'No dinosaurs with valid coordinates '
+              'were found for this selection',
+        );
+        return false;
+      }
+
+      debugPrint(
+        'Showing ${validDinosaurs.length} '
+            'dinosaur selection markers',
+      );
+
+      // --------------------------------------------------
+      // 2. SUBIR ICONO DEL MARCADOR
+      // --------------------------------------------------
+
+      final markerUploaded = await uploadAssetToLG(
+        assetPath:
+        'assets/images/markers/dino_marker.png',
+        fileName: 'dino_marker.png',
+      );
+
+      if (!markerUploaded) {
+        debugPrint(
+          'Could not upload dino_marker.png',
+        );
+        return false;
+      }
+
+      debugPrint(
+        'Marker image uploaded successfully',
+      );
+
+      // --------------------------------------------------
+      // 3. CREAR LOS PLACEMARKS
+      // --------------------------------------------------
+
+      final placemarks =
+      validDinosaurs.map((dinosaur) {
+        final name =
+        _cleanText(dinosaur.name);
+
+        final country =
+        _cleanText(dinosaur.country);
+
+        final region =
+        _cleanText(dinosaur.region);
+
+        debugPrint(
+          'Creating marker for ${dinosaur.name}: '
+              'lat=${dinosaur.latitude}, '
+              'lon=${dinosaur.longitude}',
+        );
+
+        return '''
+<Placemark>
+  <name>$name</name>
+
+  <description>
+    $country - $region
+  </description>
+
+  <Style>
+    <IconStyle>
+
+      <scale>3.5</scale>
+
+      <Icon>
+        <href>http://lg1:81/kml/dino_marker.png</href>
+      </Icon>
+
+      <hotSpot
+        x="0.5"
+        y="0"
+        xunits="fraction"
+        yunits="fraction"
+      />
+
+    </IconStyle>
+
+    <LabelStyle>
+      <scale>0</scale>
+    </LabelStyle>
+
+  </Style>
+
+  <Point>
+    <altitudeMode>clampToGround</altitudeMode>
+
+    <coordinates>
+      ${dinosaur.longitude},${dinosaur.latitude},0
+    </coordinates>
+  </Point>
+
+</Placemark>
+''';
+      }).join('\n');
+
+      // --------------------------------------------------
+      // 4. CREAR KML COMPLETO
+      // --------------------------------------------------
+
+      final markersKml = '''
+<?xml version="1.0" encoding="UTF-8"?>
+
+<kml xmlns="http://www.opengis.net/kml/2.2">
+
+  <Document>
+
+    <name>
+      GeoSaurio Selection Markers
+    </name>
+
+    $placemarks
+
+  </Document>
+
+</kml>
+''';
+
+      // --------------------------------------------------
+      // 5. GUARDAR KML EN LIQUID GALAXY
+      // --------------------------------------------------
+
+      final writeResult = await execute(
+        '''
+cat > /var/www/html/kml/dinosaur_selection_markers.kml << 'EOFKML'
+$markersKml
+EOFKML
+''',
+        'Dinosaur selection markers KML written',
+      );
+
+      if (writeResult == null) {
+        debugPrint(
+          'Could not write dinosaur markers KML',
+        );
+        return false;
+      }
+
+      // --------------------------------------------------
+      // 6. ELIMINAR REFERENCIA ANTERIOR
+      // --------------------------------------------------
+
+      await execute(
+        '''
+sed -i '\\|dinosaur_selection_markers.kml|d' /var/www/html/kmls.txt
+''',
+        'Old dinosaur marker reference removed',
+      );
+
+      // --------------------------------------------------
+      // 7. REGISTRAR EL NUEVO KML
+      // --------------------------------------------------
+
+      final registerResult = await execute(
+        '''
+echo "http://lg1:81/kml/dinosaur_selection_markers.kml" >> /var/www/html/kmls.txt
+''',
+        'Dinosaur selection markers registered',
+      );
+
+      if (registerResult == null) {
+        debugPrint(
+          'Could not register dinosaur markers KML',
+        );
+        return false;
+      }
+
+      // --------------------------------------------------
+      // 8. FORZAR GOOGLE EARTH A RECARGAR LOS KML
+      // --------------------------------------------------
+
+      final refreshResult = await execute(
+        '''
+echo "search=http://lg1:81/kmls.txt" > /tmp/query.txt
+''',
+        'Dinosaur selection markers sent to Google Earth',
+      );
+
+      if (refreshResult == null) {
+        debugPrint(
+          'Could not refresh Google Earth markers',
+        );
+        return false;
+      }
+
+      // --------------------------------------------------
+      // DEBUG
+      // --------------------------------------------------
+
+      debugPrint(
+        'MARKERS: KML created for '
+            '${validDinosaurs.length} dinosaurs',
+      );
+
+      debugPrint(
+        'MARKERS: icon URL = '
+            'http://lg1:81/kml/dino_marker.png',
+      );
+
+      debugPrint(
+        'MARKERS: KML URL = '
+            'http://lg1:81/kml/dinosaur_selection_markers.kml',
+      );
+
+      debugPrint(
+        '${validDinosaurs.length} dinosaur markers '
+            'displayed successfully',
+      );
+
+      return true;
+    } catch (e, stackTrace) {
+      debugPrint(
+        'Error showing dinosaur selection markers: $e',
+      );
+
+      debugPrint('$stackTrace');
+
+      return false;
+    }
+  }
+
+  Future<bool> cleanDinosaurSelectionMarkers() async {
+    try {
+      if (_client == null || !_isConnected) {
+        return false;
+      }
+
+      // Quitar únicamente el KML de marcadores
+      // de la lista que carga Google Earth.
+      await execute(
+        '''
+sed -i '\\|dinosaur_selection_markers.kml|d' /var/www/html/kmls.txt
+''',
+        'Dinosaur selection marker reference removed',
+      );
+
+      // Vaciar el archivo por seguridad.
+      const emptyKml = '''
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+  </Document>
+</kml>
+''';
+
+      await execute(
+        '''
+cat > /var/www/html/kml/dinosaur_selection_markers.kml << 'EOFKML'
+$emptyKml
+EOFKML
+''',
+        'Dinosaur selection markers cleaned',
+      );
+
+      // Recargar los KML restantes.
+      final result = await execute(
+        '''
+echo "search=http://lg1:81/kmls.txt" > /tmp/query.txt
+''',
+        'Google Earth refreshed after marker cleanup',
+      );
+
+      return result != null;
+    } catch (e, stackTrace) {
+      debugPrint(
+        'Error cleaning dinosaur selection markers: $e',
+      );
+      debugPrint('$stackTrace');
+
+      return false;
+    }
+  }
+
+  String _buildDinosaurOrbitKml(
       Dinosaur dinosaur,
       ) {
     final cubePosition =
@@ -1149,39 +1726,35 @@ class LgService extends ChangeNotifier {
     cubePosition['longitude']!;
 
     /*
-   * Configuración fija de la cámara.
+   * IMPORTANTE:
+   * exactamente la misma vista que flyToDinosaur().
    *
-   * La cámara no sube, no baja, no se acerca
-   * y no se aleja durante la órbita.
+   * Si has cambiado la cámara a 602,
+   * mantenemos 602 también aquí.
    */
     const double orbitAltitude = 160.0;
+    const double orbitRange = 610.0;
     const double orbitTilt = 72.0;
-    const double orbitRange = 600.0;
 
     /*
-   * 72 movimientos de 5 grados:
-   * 72 × 5 = 360 grados.
+   * 36 pasos × 10 grados = 360 grados.
    *
-   * 72 × 0.42 segundos ≈ 30 segundos.
+   * duration controla la velocidad.
+   * 0.7 = bastante fluida.
    */
-    const int totalSteps = 72;
-    const double degreesPerStep = 5.0;
-    const double durationPerStep = 0.30;
+    const double degreesPerStep = 10.0;
+    const double durationPerStep = 0.7;
 
-    final StringBuffer flyToSteps =
-    StringBuffer();
+    final StringBuffer steps = StringBuffer();
 
-    for (
-    int step = 0;
-    step <= totalSteps;
-    step++
-    ) {
-      final double heading =
-          (dinosaur.heading +
-              step * degreesPerStep) %
-              360.0;
+    double heading = dinosaur.heading;
 
-      flyToSteps.write(
+    for (int step = 0; step <= 36; step++) {
+      if (heading >= 360.0) {
+        heading -= 360.0;
+      }
+
+      steps.write(
         '''
       <gx:FlyTo>
         <gx:duration>$durationPerStep</gx:duration>
@@ -1194,32 +1767,63 @@ class LgService extends ChangeNotifier {
           <heading>$heading</heading>
           <tilt>$orbitTilt</tilt>
           <range>$orbitRange</range>
-          <altitudeMode>relativeToGround</altitudeMode>
+          <gx:fovy>60</gx:fovy>
+          <gx:altitudeMode>relativeToGround</gx:altitudeMode>
         </LookAt>
+
       </gx:FlyTo>
 ''',
       );
+
+      heading += degreesPerStep;
     }
 
     return '''
 <?xml version="1.0" encoding="UTF-8"?>
+
 <kml
   xmlns="http://www.opengis.net/kml/2.2"
   xmlns:gx="http://www.google.com/kml/ext/2.2"
+  xmlns:kml="http://www.opengis.net/kml/2.2"
+  xmlns:atom="http://www.w3.org/2005/Atom"
 >
-  <Document>
-    <name>GeoSaurio Dinosaur Orbit</name>
 
-    <gx:Tour>
-      <name>DinosaurOrbit</name>
+  <gx:Tour>
+    <name>DinosaurOrbit</name>
 
-      <gx:Playlist>
-        ${flyToSteps.toString()}
-      </gx:Playlist>
-    </gx:Tour>
-  </Document>
+    <gx:Playlist>
+      ${steps.toString()}
+    </gx:Playlist>
+
+  </gx:Tour>
+
 </kml>
 ''';
+  }
+
+  String _buildDinosaurOrbitLookAt({
+    required double latitude,
+    required double longitude,
+    required double heading,
+  }) {
+    return '<LookAt>'
+        '<longitude>$longitude</longitude>'
+        '<latitude>$latitude</latitude>'
+
+    // El cubo mide 30 m.
+    // Miramos aproximadamente a su centro vertical.
+        '<altitude>15</altitude>'
+
+        '<heading>$heading</heading>'
+
+    // Misma inclinación que la vista normal.
+        '<tilt>72</tilt>'
+
+    // Misma distancia que flyToDinosaur().
+        '<range>610</range>'
+
+        '<altitudeMode>relativeToGround</altitudeMode>'
+        '</LookAt>';
   }
 
   Future<bool> startDinosaurOrbit(
@@ -1241,157 +1845,118 @@ class LgService extends ChangeNotifier {
         return false;
       }
 
-      _dinosaurOrbitTimer?.cancel();
-      _dinosaurOrbitTimer = null;
+      /*
+     * El punto que NO se mueve.
+     *
+     * Como queremos orbitar alrededor del cubo,
+     * usamos exactamente el centro horizontal
+     * del cubo como LookAt.
+     */
+      final cubePosition =
+      _calculateCubePosition(dinosaur);
 
-      _dinosaurOrbitStopTimer?.cancel();
-      _dinosaurOrbitStopTimer = null;
+      final double latitude =
+      cubePosition['latitude']!;
 
-      // Detener cualquier tour anterior.
-      await execute(
-        'echo "exittour=true" > /tmp/query.txt',
-        'Previous tour stopped',
-      );
-
-      await Future.delayed(
-        const Duration(milliseconds: 500),
-      );
-
-      final String orbitKml =
-      _buildDinosaurOrbitTour(dinosaur);
-
-      // Crear el archivo KML del tour.
-      final String writeTourCommand = '''
-cat > /var/www/html/kml/dinosaur_orbit.kml << 'EOFKML'
-$orbitKml
-EOFKML
-''';
-
-      final writeResult = await execute(
-        writeTourCommand,
-        'Dinosaur orbit KML written',
-      );
-
-      if (writeResult == null) {
-        debugPrint(
-          'Could not write dinosaur_orbit.kml',
-        );
-        return false;
-      }
+      final double longitude =
+      cubePosition['longitude']!;
 
       /*
-     * Registrar el KML del tour en la lista.
-     * No vaciamos kmls.txt para conservar el cubo.
+     * Igual que el código de tu amiga:
+     * partimos del heading actual.
      */
-      await execute(
-        'grep -qxF '
-            '"http://lg1:81/kml/dinosaur_orbit.kml" '
-            '/var/www/html/kmls.txt || '
-            'echo "http://lg1:81/kml/dinosaur_orbit.kml" '
-            '>> /var/www/html/kmls.txt',
-        'Orbit KML registered',
-      );
-
-      /*
-     * Recargar la lista completa de KML.
-     * De esta manera se mantienen el cubo y el tour.
-     */
-      final loadResult = await execute(
-        'echo "search=http://lg1:81/kmls.txt" '
-            '> /tmp/query.txt',
-        'Orbit KML list loaded',
-      );
-
-      if (loadResult == null) {
-        debugPrint(
-          'Could not load orbit KML list',
-        );
-        return false;
-      }
-
-      /*
-     * Google Earth necesita tiempo para abrir y registrar
-     * internamente el gx:Tour.
-     */
-      await Future.delayed(
-        const Duration(seconds: 3),
-      );
-
-      debugPrint(
-        'Trying to play tour named DinosaurOrbit',
-      );
-
-      final playResult = await execute(
-        'echo "playtour=DinosaurOrbit" '
-            '> /tmp/query.txt',
-        'Dinosaur orbit play command sent',
-      );
-
-      if (playResult == null) {
-        debugPrint(
-          'Could not send playtour command',
-        );
-        return false;
-      }
+      double heading = dinosaur.heading;
 
       _isDinosaurOrbiting = true;
-      _orbitCommandRunning = false;
+
       notifyListeners();
 
+      debugPrint(
+        'Orbit started around cube: '
+            'lat=$latitude, lon=$longitude',
+      );
+
       /*
-     * El Timer no mueve la cámara.
-     * Solo restablece el estado del botón al terminar.
+     * EXACTAMENTE el enfoque de tu amiga.
+     *
+     * Mientras Orbit siga activo:
+     *
+     * heading + 10
+     * enviar flytoview
+     * esperar 500 ms
+     * repetir
      */
-      _dinosaurOrbitStopTimer = Timer(
-        const Duration(seconds: 31),
-            () {
-          _isDinosaurOrbiting = false;
-          _orbitCommandRunning = false;
-          _dinosaurOrbitStopTimer = null;
+      while (_isDinosaurOrbiting) {
+        heading =
+            (heading + 10.0) % 360.0;
 
-          notifyListeners();
+        final lookAt =
+        _buildDinosaurOrbitLookAt(
+          latitude: latitude,
+          longitude: longitude,
+          heading: heading,
+        );
 
+        debugPrint(
+          'Orbit heading: $heading',
+        );
+
+        /*
+       * Mandamos directamente la nueva vista.
+       */
+        final result = await execute(
+          'echo "flytoview=$lookAt" '
+              '> /tmp/query.txt',
+          'Orbit view sent',
+        );
+
+        if (result == null) {
           debugPrint(
-            'Dinosaur orbit completed for '
-                '${dinosaur.name}',
+            'Could not send orbit view',
           );
-        },
+        }
+
+        /*
+       * Tu amiga usa 500 ms.
+       *
+       * No toquemos esto hasta comprobar
+       * primero que la órbita funciona.
+       */
+        await Future.delayed(
+          const Duration(
+            milliseconds: 500,
+          ),
+        );
+      }
+
+      debugPrint(
+        'Orbit loop finished',
       );
 
       return true;
     } catch (e, stackTrace) {
       debugPrint(
-        'Error starting dinosaur orbit: $e',
+        'Error during dinosaur orbit: $e',
       );
+
       debugPrint('$stackTrace');
 
-      await stopDinosaurOrbit();
+      _isDinosaurOrbiting = false;
+
+      notifyListeners();
+
       return false;
     }
   }
 
   Future<void> stopDinosaurOrbit() async {
-    _dinosaurOrbitTimer?.cancel();
-    _dinosaurOrbitTimer = null;
-
-    _dinosaurOrbitStopTimer?.cancel();
-    _dinosaurOrbitStopTimer = null;
-
     _isDinosaurOrbiting = false;
-    _orbitCommandRunning = false;
 
     notifyListeners();
 
-    try {
-      await execute(
-        'echo "exittour=true" > /tmp/query.txt',
-        'Dinosaur orbit stopped',
-      );
-    } catch (e) {
-      debugPrint(
-        'Error stopping dinosaur orbit: $e',
-      );
-    }
+    debugPrint(
+      'Dinosaur orbit stopped',
+    );
   }
 
 
@@ -1504,7 +2069,7 @@ EOFKML
      */
       const double targetAltitude = 160.0;
       const double fixedTilt = 72.0;
-      const double fixedRange = 600.0;
+      const double fixedRange = 610.0;
 
       final lookAt =
           '<LookAt>'
@@ -1687,7 +2252,7 @@ EOFKML
       }
 
       const double radius = 0.0025;
-      const double altitude = 250.0;
+      const double altitude = 30.0;
 
       final cubePosition =
       _calculateCubePosition(dinosaur);
@@ -2239,7 +2804,7 @@ EOFKML
       htmlFileName: 'skeleton.html',
       imageFileName: imageFileName,
       title: '${dinosaur.name} Skeleton',
-      imageHeight: 95,
+      imageHeight: 70,
     );
 
     if (!uploadedHtml) {
@@ -2274,7 +2839,7 @@ EOFKML
       htmlFileName: 'comparison.html',
       imageFileName: imageFileName,
       title: '${dinosaur.name} Comparison',
-      imageHeight: 95,
+      imageHeight: 70,
     );
 
     if (!uploadedHtml) return false;

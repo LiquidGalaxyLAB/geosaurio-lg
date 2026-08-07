@@ -2,12 +2,72 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../services/lg_service.dart';
-import 'connection_screen.dart';
 
-class LgSettingsScreen extends StatelessWidget {
+class LgSettingsScreen extends StatefulWidget {
   const LgSettingsScreen({super.key});
 
-  void showSnack(BuildContext context, String message, {bool success = true}) {
+  @override
+  State<LgSettingsScreen> createState() =>
+      _LgSettingsScreenState();
+}
+
+class _LgSettingsScreenState
+    extends State<LgSettingsScreen> {
+  final TextEditingController ipController = TextEditingController();
+  final TextEditingController userController = TextEditingController(
+    text: 'lg',
+  );
+  final TextEditingController passwordController = TextEditingController(
+    text: 'lqgalaxy',
+  );
+  final TextEditingController portController = TextEditingController(
+    text: '22',
+  );
+  final TextEditingController screensController = TextEditingController(
+    text: '5',
+  );
+
+  bool isConnecting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedSettings();
+  }
+
+  Future<void> _loadSavedSettings() async {
+    final model = await LgConnectionModel.loadFromPreferences();
+
+    if (!mounted) return;
+
+    setState(() {
+      ipController.text = model.ip;
+      userController.text = model.username;
+      passwordController.text = model.password;
+      portController.text = model.port.toString();
+      screensController.text = model.screens.toString();
+    });
+
+    context.read<LgService>().updateConnectionSettings(
+      ip: model.ip,
+      port: model.port,
+      username: model.username,
+      password: model.password,
+      screens: model.screens,
+    );
+  }
+
+  @override
+  void dispose() {
+    ipController.dispose();
+    userController.dispose();
+    passwordController.dispose();
+    portController.dispose();
+    screensController.dispose();
+    super.dispose();
+  }
+
+  void snack(String message, {bool success = true}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
@@ -17,131 +77,88 @@ class LgSettingsScreen extends StatelessWidget {
     );
   }
 
-  Future<bool> confirmLgAction(
-      BuildContext context,
-      String actionName,
-      ) async {
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-          ),
-          title: Text(
-            '$actionName Liquid Galaxy?',
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-          content: Text(
-            'Are you sure you want to $actionName Liquid Galaxy?',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context, true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Yes'),
-            ),
-          ],
-        );
-      },
-    );
-
-    return result ?? false;
+  int parseInt(String value, int fallback) {
+    return int.tryParse(value.trim()) ?? fallback;
   }
 
-  Future<void> runAction(
-      BuildContext context,
-      String actionName,
-      Future<bool> Function(LgService lgService) action, {
-        bool needsConfirmation = false,
-      }) async {
-    final lgService = context.read<LgService>();
-
-    if (!lgService.isConnected) {
-      showSnack(context, 'Connect to Liquid Galaxy first.', success: false);
-      return;
-    }
-
-    if (needsConfirmation) {
-      final confirmed = await confirmLgAction(context, actionName);
-      if (!confirmed) return;
-    }
-
-    showSnack(context, '$actionName command sent...', success: true);
-
-    final ok = await action(lgService);
-
-    if (!context.mounted) return;
-
-    showSnack(
-      context,
-      ok ? '$actionName completed.' : '$actionName failed.',
-      success: ok,
+  LgConnectionModel buildModel() {
+    return LgConnectionModel(
+      ip: ipController.text.trim(),
+      username: userController.text.trim(),
+      password: passwordController.text,
+      port: parseInt(portController.text, 22),
+      screens: parseInt(screensController.text, 5),
     );
   }
 
-  Future<void> toggleLogos(BuildContext context) async {
-    final lgService = context.read<LgService>();
+  Future<void> applySettings() async {
+    final model = buildModel();
+    await model.saveToPreferences();
 
-    if (!lgService.isConnected) {
-      showSnack(context, 'Connect to Liquid Galaxy first.', success: false);
+    if (!mounted) return;
+
+    context.read<LgService>().updateConnectionSettings(
+      ip: model.ip,
+      port: model.port,
+      username: model.username,
+      password: model.password,
+      screens: model.screens,
+    );
+  }
+
+  Future<void> connectToLg() async {
+    if (ipController.text.trim().isEmpty ||
+        userController.text.trim().isEmpty ||
+        passwordController.text.isEmpty ||
+        portController.text.trim().isEmpty ||
+        screensController.text.trim().isEmpty) {
+      snack('Please fill all connection fields', success: false);
       return;
     }
 
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Logos'),
-          content: const Text('What do you want to do?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Hide'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Show'),
-            ),
-          ],
-        );
-      },
+    setState(() => isConnecting = true);
+
+    await applySettings();
+
+    if (!mounted) return;
+
+    final lgService = context.read<LgService>();
+    final connected = await lgService.connectToLG() ?? false;
+
+    if (connected) {
+      await lgService.sendLogo();
+    }
+
+    if (!mounted) return;
+
+    setState(() => isConnecting = false);
+
+    snack(
+      connected
+          ? 'Connected to Liquid Galaxy'
+          : 'Could not connect to LG',
+      success: connected,
     );
 
-    if (!context.mounted) return;
-
-    if (result == true) {
-      final ok = await lgService.sendLogo();
-      if (!context.mounted) return;
-
-      showSnack(
-        context,
-        ok ? 'Logo shown.' : 'Error showing logo.',
-        success: ok,
-      );
-    } else if (result == false) {
-      await lgService.cleanLogos();
-      if (!context.mounted) return;
-
-      showSnack(context, 'Logo hidden.');
+    if (connected) {
+      Navigator.pop(context, true);
     }
+  }
+
+  Future<void> disconnectLg() async {
+    context.read<LgService>().disconnect();
+    snack('Disconnected from Liquid Galaxy');
   }
 
   @override
   Widget build(BuildContext context) {
-    final isConnected = context.watch<LgService>().isConnected;
+    final lgService = context.watch<LgService>();
+    final isConnected = lgService.isConnected;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F4EF),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
             children: [
@@ -172,105 +189,79 @@ class LgSettingsScreen extends StatelessWidget {
                 child: Column(
                   children: [
                     Icon(
-                      isConnected ? Icons.public : Icons.public_off,
-                      size: 60,
-                      color: const Color(0xFF3E2A1F),
+                      isConnected ? Icons.wifi : Icons.wifi_off,
+                      size: 58,
+                      color: isConnected ? Colors.green : Colors.red,
                     ),
                     const SizedBox(height: 10),
-                    const Text(
-                      'Liquid Galaxy Control Panel',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
+                    Text(
+                      isConnected ? 'LG Connected' : 'LG Disconnected',
+                      style: const TextStyle(
                         fontSize: 21,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      isConnected
-                          ? 'Connected. Manage system actions.'
-                          : 'Disconnected. Open Connection first.',
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Configure the Liquid Galaxy master machine connection.',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.black54),
+                      style: TextStyle(color: Colors.black54),
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 24),
-              Expanded(
-                child: ListView(
-                  children: [
-                    lgButton(
-                      icon: Icons.restart_alt,
-                      text: 'Reboot',
-                      color: Colors.green,
-                      onTap: () => runAction(
-                        context,
-                        'Reboot',
-                            (LgService lg) => lg.reboot(),
-                        needsConfirmation: true,
-                      ),
-                    ),
-                    lgButton(
-                      icon: Icons.refresh,
-                      text: 'Relaunch',
-                      color: Colors.blue,
-                      onTap: () => runAction(
-                        context,
-                        'Relaunch',
-                            (LgService lg) => lg.relaunchLG(),
-                        needsConfirmation: true,
-                      ),
-                    ),
-                    lgButton(
-                      icon: Icons.power_settings_new,
-                      text: 'Shutdown',
-                      color: Colors.red,
-                      onTap: () => runAction(
-                        context,
-                        'Shutdown',
-                            (LgService lg) => lg.shutdown(),
-                        needsConfirmation: true,
-                      ),
-                    ),
-                    lgButton(
-                      icon: Icons.visibility,
-                      text: 'Show / Hide Logos',
-                      color: Colors.purple,
-                      onTap: () => toggleLogos(context),
-                    ),
-                    lgButton(
-                      icon: Icons.cleaning_services,
-                      text: "Clean KML's",
-                      color: Colors.cyan,
-                      onTap: () => runAction(
-                        context,
-                        "Clean KML's",
-                            (LgService lg) => lg.cleanAll(),
-                      ),
-                    ),
-                    lgButton(
-                      icon: Icons.wifi,
-                      text: 'Connection',
-                      color: const Color(0xFF3E2A1F),
-                      onTap: () async {
-                        final connected = await Navigator.push<bool>(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const ConnectionScreen(),
-                          ),
-                        );
-
-                        if (!context.mounted) return;
-
-                        if (connected == true) {
-                          Navigator.pop(context, true);
-                        }
-                      },
-                    ),
-                  ],
-                ),
+              configField(
+                label: 'IP Address',
+                icon: Icons.computer,
+                controller: ipController,
+                hint: '192.168.1.100',
               ),
+              configField(
+                label: 'Username',
+                icon: Icons.person,
+                controller: userController,
+                hint: 'lg',
+              ),
+              configField(
+                label: 'Password',
+                icon: Icons.lock,
+                controller: passwordController,
+                hint: 'lqgalaxy',
+                obscure: true,
+              ),
+              configField(
+                label: 'Port',
+                icon: Icons.settings_ethernet,
+                controller: portController,
+                hint: '22',
+                keyboardType: TextInputType.number,
+              ),
+              configField(
+                label: 'Number of Screens',
+                icon: Icons.screenshot_monitor,
+                controller: screensController,
+                hint: '5',
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 18),
+              mainButton(
+                label: isConnecting
+                    ? 'Connecting...'
+                    : isConnected
+                    ? 'Reconnect'
+                    : 'Connect',
+                icon: Icons.link,
+                onPressed: isConnecting ? null : connectToLg,
+              ),
+              const SizedBox(height: 12),
+              mainButton(
+                label: 'Disconnect',
+                icon: Icons.link_off,
+                onPressed: isConnected ? disconnectLg : null,
+                isSecondary: true,
+              ),
+              const SizedBox(height: 30),
             ],
           ),
         ),
@@ -278,7 +269,82 @@ class LgSettingsScreen extends StatelessWidget {
     );
   }
 
-  static BoxDecoration cardDecoration() {
+  Widget mainButton({
+    required String label,
+    required IconData icon,
+    required VoidCallback? onPressed,
+    bool isSecondary = false,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      height: 58,
+      child: ElevatedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon),
+        label: Text(
+          label,
+          style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: isSecondary
+              ? Colors.grey.shade300
+              : const Color(0xFF3E2A1F),
+          foregroundColor: isSecondary ? Colors.grey.shade700 : Colors.white,
+          elevation: isSecondary ? 0 : 6,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget configField({
+    required String label,
+    required IconData icon,
+    required TextEditingController controller,
+    required String hint,
+    bool obscure = false,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 7),
+          TextField(
+            controller: controller,
+            obscureText: obscure,
+            keyboardType: keyboardType,
+            decoration: InputDecoration(
+              hintText: hint,
+              prefixIcon: Icon(icon, color: Colors.brown),
+              filled: true,
+              fillColor: Colors.white,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(18),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  BoxDecoration cardDecoration() {
     return BoxDecoration(
       color: Colors.white,
       borderRadius: BorderRadius.circular(22),
@@ -289,46 +355,6 @@ class LgSettingsScreen extends StatelessWidget {
           offset: const Offset(0, 4),
         ),
       ],
-    );
-  }
-
-  Widget lgButton({
-    required IconData icon,
-    required String text,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      height: 62,
-      child: ElevatedButton(
-        onPressed: onTap,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          foregroundColor: Colors.white,
-          elevation: 5,
-          shadowColor: color.withValues(alpha: 0.4),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, size: 26),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Text(
-                text,
-                style: const TextStyle(
-                  fontSize: 19,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const Icon(Icons.chevron_right),
-          ],
-        ),
-      ),
     );
   }
 }

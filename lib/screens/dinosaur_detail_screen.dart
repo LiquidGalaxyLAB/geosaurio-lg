@@ -61,52 +61,27 @@ class _DinosaurDetailScreenState
       isReturningToSelection = true;
     });
 
-    final lgService = context.read<LgService>();
+    await AudioService().stop();
 
-    try {
-      // Detener la narración.
-      await AudioService().stop();
-
-      // Detener la órbita si sigue activa.
-      await lgService.stopDinosaurOrbit();
-
-      /*
-       * Cerrar Chromium por si se estaba mostrando
-       * Skeleton o Comparison.
-       */
-      await lgService.closeChromiumOnAllScreens();
-
-      /*
-       * El callback limpia los KML y devuelve
-       * Google Earth a la vista del país.
-       */
-      await widget.onBackToDinosaurSelection();
-
-      if (!mounted) {
-        return;
-      }
-
-      Navigator.pop(context);
-    } catch (e, stackTrace) {
-      debugPrint(
-        'Error returning to dinosaur selection: $e',
-      );
-      debugPrint('$stackTrace');
-
-      if (!mounted) {
-        return;
-      }
-
-      setState(() {
-        isReturningToSelection = false;
-      });
-
-      showSnack(
-        context,
-        'Could not return to dinosaur selection',
-        success: false,
-      );
+    if (!mounted) {
+      return;
     }
+
+    /*
+   * Volver inmediatamente a la selección
+   * en la aplicación.
+   */
+    Navigator.pop(context);
+
+    /*
+   * HomeScreen se encarga ahora de:
+   * - detener orbit
+   * - volver al país
+   * - limpiar cubo
+   * - limpiar pantalla derecha
+   * - restaurar logo
+   */
+    widget.onBackToDinosaurSelection();
   }
 
   Future<void> sendToLg(
@@ -126,55 +101,31 @@ class _DinosaurDetailScreenState
 
     bool ok = false;
 
-    if (action == 'Orbit') {
-      /*
-       * startDinosaurOrbit controla el movimiento
-       * y lo detiene automáticamente tras 30 segundos.
-       */
-      ok = await lgService.startDinosaurOrbit(
+    /*
+   * Comparison y Skeleton detienen primero
+   * cualquier órbita activa.
+   */
+    await lgService.stopDinosaurOrbit();
+
+    /*
+   * Recuperar la vista normal del dinosaurio
+   * antes de abrir Chromium.
+   */
+    await lgService.flyToDinosaur(
+      dinosaur,
+    );
+
+    if (action == 'Comparison') {
+      ok = await lgService.showDinosaurComparisonImage(
         dinosaur,
       );
-    } else {
-      /*
-       * Comparison y Skeleton deben detener primero
-       * una posible órbita.
-       */
-      await lgService.stopDinosaurOrbit();
-
-      /*
-       * Recuperar la vista normal del dinosaurio antes
-       * de abrir Chromium.
-       */
-      await lgService.flyToDinosaur(
+    } else if (action == 'Skeleton') {
+      ok = await lgService.showDinosaurSkeletonImage(
         dinosaur,
       );
-
-      if (action == 'Comparison') {
-        ok = await lgService.showDinosaurComparisonImage(
-          dinosaur,
-        );
-      } else if (action == 'Skeleton') {
-        ok = await lgService.showDinosaurSkeletonImage(
-          dinosaur,
-        );
-      }
     }
 
     if (!context.mounted) {
-      return;
-    }
-
-    if (action == 'Orbit') {
-      showSnack(
-        context,
-        ok
-            ? 'Orbit started for 30 seconds'
-            : lgService.isDinosaurOrbiting
-            ? 'The orbit is already running'
-            : 'Could not start the orbit',
-        success: ok,
-      );
-
       return;
     }
 
@@ -188,11 +139,7 @@ class _DinosaurDetailScreenState
   }
 
   Future<void> startNarration() async {
-    await AudioService().playDinosaurAudio(
-      dinosaur.name,
-    );
-
-    if (!mounted) {
+    if (isNarrationPlaying) {
       return;
     }
 
@@ -200,23 +147,55 @@ class _DinosaurDetailScreenState
       isNarrationPlaying = true;
     });
 
-    showSnack(
-      context,
-      'Narration started',
-      success: true,
-    );
+    try {
+      await AudioService().playDinosaurAudio(
+        dinosaur.name,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      showSnack(
+        context,
+        'Narration started',
+        success: true,
+      );
+    } catch (e) {
+      debugPrint(
+        'Error starting narration: $e',
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        isNarrationPlaying = false;
+      });
+
+      showSnack(
+        context,
+        'Could not start narration',
+        success: false,
+      );
+    }
   }
 
   Future<void> stopNarration() async {
-    await AudioService().stop();
-
-    if (!mounted) {
+    if (!isNarrationPlaying) {
       return;
     }
 
     setState(() {
       isNarrationPlaying = false;
     });
+
+    await AudioService().stop();
+
+    if (!mounted) {
+      return;
+    }
 
     showSnack(
       context,
@@ -250,20 +229,6 @@ class _DinosaurDetailScreenState
           : 'Could not close Chromium',
       success: ok,
     );
-  }
-
-  @override
-  void dispose() {
-    AudioService().stop();
-
-    /*
-     * No se puede usar await dentro de dispose,
-     * pero stopDinosaurOrbit cancela los Timer
-     * inmediatamente.
-     */
-    LgService().stopDinosaurOrbit();
-
-    super.dispose();
   }
 
   @override
@@ -341,7 +306,38 @@ class _DinosaurDetailScreenState
                    * Compensa el ancho del botón izquierdo
                    * para mantener el título centrado.
                    */
-                  const SizedBox(width: 48),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.circle,
+                          size: 12,
+                          color: lgService.isConnected
+                              ? Colors.green
+                              : Colors.red,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          lgService.isConnected
+                              ? 'Connected'
+                              : 'Disconnected',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
 
@@ -550,25 +546,60 @@ class _DinosaurDetailScreenState
                    */
                   optionButton(
                     icon: lgService.isDinosaurOrbiting
-                        ? Icons.sync
+                        ? Icons.stop_circle_outlined
                         : Icons.threesixty,
                     text: lgService.isDinosaurOrbiting
-                        ? 'Orbiting...'
+                        ? 'Stop Orbit'
                         : 'Orbit',
-                    onTap: () {
-                      if (lgService
-                          .isDinosaurOrbiting) {
+                    onTap: () async {
+                      if (!lgService.isConnected) {
                         showSnack(
                           context,
-                          'The orbit is already running',
+                          'Liquid Galaxy is not connected',
                           success: false,
                         );
                         return;
                       }
 
-                      sendToLg(
+                      /*
+     * Si ya está orbitando:
+     * detener inmediatamente.
+     */
+                      if (lgService.isDinosaurOrbiting) {
+                        await lgService.stopDinosaurOrbit();
+
+                        if (!context.mounted) {
+                          return;
+                        }
+
+                        showSnack(
+                          context,
+                          'Orbit stopped',
+                          success: true,
+                        );
+
+                        return;
+                      }
+
+                      /*
+     * Si no está orbitando:
+     * iniciar la órbita.
+     */
+                      final ok =
+                      await lgService.startDinosaurOrbit(
+                        dinosaur,
+                      );
+
+                      if (!context.mounted) {
+                        return;
+                      }
+
+                      showSnack(
                         context,
-                        'Orbit',
+                        ok
+                            ? 'Orbit started'
+                            : 'Could not start the orbit',
+                        success: ok,
                       );
                     },
                   ),

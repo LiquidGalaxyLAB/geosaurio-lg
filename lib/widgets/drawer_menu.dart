@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
+import '../../screens/help_screen.dart';
 import '../../screens/home_screen.dart';
 import '../../screens/about_screen.dart';
 import '../../screens/lg_settings_screen.dart';
+import '../../screens/lg_tools_screen.dart';
 import '../../services/theme_service.dart';
 
 class AppDrawer extends StatelessWidget {
@@ -16,8 +17,11 @@ class AppDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeService = context.watch<ThemeService>();
-    final colorScheme = Theme.of(context).colorScheme;
+    final themeService =
+    context.watch<ThemeService>();
+
+    final colorScheme =
+        Theme.of(context).colorScheme;
 
     return Drawer(
       backgroundColor: colorScheme.surface,
@@ -28,11 +32,13 @@ class AppDrawer extends StatelessWidget {
 
             CircleAvatar(
               radius: 38,
-              backgroundColor: colorScheme.primary,
+              backgroundColor:
+              colorScheme.primary,
               child: Icon(
                 Icons.public,
                 size: 42,
-                color: colorScheme.onPrimary,
+                color:
+                colorScheme.onPrimary,
               ),
             ),
 
@@ -43,18 +49,24 @@ class AppDrawer extends StatelessWidget {
               style: TextStyle(
                 fontSize: 25,
                 fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
+                color:
+                colorScheme.onSurface,
               ),
             ),
 
             Text(
               'For Liquid Galaxy',
               style: TextStyle(
-                color: colorScheme.onSurfaceVariant,
+                color:
+                colorScheme.onSurfaceVariant,
               ),
             ),
 
             const SizedBox(height: 22),
+
+            // --------------------------------------------------
+            // MAIN MENU
+            // --------------------------------------------------
 
             drawerTile(
               context: context,
@@ -66,28 +78,39 @@ class AppDrawer extends StatelessWidget {
                 Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const HomeScreen(),
+                    builder: (context) =>
+                    const HomeScreen(),
                   ),
                       (route) => false,
                 );
               },
             ),
 
+            // --------------------------------------------------
+            // INFORMATION
+            // --------------------------------------------------
+
             drawerTile(
               context: context,
               icon: Icons.info,
-              title: 'Information',
+              title: 'About',
               onTap: () {
                 Navigator.pop(context);
 
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const AboutScreen(),
+                    builder: (context) =>
+                    const AboutScreen(),
                   ),
                 );
               },
             ),
+
+            // --------------------------------------------------
+            // LG SETTINGS
+            // CONNECTION SETTINGS ONLY
+            // --------------------------------------------------
 
             drawerTile(
               context: context,
@@ -99,32 +122,84 @@ class AppDrawer extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const LgSettingsScreen(),
+                    builder: (context) =>
+                    const LgSettingsScreen(),
                   ),
                 );
               },
             ),
 
+            // --------------------------------------------------
+            // LG TOOLS
+            // LIQUID GALAXY ACTIONS
+            // --------------------------------------------------
+
+            drawerTile(
+              context: context,
+              icon: Icons.handyman,
+              title: 'LG Tools',
+              onTap: () {
+                Navigator.pop(context);
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                    const LgToolsScreen(),
+                  ),
+                );
+              },
+            ),
+
+            //HELP
+
+            drawerTile(
+              context: context,
+              icon: Icons.help_outline,
+              title: 'Help',
+              onTap: () {
+                Navigator.pop(context);
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                    const HelpScreen(),
+                  ),
+                );
+              },
+            ),
+
+            // --------------------------------------------------
+            // DARK MODE
+            // --------------------------------------------------
+
             Padding(
-              padding: const EdgeInsets.symmetric(
+              padding:
+              const EdgeInsets.symmetric(
                 horizontal: 14,
                 vertical: 4,
               ),
               child: Material(
-                color: colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(14),
+                color: colorScheme
+                    .surfaceContainerHighest,
+                borderRadius:
+                BorderRadius.circular(14),
                 child: SwitchListTile(
                   secondary: Icon(
                     themeService.isDarkMode
                         ? Icons.dark_mode
                         : Icons.light_mode,
-                    color: colorScheme.primary,
+                    color:
+                    colorScheme.primary,
                   ),
                   title: Text(
                     'Dark mode',
                     style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: colorScheme.onSurface,
+                      fontWeight:
+                      FontWeight.w600,
+                      color:
+                      colorScheme.onSurface,
                     ),
                   ),
                   subtitle: Text(
@@ -132,9 +207,11 @@ class AppDrawer extends StatelessWidget {
                         ? 'Dark theme enabled'
                         : 'Light theme enabled',
                   ),
-                  value: themeService.isDarkMode,
+                  value:
+                  themeService.isDarkMode,
                   onChanged: (value) {
-                    themeService.setDarkMode(value);
+                    themeService
+                        .setDarkMode(value);
                   },
                 ),
               ),
@@ -142,12 +219,20 @@ class AppDrawer extends StatelessWidget {
 
             const Spacer(),
 
+            // --------------------------------------------------
+            // LIQUID GALAXY CONNECTION STATUS
+            // --------------------------------------------------
+
             Container(
-              margin: const EdgeInsets.all(18),
-              padding: const EdgeInsets.all(14),
+              margin:
+              const EdgeInsets.all(18),
+              padding:
+              const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(16),
+                color: colorScheme
+                    .surfaceContainerHighest,
+                borderRadius:
+                BorderRadius.circular(16),
               ),
               child: Row(
                 children: [
@@ -161,13 +246,17 @@ class AppDrawer extends StatelessWidget {
 
                   const SizedBox(width: 10),
 
-                  Text(
-                    isLgConnected
-                        ? 'LG connected'
-                        : 'LG disconnected',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w500,
-                      color: colorScheme.onSurface,
+                  Expanded(
+                    child: Text(
+                      isLgConnected
+                          ? 'LG connected'
+                          : 'LG disconnected',
+                      style: TextStyle(
+                        fontWeight:
+                        FontWeight.w500,
+                        color: colorScheme
+                            .onSurface,
+                      ),
                     ),
                   ),
                 ],
@@ -185,16 +274,20 @@ class AppDrawer extends StatelessWidget {
     required String title,
     required VoidCallback onTap,
   }) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final colorScheme =
+        Theme.of(context).colorScheme;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(
+      padding:
+      const EdgeInsets.symmetric(
         horizontal: 14,
         vertical: 4,
       ),
       child: Material(
-        color: colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(14),
+        color: colorScheme
+            .surfaceContainerHighest,
+        borderRadius:
+        BorderRadius.circular(14),
         child: ListTile(
           leading: Icon(
             icon,
@@ -203,14 +296,17 @@ class AppDrawer extends StatelessWidget {
           title: Text(
             title,
             style: TextStyle(
-              fontWeight: FontWeight.w600,
-              color: colorScheme.onSurface,
+              fontWeight:
+              FontWeight.w600,
+              color:
+              colorScheme.onSurface,
             ),
           ),
           trailing: Icon(
             Icons.chevron_right,
             size: 20,
-            color: colorScheme.onSurfaceVariant,
+            color:
+            colorScheme.onSurfaceVariant,
           ),
           onTap: onTap,
         ),

@@ -163,20 +163,38 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
-    await lgService.cleanDinosaurMarkers();
+    /*
+   * Limpiar únicamente marcadores anteriores
+   * de selección.
+   */
+    await lgService.cleanDinosaurSelectionMarkers();
 
+    /*
+   * Mover Google Earth al país seleccionado.
+   */
     await lgService.flyToCountry(
       country,
       availableDinosaurs,
     );
+
+    /*
+   * Mostrar solamente los dinosaurios
+   * disponibles en este país.
+   */
+    await lgService.showDinosaurSelectionMarkers(
+      availableDinosaurs,
+    );
   }
 
-  Future<void> selectDinosaur(Dinosaur dinosaur) async {
+  Future<void> selectDinosaur(
+      Dinosaur dinosaur,
+      ) async {
     setState(() {
       selectedDinosaur = dinosaur.name;
     });
 
-    final lgService = context.read<LgService>();
+    final lgService =
+    context.read<LgService>();
 
     if (lgService.isConnected) {
       debugPrint(
@@ -185,8 +203,19 @@ class _HomeScreenState extends State<HomeScreen> {
             'Longitude: ${dinosaur.longitude}',
       );
 
+      /*
+     * Quitamos los marcadores de selección
+     * antes de entrar en la vista del dinosaurio.
+     */
+      await lgService.cleanDinosaurSelectionMarkers();
+
+      /*
+     * Volamos hacia el dinosaurio.
+     */
       final bool flyOk =
-      await lgService.flyToDinosaur(dinosaur);
+      await lgService.flyToDinosaur(
+        dinosaur,
+      );
 
       debugPrint(
         flyOk
@@ -196,15 +225,21 @@ class _HomeScreenState extends State<HomeScreen> {
 
       if (flyOk) {
         /*
-       * Esperamos a que el movimiento de cámara empiece
-       * antes de generar el cubo correspondiente.
+       * Dejamos que el movimiento de cámara
+       * empiece antes de generar el cubo.
        */
         await Future.delayed(
-          const Duration(milliseconds: 800),
+          const Duration(
+            milliseconds: 800,
+          ),
         );
 
+        /*
+       * Mostrar el cubo del dinosaurio.
+       */
         final bool cubeOk =
-        await lgService.showSelectedDinosaurCube(
+        await lgService
+            .showSelectedDinosaurCube(
           dinosaur,
         );
 
@@ -215,10 +250,13 @@ class _HomeScreenState extends State<HomeScreen> {
         );
 
         /*
-       * Después mostramos la información en la pantalla derecha.
+       * Esperamos un poco antes de mostrar
+       * la información de la pantalla derecha.
        */
         await Future.delayed(
-          const Duration(milliseconds: 500),
+          const Duration(
+            milliseconds: 500,
+          ),
         );
 
         await lgService.showDinosaurAboutColumn(
@@ -246,24 +284,57 @@ class _HomeScreenState extends State<HomeScreen> {
               final lgService =
               context.read<LgService>();
 
-              // Detener una posible órbita.
+              /*
+             * Guardamos estos valores porque
+             * corresponden a la selección actual.
+             */
+              final String? country =
+                  selectedCountry;
+
+              final List<Dinosaur>
+              countryDinosaurs =
+              List<Dinosaur>.from(
+                availableDinosaurs,
+              );
+
+              /*
+             * Detener cualquier órbita activa.
+             */
               await lgService.stopDinosaurOrbit();
 
-              // Limpiar el cubo.
-              await lgService.cleanDinosaurMarkers();
+              /*
+             * Limpiar los elementos de la vista
+             * del dinosaurio.
+             */
+              await lgService
+                  .cleanDinosaurMarkers();
 
-              // Limpiar la información de la pantalla derecha.
-              await lgService.cleanRightScreenKml();
+              await lgService
+                  .cleanRightScreenKml();
 
-              // Volver a la vista general del país seleccionado.
-              if (selectedCountry != null) {
+              /*
+             * Volver a la vista general del país.
+             */
+              if (country != null) {
                 await lgService.flyToCountry(
-                  selectedCountry!,
-                  availableDinosaurs,
+                  country,
+                  countryDinosaurs,
+                );
+
+                /*
+               * Volver a mostrar únicamente
+               * los marcadores de los dinosaurios
+               * disponibles en este país.
+               */
+                await lgService
+                    .showDinosaurSelectionMarkers(
+                  countryDinosaurs,
                 );
               }
 
-              // Restaurar el logo.
+              /*
+             * Restaurar el logo.
+             */
               await lgService.sendLogo();
             },
           );
@@ -422,28 +493,75 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget buildTopBar(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    final isConnected =
+        context.watch<LgService>().isConnected;
+
     return Row(
       children: [
         Container(
           decoration: BoxDecoration(
-            color: Theme
-                .of(context)
-                .colorScheme
-                .surfaceContainerHighest,
+            color: colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(14),
           ),
           child: IconButton(
-            icon: const Icon(Icons.menu, size: 30),
-            onPressed: () => Scaffold.of(context).openDrawer(),
+            icon: const Icon(
+              Icons.menu,
+              size: 30,
+            ),
+            onPressed: () {
+              Scaffold.of(context).openDrawer();
+            },
           ),
         ),
+
         const Spacer(),
+
         const Text(
           'GeoSaurio',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
         ),
+
         const Spacer(),
-        const SizedBox(width: 48),
+
+        Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 8,
+          ),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.circle,
+                size: 12,
+                color: isConnected
+                    ? Colors.green
+                    : Colors.red,
+              ),
+
+              const SizedBox(width: 8),
+
+              Text(
+                isConnected
+                    ? 'Connected'
+                    : 'Disconnected',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
