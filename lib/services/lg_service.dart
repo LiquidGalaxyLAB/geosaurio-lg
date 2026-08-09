@@ -137,6 +137,126 @@ class LgService extends ChangeNotifier {
     ],
   };
 
+  final Map<String, String> _continentFacts = {
+    'Africa':
+    'Africa preserves an extraordinary dinosaur fossil record covering '
+        'almost the entire Age of Dinosaurs. Some of the earliest dinosaurs '
+        'are known from Africa, while later ecosystems were home to enormous '
+        'sauropods and unusual predators such as Spinosaurus.',
+
+    'Asia':
+    'Asia has one of the richest and most diverse dinosaur fossil records '
+        'in the world. China and Mongolia are especially famous for spectacular '
+        'fossils, including feathered dinosaurs and discoveries that helped '
+        'scientists understand the connection between dinosaurs and birds.',
+
+    'Europe':
+    'Europe preserves dinosaur fossils from many different environments '
+        'throughout the Mesozoic Era. During several periods, much of Europe '
+        'consisted of islands, allowing distinctive dinosaur species and '
+        'ecosystems to develop.',
+
+    'North America':
+    'North America contains some of the most famous dinosaur fossil '
+        'formations in the world. Its fossil record includes giant Jurassic '
+        'sauropods, armored dinosaurs, hadrosaurs and iconic Late Cretaceous '
+        'predators.',
+
+    'South America':
+    'South America is extremely important for understanding dinosaur '
+        'evolution. Some of the earliest known dinosaurs were discovered here, '
+        'together with some of the largest sauropods and predatory dinosaurs '
+        'ever found.',
+
+    'Oceania':
+    'Oceania preserves a fascinating dinosaur fossil record from '
+        'environments that were once much closer to the polar regions. '
+        'Australian fossils show that dinosaurs could survive in cool and '
+        'highly seasonal environments.',
+
+    'Antarctica':
+    'Antarctica was much warmer during the Mesozoic Era and supported '
+        'forests and diverse ecosystems. Dinosaur fossils discovered there '
+        'show that these animals were capable of living in ancient polar '
+        'environments.',
+  };
+
+  final Map<String, String> _countryFacts = {
+    'China':
+    'China is especially famous for exceptionally preserved feathered '
+        'dinosaurs. Discoveries from northeastern China provided important '
+        'evidence about the evolutionary relationship between dinosaurs '
+        'and modern birds.',
+
+    'Mongolia':
+    'Mongolia is famous for spectacular dinosaur discoveries from the '
+        'Gobi Desert. Its fossils include Velociraptor, dinosaur eggs, nests '
+        'and remarkably well-preserved skeletons.',
+
+    'Argentina':
+    'Argentina has an extraordinary dinosaur fossil record. It preserves '
+        'some of the earliest dinosaurs known to science as well as some of '
+        'the largest sauropods and giant predatory dinosaurs ever discovered.',
+
+    'Brazil':
+    'Southern Brazil has produced important fossils from the earliest '
+        'stages of dinosaur evolution. These discoveries help scientists '
+        'understand how dinosaurs diversified during the Triassic Period.',
+
+    'United States':
+    'The United States has an exceptionally diverse dinosaur fossil '
+        'record. Famous formations preserve giant Jurassic sauropods, '
+        'stegosaurs, horned dinosaurs, hadrosaurs and large Late Cretaceous '
+        'predators.',
+
+    'Canada':
+    'Canada is particularly famous for its Late Cretaceous dinosaur '
+        'fossils. Alberta has produced many hadrosaurs, horned dinosaurs '
+        'and tyrannosaurs, making it one of the richest dinosaur regions '
+        'in the world.',
+
+    'United Kingdom':
+    'The United Kingdom played an important role in the birth of '
+        'dinosaur science. Some of the first dinosaurs ever scientifically '
+        'described were discovered there.',
+
+    'Germany':
+    'Germany has produced important dinosaur fossils from several '
+        'geological periods. Some fossil sites are especially famous for '
+        'their exceptional preservation.',
+
+    'France':
+    'France has a varied dinosaur fossil record covering several parts '
+        'of the Mesozoic Era, including sauropods, theropods and ornithopods.',
+
+    'Spain':
+    'Spain contains many important dinosaur fossil sites, including '
+        'footprints, skeletons and nesting areas that reveal information '
+        'about dinosaurs living in ancient European environments.',
+
+    'Portugal':
+    'Portugal is especially well known for its Late Jurassic dinosaur '
+        'fossils. Several discoveries show similarities with dinosaurs '
+        'known from North America.',
+
+    'South Africa':
+    'South Africa preserves an important record of early dinosaurs and '
+        'sauropodomorphs, providing valuable information about dinosaur '
+        'evolution around the Triassic and Jurassic periods.',
+
+    'India':
+    'India preserves dinosaurs from several stages of the Mesozoic Era. '
+        'Its fossil record is especially interesting because the Indian '
+        'landmass travelled across ancient oceans before colliding with Asia.',
+
+    'Australia':
+    'Australian dinosaur fossils reveal animals adapted to environments '
+        'located close to the ancient polar regions, where they experienced '
+        'strong seasonal changes in climate and daylight.',
+  };
+
+
+
   LgConnectionModel get connectionModel => _lgConnectionModel;
 
   bool get isConnected => _isConnected;
@@ -1809,19 +1929,10 @@ echo "search=http://lg1:81/kmls.txt" > /tmp/query.txt
     return '<LookAt>'
         '<longitude>$longitude</longitude>'
         '<latitude>$latitude</latitude>'
-
-    // El cubo mide 30 m.
-    // Miramos aproximadamente a su centro vertical.
-        '<altitude>15</altitude>'
-
+        '<altitude>160.0</altitude>'
         '<heading>$heading</heading>'
-
-    // Misma inclinación que la vista normal.
         '<tilt>72</tilt>'
-
-    // Misma distancia que flyToDinosaur().
         '<range>610</range>'
-
         '<altitudeMode>relativeToGround</altitudeMode>'
         '</LookAt>';
   }
@@ -1845,118 +1956,66 @@ echo "search=http://lg1:81/kmls.txt" > /tmp/query.txt
         return false;
       }
 
-      /*
-     * El punto que NO se mueve.
-     *
-     * Como queremos orbitar alrededor del cubo,
-     * usamos exactamente el centro horizontal
-     * del cubo como LookAt.
-     */
-      final cubePosition =
-      _calculateCubePosition(dinosaur);
+      final cubePosition = _calculateCubePosition(dinosaur);
+      final double latitude = cubePosition['latitude']!;
+      final double longitude = cubePosition['longitude']!;
 
-      final double latitude =
-      cubePosition['latitude']!;
-
-      final double longitude =
-      cubePosition['longitude']!;
-
-      /*
-     * Igual que el código de tu amiga:
-     * partimos del heading actual.
-     */
+      const double altitude = 160.0;
+      const double tilt = 72.0;
+      const double range = 610.0;
       double heading = dinosaur.heading;
 
       _isDinosaurOrbiting = true;
-
       notifyListeners();
 
-      debugPrint(
-        'Orbit started around cube: '
-            'lat=$latitude, lon=$longitude',
-      );
+      debugPrint('ORBIT: Starting orbit');
+      debugPrint('ORBIT: Target Lat: $latitude');
+      debugPrint('ORBIT: Target Lon: $longitude');
+      debugPrint('ORBIT: Altitude: $altitude');
+      debugPrint('ORBIT: Range: $range');
+      debugPrint('ORBIT: Tilt: $tilt');
+      debugPrint('ORBIT: Initial Heading: $heading');
 
-      /*
-     * EXACTAMENTE el enfoque de tu amiga.
-     *
-     * Mientras Orbit siga activo:
-     *
-     * heading + 10
-     * enviar flytoview
-     * esperar 500 ms
-     * repetir
-     */
       while (_isDinosaurOrbiting) {
-        heading =
-            (heading + 10.0) % 360.0;
+        heading = (heading + 10.0) % 360.0;
 
-        final lookAt =
-        _buildDinosaurOrbitLookAt(
+        final lookAt = _buildDinosaurOrbitLookAt(
           latitude: latitude,
           longitude: longitude,
           heading: heading,
         );
 
-        debugPrint(
-          'Orbit heading: $heading',
-        );
+        debugPrint('ORBIT: Heading: $heading');
 
-        /*
-       * Mandamos directamente la nueva vista.
-       */
         final result = await execute(
-          'echo "flytoview=$lookAt" '
-              '> /tmp/query.txt',
+          'echo "flytoview=$lookAt" > /tmp/query.txt',
           'Orbit view sent',
         );
 
         if (result == null) {
-          debugPrint(
-            'Could not send orbit view',
-          );
+          debugPrint('ORBIT: Could not send orbit view');
         }
 
-        /*
-       * Tu amiga usa 500 ms.
-       *
-       * No toquemos esto hasta comprobar
-       * primero que la órbita funciona.
-       */
         await Future.delayed(
-          const Duration(
-            milliseconds: 500,
-          ),
+          const Duration(milliseconds: 500),
         );
       }
 
-      debugPrint(
-        'Orbit loop finished',
-      );
-
+      debugPrint('ORBIT: Loop finished');
       return true;
     } catch (e, stackTrace) {
-      debugPrint(
-        'Error during dinosaur orbit: $e',
-      );
-
+      debugPrint('ORBIT: Error during dinosaur orbit: $e');
       debugPrint('$stackTrace');
-
       _isDinosaurOrbiting = false;
-
       notifyListeners();
-
       return false;
     }
   }
 
   Future<void> stopDinosaurOrbit() async {
     _isDinosaurOrbiting = false;
-
     notifyListeners();
-
-    debugPrint(
-      'Dinosaur orbit stopped',
-    );
+    debugPrint('ORBIT: Orbit stopped');
   }
 
 
@@ -2105,17 +2164,24 @@ echo "search=http://lg1:81/kmls.txt" > /tmp/query.txt
     }
   }
 
-  Future<bool> flyToContinent(String continent) async {
+  Future<bool> flyToContinent(
+      String continent,
+      ) async {
     try {
       if (_client == null || !_isConnected) {
-        debugPrint('SSH client is not connected');
+        debugPrint(
+          'SSH client is not connected',
+        );
         return false;
       }
 
-      final view = _continentViews[continent];
+      final view =
+      _continentViews[continent];
 
       if (view == null) {
-        debugPrint('Unknown continent: $continent');
+        debugPrint(
+          'Unknown continent: $continent',
+        );
         return false;
       }
 
@@ -2130,30 +2196,74 @@ echo "search=http://lg1:81/kmls.txt" > /tmp/query.txt
           '<altitudeMode>relativeToGround</altitudeMode>'
           '</LookAt>';
 
+      // --------------------------------------------------
+      // 1. MOVER GOOGLE EARTH AL CONTINENTE
+      // --------------------------------------------------
+
       final result = await execute(
         'echo "flytoview=$lookAt" > /tmp/query.txt',
         'FlyTo continent sent: $continent',
       );
 
-      return result != null;
+      if (result == null) {
+        debugPrint(
+          'Could not fly to continent: $continent',
+        );
+        return false;
+      }
+
+      // --------------------------------------------------
+      // 2. MOSTRAR INFORMACIÓN DEL CONTINENTE
+      // EN LA PANTALLA DERECHA
+      // --------------------------------------------------
+
+      final infoShown =
+      await showContinentInfoColumn(
+        continent,
+      );
+
+      if (!infoShown) {
+        debugPrint(
+          'Continent FlyTo worked, '
+              'but information column could not be shown',
+        );
+      }
+
+      debugPrint(
+        'Continent selected successfully: $continent',
+      );
+
+      return true;
     } catch (e, stackTrace) {
-      debugPrint('Error flying to continent: $e');
+      debugPrint(
+        'Error flying to continent: $e',
+      );
+
       debugPrint('$stackTrace');
+
       return false;
     }
   }
 
   Future<bool> flyToCountry(
       String country,
+      String continent,
       List<Dinosaur> dinosaurs,
       ) async {
     try {
       if (_client == null || !_isConnected) {
-        debugPrint('SSH client is not connected');
+        debugPrint(
+          'SSH client is not connected',
+        );
         return false;
       }
 
-      final validDinosaurs = dinosaurs.where((dinosaur) {
+      // --------------------------------------------------
+      // 1. FILTRAR DINOSAURIOS CON COORDENADAS VÁLIDAS
+      // --------------------------------------------------
+
+      final validDinosaurs =
+      dinosaurs.where((dinosaur) {
         return dinosaur.latitude != 0 &&
             dinosaur.longitude != 0;
       }).toList();
@@ -2165,22 +2275,45 @@ echo "search=http://lg1:81/kmls.txt" > /tmp/query.txt
         return false;
       }
 
+      // --------------------------------------------------
+      // 2. CALCULAR CENTRO APROXIMADO DEL PAÍS
+      // SEGÚN LOS DINOSAURIOS DISPONIBLES
+      // --------------------------------------------------
+
       final latitude =
           validDinosaurs
-              .map((dinosaur) => dinosaur.latitude)
-              .reduce((a, b) => a + b) /
+              .map(
+                (dinosaur) =>
+            dinosaur.latitude,
+          )
+              .reduce(
+                (a, b) => a + b,
+          ) /
               validDinosaurs.length;
 
       final longitude =
           validDinosaurs
-              .map((dinosaur) => dinosaur.longitude)
-              .reduce((a, b) => a + b) /
+              .map(
+                (dinosaur) =>
+            dinosaur.longitude,
+          )
+              .reduce(
+                (a, b) => a + b,
+          ) /
               validDinosaurs.length;
 
-      final range =
+      // --------------------------------------------------
+      // 3. AJUSTAR DISTANCIA
+      // --------------------------------------------------
+
+      final double range =
       validDinosaurs.length <= 1
           ? 250000.0
           : 900000.0;
+
+      // --------------------------------------------------
+      // 4. CREAR LOOKAT
+      // --------------------------------------------------
 
       final lookAt =
           '<LookAt>'
@@ -2195,18 +2328,56 @@ echo "search=http://lg1:81/kmls.txt" > /tmp/query.txt
 
       debugPrint(
         'Sending FlyTo country $country: '
-            'lat=$latitude, lon=$longitude, range=$range',
+            'lat=$latitude, '
+            'lon=$longitude, '
+            'range=$range',
       );
+
+      // --------------------------------------------------
+      // 5. MOVER GOOGLE EARTH AL PAÍS
+      // --------------------------------------------------
 
       final result = await execute(
         'echo "flytoview=$lookAt" > /tmp/query.txt',
         'FlyTo country sent: $country',
       );
 
-      return result != null;
+      if (result == null) {
+        debugPrint(
+          'Could not fly to country: $country',
+        );
+        return false;
+      }
+
+      // --------------------------------------------------
+      // 6. MOSTRAR COLUMNA INFORMATIVA DEL PAÍS
+      // --------------------------------------------------
+
+      final infoShown =
+      await showCountryInfoColumn(
+        country,
+        continent,
+      );
+
+      if (!infoShown) {
+        debugPrint(
+          'Country FlyTo worked, '
+              'but information column could not be shown',
+        );
+      }
+
+      debugPrint(
+        'Country selected successfully: $country',
+      );
+
+      return true;
     } catch (e, stackTrace) {
-      debugPrint('Error flying to country: $e');
+      debugPrint(
+        'Error flying to country: $e',
+      );
+
       debugPrint('$stackTrace');
+
       return false;
     }
   }
@@ -2627,6 +2798,528 @@ EOFKML
         'Error cleaning dinosaur markers: $e',
       );
       debugPrint('$stackTrace');
+      return false;
+    }
+  }
+
+  Future<bool> createLocationInfoColumn({
+    required String title,
+    required String subtitle,
+    required String introduction,
+    required String instructions,
+    required String fact,
+    required String fileName,
+  }) async {
+    try {
+      const double width = 1000;
+      const double height = 1900;
+      const double padding = 60;
+
+      final recorder = ui.PictureRecorder();
+      final canvas = ui.Canvas(recorder);
+
+      const backgroundColor =
+      ui.Color(0xFF102F33);
+
+      const cardColor =
+      ui.Color(0xFF1A464A);
+
+      const secondaryCardColor =
+      ui.Color(0xFF24575B);
+
+      const accentColor =
+      ui.Color(0xFFE9C46A);
+
+      const titleColor =
+      ui.Color(0xFFFFFFFF);
+
+      const textColor =
+      ui.Color(0xFFF4F7F6);
+
+      const secondaryTextColor =
+      ui.Color(0xFFC6DAD8);
+
+      final backgroundPaint = ui.Paint()
+        ..color = backgroundColor;
+
+      canvas.drawRRect(
+        ui.RRect.fromRectAndRadius(
+          const ui.Rect.fromLTWH(
+            0,
+            0,
+            width,
+            height,
+          ),
+          const ui.Radius.circular(45),
+        ),
+        backgroundPaint,
+      );
+
+      double currentY = 55;
+
+      double drawText({
+        required String text,
+        required double fontSize,
+        required double y,
+        double x = padding,
+        ui.FontWeight fontWeight =
+            ui.FontWeight.normal,
+        ui.Color color = textColor,
+        double maxWidth =
+            width - (padding * 2),
+        double lineHeight = 1.3,
+        ui.TextAlign textAlign =
+            ui.TextAlign.left,
+      }) {
+        final builder = ui.ParagraphBuilder(
+          ui.ParagraphStyle(
+            textAlign: textAlign,
+            fontSize: fontSize,
+            fontWeight: fontWeight,
+            height: lineHeight,
+          ),
+        )
+          ..pushStyle(
+            ui.TextStyle(
+              color: color,
+              fontSize: fontSize,
+              fontWeight: fontWeight,
+            ),
+          )
+          ..addText(text);
+
+        final paragraph = builder.build();
+
+        paragraph.layout(
+          ui.ParagraphConstraints(
+            width: maxWidth,
+          ),
+        );
+
+        canvas.drawParagraph(
+          paragraph,
+          ui.Offset(
+            x,
+            y,
+          ),
+        );
+
+        return paragraph.height;
+      }
+
+      void drawCard({
+        required double y,
+        required double cardHeight,
+        ui.Color color = cardColor,
+      }) {
+        final paint = ui.Paint()
+          ..color = color;
+
+        canvas.drawRRect(
+          ui.RRect.fromRectAndRadius(
+            ui.Rect.fromLTWH(
+              padding,
+              y,
+              width - (padding * 2),
+              cardHeight,
+            ),
+            const ui.Radius.circular(30),
+          ),
+          paint,
+        );
+      }
+
+      // --------------------------------------------------
+      // TITLE
+      // --------------------------------------------------
+
+      currentY += drawText(
+        text: title.toUpperCase(),
+        fontSize: 62,
+        y: currentY,
+        fontWeight: ui.FontWeight.bold,
+        textAlign: ui.TextAlign.center,
+        color: titleColor,
+      );
+
+      currentY += 8;
+
+      currentY += drawText(
+        text: subtitle.toUpperCase(),
+        fontSize: 30,
+        y: currentY,
+        fontWeight: ui.FontWeight.bold,
+        textAlign: ui.TextAlign.center,
+        color: accentColor,
+      );
+
+      currentY += 25;
+
+      final separatorPaint = ui.Paint()
+        ..color = accentColor
+        ..strokeWidth = 4;
+
+      canvas.drawLine(
+        ui.Offset(
+          padding,
+          currentY,
+        ),
+        ui.Offset(
+          width - padding,
+          currentY,
+        ),
+        separatorPaint,
+      );
+
+      currentY += 38;
+
+      // --------------------------------------------------
+      // INTRODUCTION
+      // --------------------------------------------------
+
+      currentY += drawText(
+        text: introduction,
+        fontSize: 34,
+        y: currentY,
+        textAlign: ui.TextAlign.center,
+        color: secondaryTextColor,
+        lineHeight: 1.4,
+      );
+
+      currentY += 48;
+
+      // --------------------------------------------------
+      // WHAT CAN YOU DO NOW?
+      // --------------------------------------------------
+
+      currentY += drawText(
+        text: 'WHAT CAN YOU DO NOW?',
+        fontSize: 41,
+        y: currentY,
+        fontWeight: ui.FontWeight.bold,
+        color: titleColor,
+      );
+
+      currentY += 20;
+
+      const double actionsCardHeight = 465;
+
+      drawCard(
+        y: currentY,
+        cardHeight: actionsCardHeight,
+      );
+
+      drawText(
+        text: instructions,
+        fontSize: 32,
+        y: currentY + 35,
+        x: padding + 38,
+        maxWidth:
+        width - (padding * 2) - 76,
+        lineHeight: 1.55,
+      );
+
+      currentY +=
+          actionsCardHeight + 50;
+
+      // --------------------------------------------------
+      // DID YOU KNOW?
+      // --------------------------------------------------
+
+      currentY += drawText(
+        text: 'DID YOU KNOW?',
+        fontSize: 41,
+        y: currentY,
+        fontWeight: ui.FontWeight.bold,
+        color: titleColor,
+      );
+
+      currentY += 20;
+
+      const double factCardHeight = 485;
+
+      drawCard(
+        y: currentY,
+        cardHeight: factCardHeight,
+        color: secondaryCardColor,
+      );
+
+      drawText(
+        text: fact,
+        fontSize: 31,
+        y: currentY + 36,
+        x: padding + 38,
+        maxWidth:
+        width - (padding * 2) - 76,
+        lineHeight: 1.45,
+      );
+
+      currentY +=
+          factCardHeight + 55;
+
+      // --------------------------------------------------
+      // FOOTER
+      // --------------------------------------------------
+
+      drawText(
+        text:
+        'Continue exploring with GeoSaurio',
+        fontSize: 30,
+        y: currentY,
+        fontWeight: ui.FontWeight.bold,
+        textAlign: ui.TextAlign.center,
+        color: accentColor,
+      );
+
+      // --------------------------------------------------
+      // CREATE PNG
+      // --------------------------------------------------
+
+      final picture =
+      recorder.endRecording();
+
+      final image =
+      await picture.toImage(
+        width.toInt(),
+        height.toInt(),
+      );
+
+      final byteData =
+      await image.toByteData(
+        format: ui.ImageByteFormat.png,
+      );
+
+      if (byteData == null) {
+        debugPrint(
+          'Could not create location info column',
+        );
+        return false;
+      }
+
+      final bytes =
+      byteData.buffer.asUint8List();
+
+      final uploaded =
+      await uploadBytesToLG(
+        bytes: bytes,
+        fileName: fileName,
+      );
+
+      if (!uploaded) {
+        debugPrint(
+          'Could not upload location info column',
+        );
+        return false;
+      }
+
+      debugPrint(
+        'Location info column created: $fileName',
+      );
+
+      return true;
+    } catch (e, stackTrace) {
+      debugPrint(
+        'Error creating location info column: $e',
+      );
+
+      debugPrint('$stackTrace');
+
+      return false;
+    }
+  }
+
+  Future<bool> showLocationInfoOverlay({
+    required String fileName,
+    required String locationName,
+  }) async {
+    try {
+      if (_client == null || !_isConnected) {
+        debugPrint(
+          'Cannot show location info: '
+              'Liquid Galaxy is not connected',
+        );
+        return false;
+      }
+
+      final screen =
+      calculateRightMostScreen(
+        _lgConnectionModel.screens,
+      );
+
+      final cleanLocationName =
+      _cleanText(locationName);
+
+      final kml = '''
+<?xml version="1.0" encoding="UTF-8"?>
+
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+
+    <ScreenOverlay>
+
+      <name>
+        $cleanLocationName Information
+      </name>
+
+      <Icon>
+        <href>http://lg1:81/$fileName</href>
+      </Icon>
+
+      <overlayXY
+        x="0.5"
+        y="0.5"
+        xunits="fraction"
+        yunits="fraction"
+      />
+
+      <screenXY
+        x="0.5"
+        y="0.5"
+        xunits="fraction"
+        yunits="fraction"
+      />
+
+      <rotationXY
+        x="0"
+        y="0"
+        xunits="fraction"
+        yunits="fraction"
+      />
+
+      <size
+        x="850"
+        y="0"
+        xunits="pixels"
+        yunits="pixels"
+      />
+
+    </ScreenOverlay>
+
+  </Document>
+</kml>
+''';
+
+      await cleanRightScreenKml();
+
+      final result = await execute(
+        "echo '$kml' > "
+            "/var/www/html/kml/slave_$screen.kml",
+        'Location info column sent',
+      );
+
+      return result != null;
+    } catch (e, stackTrace) {
+      debugPrint(
+        'Error showing location info overlay: $e',
+      );
+
+      debugPrint('$stackTrace');
+
+      return false;
+    }
+  }
+
+  Future<bool> showContinentInfoColumn(
+      String continent,
+      ) async {
+    try {
+      final fact =
+          _continentFacts[continent] ??
+              'This continent preserves an important '
+                  'dinosaur fossil record with discoveries '
+                  'from different parts of the Mesozoic Era.';
+
+      const instructions =
+          '→ Select a country to continue exploring\n\n'
+          '→ Discover which dinosaurs were found there\n\n'
+          '→ Explore dinosaur fossil locations\n\n'
+          '→ Travel across the discoveries using Liquid Galaxy';
+
+      const fileName =
+          'continent_info.png';
+
+      final created =
+      await createLocationInfoColumn(
+        title: continent,
+        subtitle: 'GeoSaurio',
+        introduction:
+        'Explore the dinosaur discoveries of '
+            '$continent and learn how dinosaur life '
+            'changed across this part of the world.',
+        instructions: instructions,
+        fact: fact,
+        fileName: fileName,
+      );
+
+      if (!created) {
+        return false;
+      }
+
+      return await showLocationInfoOverlay(
+        fileName: fileName,
+        locationName: continent,
+      );
+    } catch (e, stackTrace) {
+      debugPrint(
+        'Error showing continent information: $e',
+      );
+
+      debugPrint('$stackTrace');
+
+      return false;
+    }
+  }
+
+  Future<bool> showCountryInfoColumn(
+      String country,
+      String continent,
+      ) async {
+    try {
+      final fact =
+          _countryFacts[country] ??
+              '$country has produced dinosaur fossils '
+                  'that help scientists understand dinosaur '
+                  'diversity and evolution during the '
+                  'Mesozoic Era.';
+
+      const instructions =
+          '→ Explore the dinosaurs found in this country\n\n'
+          '→ Select a dinosaur to visit its fossil location\n\n'
+          '→ Discover information about each species\n\n'
+          '→ View its skeleton and size comparison\n\n'
+          '→ Listen to its narrated description';
+
+      const fileName =
+          'country_info.png';
+
+      final created =
+      await createLocationInfoColumn(
+        title: country,
+        subtitle: '$continent • GeoSaurio',
+        introduction:
+        'Explore the dinosaurs discovered in '
+            '$country and learn more about the fossil '
+            'sites that preserve their history.',
+        instructions: instructions,
+        fact: fact,
+        fileName: fileName,
+      );
+
+      if (!created) {
+        return false;
+      }
+
+      return await showLocationInfoOverlay(
+        fileName: fileName,
+        locationName: country,
+      );
+    } catch (e, stackTrace) {
+      debugPrint(
+        'Error showing country information: $e',
+      );
+
+      debugPrint('$stackTrace');
+
       return false;
     }
   }

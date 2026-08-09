@@ -37,7 +37,15 @@ class DinosaurService {
       if (dinosaur.period != period) continue;
 
       grouped.putIfAbsent(dinosaur.area, () => {});
-      grouped[dinosaur.area]!.add(dinosaur.country);
+      
+      // Support multiple countries separated by comma
+      final countries = dinosaur.country.split(RegExp(r',\s*'));
+      for (var country in countries) {
+        final trimmedCountry = country.trim();
+        if (trimmedCountry.isNotEmpty) {
+          grouped[dinosaur.area]!.add(trimmedCountry);
+        }
+      }
     }
 
     return grouped.map((continent, countries) {
@@ -55,9 +63,21 @@ class DinosaurService {
     for (final dinosaur in dinosaurs) {
       if (dinosaur.period != period) continue;
 
-      grouped.putIfAbsent(dinosaur.country, () => {});
-      grouped[dinosaur.country]!.putIfAbsent(dinosaur.region, () => {});
-      grouped[dinosaur.country]![dinosaur.region]!.add(dinosaur.name);
+      final countries = dinosaur.country.split(RegExp(r',\s*'));
+      final regions = dinosaur.region.split(RegExp(r',\s*'));
+
+      for (var country in countries) {
+        final trimmedCountry = country.trim();
+        if (trimmedCountry.isEmpty) continue;
+        grouped.putIfAbsent(trimmedCountry, () => {});
+        
+        for (var region in regions) {
+          final trimmedRegion = region.trim();
+          if (trimmedRegion.isEmpty) continue;
+          grouped[trimmedCountry]!.putIfAbsent(trimmedRegion, () => {});
+          grouped[trimmedCountry]![trimmedRegion]!.add(dinosaur.name);
+        }
+      }
     }
 
     return grouped.map((country, regions) {
