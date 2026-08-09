@@ -18,10 +18,8 @@ class DinosaurService {
           return Dinosaur.fromCsv(row);
         })
         .where((dinosaur) {
+          // Solo filtramos si el nombre está vacío o el periodo es realmente desconocido
           return dinosaur.name.isNotEmpty &&
-              dinosaur.country.isNotEmpty &&
-              dinosaur.region.isNotEmpty &&
-              dinosaur.area.isNotEmpty &&
               dinosaur.period != DinosaurPeriod.unknown;
         })
         .toList();
