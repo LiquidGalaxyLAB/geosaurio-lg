@@ -86,6 +86,8 @@ class LgService extends ChangeNotifier {
 
   bool _isDinosaurOrbiting = false;
 
+  Timer? _dinosaurOrbitTimer;
+
   bool get isDinosaurOrbiting =>
       _isDinosaurOrbiting;
 
@@ -1545,14 +1547,16 @@ class LgService extends ChangeNotifier {
           'Cannot show dinosaur markers: '
               'Liquid Galaxy is not connected',
         );
+
         return false;
       }
 
       // --------------------------------------------------
-      // 1. FILTRAR DINOSAURIOS CON COORDENADAS VÁLIDAS
+      // 1. DINOSAURIOS CON COORDENADAS VÁLIDAS
       // --------------------------------------------------
 
-      final validDinosaurs = dinosaurs.where((dinosaur) {
+      final validDinosaurs =
+      dinosaurs.where((dinosaur) {
         return dinosaur.latitude != 0 &&
             dinosaur.longitude != 0;
       }).toList();
@@ -1560,73 +1564,106 @@ class LgService extends ChangeNotifier {
       if (validDinosaurs.isEmpty) {
         debugPrint(
           'No dinosaurs with valid coordinates '
-              'were found for this selection',
+              'for this selection',
         );
+
         return false;
       }
 
       debugPrint(
-        'Showing ${validDinosaurs.length} '
-            'dinosaur selection markers',
+        'Creating ${validDinosaurs.length} '
+            'dinosaur placemarks',
       );
 
       // --------------------------------------------------
       // 2. SUBIR ICONO DEL MARCADOR
       // --------------------------------------------------
 
-      final markerUploaded = await uploadAssetToLG(
+      final markerUploaded =
+      await uploadAssetToLG(
         assetPath:
         'assets/images/markers/dino_marker.png',
-        fileName: 'dino_marker.png',
+        fileName:
+        'kml/dino_marker.png',
       );
 
       if (!markerUploaded) {
         debugPrint(
-          'Could not upload dino_marker.png',
+          'Could not upload dinosaur marker icon',
         );
+
         return false;
       }
 
-      debugPrint(
-        'Marker image uploaded successfully',
-      );
-
       // --------------------------------------------------
-      // 3. CREAR LOS PLACEMARKS
+      // 3. CREAR PLACEMARKS
       // --------------------------------------------------
 
       final placemarks =
       validDinosaurs.map((dinosaur) {
-        final name =
+        final safeName =
         _cleanText(dinosaur.name);
 
-        final country =
-        _cleanText(dinosaur.country);
-
-        final region =
-        _cleanText(dinosaur.region);
-
         debugPrint(
-          'Creating marker for ${dinosaur.name}: '
-              'lat=${dinosaur.latitude}, '
+          'PLACEMARK: ${dinosaur.name} | '
+              'lat=${dinosaur.latitude} | '
               'lon=${dinosaur.longitude}',
         );
 
         return '''
 <Placemark>
-  <name>$name</name>
 
-  <description>
-    $country - $region
-  </description>
+  <name>
+    $safeName
+  </name>
 
-  <Style>
+  <styleUrl>
+    #dinoMarkerStyle
+  </styleUrl>
+
+  <Point>
+
+    <altitudeMode>
+      clampToGround
+    </altitudeMode>
+
+    <coordinates>
+      ${dinosaur.longitude},${dinosaur.latitude},0
+    </coordinates>
+
+  </Point>
+
+</Placemark>
+''';
+      }).join('\n');
+
+      // --------------------------------------------------
+      // 4. KML COMPLETO
+      // --------------------------------------------------
+
+      final kml = '''
+<?xml version="1.0" encoding="UTF-8"?>
+
+<kml xmlns="http://www.opengis.net/kml/2.2">
+
+<Document>
+
+  <name>
+    GeoSaurio Dinosaur Locations
+  </name>
+
+  <Style id="dinoMarkerStyle">
+
     <IconStyle>
 
-      <scale>3.5</scale>
+      <scale>
+        1.2
+      </scale>
 
       <Icon>
-        <href>http://lg1:81/kml/dino_marker.png</href>
+        <href>
+          http://lg1:81/kml/dino_marker.png
+        </href>
       </Icon>
 
       <hotSpot
@@ -1638,144 +1675,177 @@ class LgService extends ChangeNotifier {
 
     </IconStyle>
 
-    <LabelStyle>
-      <scale>0</scale>
-    </LabelStyle>
-
   </Style>
 
-  <Point>
-    <altitudeMode>clampToGround</altitudeMode>
+  $placemarks
 
-    <coordinates>
-      ${dinosaur.longitude},${dinosaur.latitude},0
-    </coordinates>
-  </Point>
-
-</Placemark>
-''';
-      }).join('\n');
-
-      // --------------------------------------------------
-      // 4. CREAR KML COMPLETO
-      // --------------------------------------------------
-
-      final markersKml = '''
-<?xml version="1.0" encoding="UTF-8"?>
-
-<kml xmlns="http://www.opengis.net/kml/2.2">
-
-  <Document>
-
-    <name>
-      GeoSaurio Selection Markers
-    </name>
-
-    $placemarks
-
-  </Document>
+</Document>
 
 </kml>
 ''';
 
       // --------------------------------------------------
-      // 5. GUARDAR KML EN LIQUID GALAXY
+      // 5. SABER QUÉ PANTALLA CONTIENE EL LOGO
       // --------------------------------------------------
 
-      final writeResult = await execute(
-        '''
-cat > /var/www/html/kml/dinosaur_selection_markers.kml << 'EOFKML'
-$markersKml
-EOFKML
-''',
-        'Dinosaur selection markers KML written',
+      final logoScreen =
+      calculateLeftMostScreen(
+        _lgConnectionModel.screens,
       );
 
-      if (writeResult == null) {
-        debugPrint(
-          'Could not write dinosaur markers KML',
-        );
-        return false;
-      }
-
       // --------------------------------------------------
-      // 6. ELIMINAR REFERENCIA ANTERIOR
+      // 6. LIMPIAR KMLS.TXT
       // --------------------------------------------------
 
       await execute(
-        '''
-sed -i '\\|dinosaur_selection_markers.kml|d' /var/www/html/kmls.txt
-''',
-        'Old dinosaur marker reference removed',
+        '> /var/www/html/kmls.txt',
+        'Old dinosaur marker references removed',
       );
 
       // --------------------------------------------------
-      // 7. REGISTRAR EL NUEVO KML
+      // 7. ESCRIBIR LOS MARCADORES EN MASTER.KML
       // --------------------------------------------------
 
-      final registerResult = await execute(
+      final masterResult =
+      await execute(
         '''
-echo "http://lg1:81/kml/dinosaur_selection_markers.kml" >> /var/www/html/kmls.txt
+cat > /var/www/html/kml/master.kml << 'EOFKML'
+$kml
+EOFKML
 ''',
-        'Dinosaur selection markers registered',
+        'Dinosaur markers written to master.kml',
       );
 
-      if (registerResult == null) {
-        debugPrint(
-          'Could not register dinosaur markers KML',
-        );
+      if (masterResult == null) {
         return false;
       }
 
       // --------------------------------------------------
-      // 8. FORZAR GOOGLE EARTH A RECARGAR LOS KML
+      // 8. REGISTRAR MASTER
       // --------------------------------------------------
 
-      final refreshResult = await execute(
-        '''
-echo "search=http://lg1:81/kmls.txt" > /tmp/query.txt
+      final registerMasterResult =
+      await execute(
+        'echo "http://lg1:81/kml/master.kml" '
+            '>> /var/www/html/kmls.txt',
+        'Master dinosaur markers registered',
+      );
+
+      if (registerMasterResult == null) {
+        return false;
+      }
+
+      // --------------------------------------------------
+      // 9. ESCRIBIR EN LOS SLAVES
+      //
+      // NO tocamos la pantalla del logo.
+      // --------------------------------------------------
+
+      for (
+      int screen = 1;
+      screen <= _lgConnectionModel.screens;
+      screen++
+      ) {
+        if (screen == logoScreen) {
+          debugPrint(
+            'Skipping slave_$screen '
+                'to preserve logo',
+          );
+
+          continue;
+        }
+
+        final slaveResult =
+        await execute(
+          '''
+cat > /var/www/html/kml/slave_$screen.kml << 'EOFKML'
+$kml
+EOFKML
 ''',
-        'Dinosaur selection markers sent to Google Earth',
+          'Dinosaur markers written to '
+              'slave_$screen.kml',
+        );
+
+        if (slaveResult == null) {
+          return false;
+        }
+
+        final registerSlaveResult =
+        await execute(
+          'echo "http://lg1:81/kml/slave_$screen.kml" '
+              '>> /var/www/html/kmls.txt',
+          'Dinosaur markers slave_$screen registered',
+        );
+
+        if (registerSlaveResult == null) {
+          return false;
+        }
+      }
+
+      // --------------------------------------------------
+      // 10. DAR TIEMPO A QUE LOS ARCHIVOS
+      //     ESTÉN DISPONIBLES
+      // --------------------------------------------------
+
+      await Future.delayed(
+        const Duration(
+          milliseconds: 500,
+        ),
+      );
+
+      // --------------------------------------------------
+      // 11. HACER QUE GOOGLE EARTH CARGUE LOS KML
+      // --------------------------------------------------
+
+      final refreshResult =
+      await execute(
+        'echo "search=http://lg1:81/kmls.txt" '
+            '> /tmp/query.txt',
+        'Dinosaur markers loaded',
       );
 
       if (refreshResult == null) {
-        debugPrint(
-          'Could not refresh Google Earth markers',
-        );
         return false;
       }
 
       // --------------------------------------------------
-      // DEBUG
+      // 12. FORZAR REFRESCO EN LOS SLAVES
       // --------------------------------------------------
 
-      debugPrint(
-        'MARKERS: KML created for '
-            '${validDinosaurs.length} dinosaurs',
-      );
+      for (
+      int screen = 2;
+      screen <= _lgConnectionModel.screens;
+      screen++
+      ) {
+        if (screen == logoScreen) {
+          continue;
+        }
+
+        await _forceRefresh(
+          screen,
+        );
+      }
+
+      // --------------------------------------------------
+      // 13. RESTAURAR LOGO POR SEGURIDAD
+      // --------------------------------------------------
+
+      await sendLogo();
 
       debugPrint(
-        'MARKERS: icon URL = '
-            'http://lg1:81/kml/dino_marker.png',
-      );
-
-      debugPrint(
-        'MARKERS: KML URL = '
-            'http://lg1:81/kml/dinosaur_selection_markers.kml',
-      );
-
-      debugPrint(
-        '${validDinosaurs.length} dinosaur markers '
-            'displayed successfully',
+        '${validDinosaurs.length} '
+            'dinosaur placemarks displayed successfully',
       );
 
       return true;
     } catch (e, stackTrace) {
       debugPrint(
-        'Error showing dinosaur selection markers: $e',
+        'Error showing dinosaur placemarks: $e',
       );
 
-      debugPrint('$stackTrace');
+      debugPrint(
+        '$stackTrace',
+      );
 
       return false;
     }
@@ -1833,189 +1903,242 @@ echo "search=http://lg1:81/kmls.txt" > /tmp/query.txt
     }
   }
 
-  String _buildDinosaurOrbitKml(
-      Dinosaur dinosaur,
-      ) {
-    final cubePosition =
-    _calculateCubePosition(dinosaur);
-
-    final double cubeLatitude =
-    cubePosition['latitude']!;
-
-    final double cubeLongitude =
-    cubePosition['longitude']!;
-
-    /*
-   * IMPORTANTE:
-   * exactamente la misma vista que flyToDinosaur().
-   *
-   * Si has cambiado la cámara a 602,
-   * mantenemos 602 también aquí.
-   */
-    const double orbitAltitude = 160.0;
-    const double orbitRange = 610.0;
-    const double orbitTilt = 72.0;
-
-    /*
-   * 36 pasos × 10 grados = 360 grados.
-   *
-   * duration controla la velocidad.
-   * 0.7 = bastante fluida.
-   */
-    const double degreesPerStep = 10.0;
-    const double durationPerStep = 0.7;
-
-    final StringBuffer steps = StringBuffer();
-
-    double heading = dinosaur.heading;
-
-    for (int step = 0; step <= 36; step++) {
-      if (heading >= 360.0) {
-        heading -= 360.0;
-      }
-
-      steps.write(
-        '''
-      <gx:FlyTo>
-        <gx:duration>$durationPerStep</gx:duration>
-        <gx:flyToMode>smooth</gx:flyToMode>
-
-        <LookAt>
-          <longitude>$cubeLongitude</longitude>
-          <latitude>$cubeLatitude</latitude>
-          <altitude>$orbitAltitude</altitude>
-          <heading>$heading</heading>
-          <tilt>$orbitTilt</tilt>
-          <range>$orbitRange</range>
-          <gx:fovy>60</gx:fovy>
-          <gx:altitudeMode>relativeToGround</gx:altitudeMode>
-        </LookAt>
-
-      </gx:FlyTo>
-''',
-      );
-
-      heading += degreesPerStep;
-    }
-
-    return '''
-<?xml version="1.0" encoding="UTF-8"?>
-
-<kml
-  xmlns="http://www.opengis.net/kml/2.2"
-  xmlns:gx="http://www.google.com/kml/ext/2.2"
-  xmlns:kml="http://www.opengis.net/kml/2.2"
-  xmlns:atom="http://www.w3.org/2005/Atom"
->
-
-  <gx:Tour>
-    <name>DinosaurOrbit</name>
-
-    <gx:Playlist>
-      ${steps.toString()}
-    </gx:Playlist>
-
-  </gx:Tour>
-
-</kml>
-''';
-  }
-
   String _buildDinosaurOrbitLookAt({
     required double latitude,
     required double longitude,
+    required double range,
+    required double tilt,
     required double heading,
   }) {
-    return '<LookAt>'
+    return '<gx:duration>0.3</gx:duration>'
+        '<gx:flyToMode>smooth</gx:flyToMode>'
+        '<LookAt>'
         '<longitude>$longitude</longitude>'
         '<latitude>$latitude</latitude>'
-        '<altitude>160.0</altitude>'
+        '<range>$range</range>'
+        '<tilt>$tilt</tilt>'
         '<heading>$heading</heading>'
-        '<tilt>72</tilt>'
-        '<range>610</range>'
         '<altitudeMode>relativeToGround</altitudeMode>'
         '</LookAt>';
+  }
+
+  Future<bool> _flyToDinosaurOrbit({
+    required double latitude,
+    required double longitude,
+    required double range,
+    required double tilt,
+    required double heading,
+  }) async {
+    try {
+      if (_client == null || !_isConnected) {
+        return false;
+      }
+
+      final lookAt =
+      _buildDinosaurOrbitLookAt(
+        latitude: latitude,
+        longitude: longitude,
+        range: range,
+        tilt: tilt,
+        heading: heading,
+      );
+
+      final result = await execute(
+        'echo "flytoview=$lookAt" > /tmp/query.txt',
+        'Orbit view sent: heading=$heading',
+      );
+
+      /*
+     * Igual que el código que sabemos
+     * que funciona.
+     */
+      await Future.delayed(
+        const Duration(
+          milliseconds: 50,
+        ),
+      );
+
+      return result != null;
+    } catch (e, stackTrace) {
+      debugPrint(
+        'Error sending orbit view: $e',
+      );
+
+      debugPrint('$stackTrace');
+
+      return false;
+    }
   }
 
   Future<bool> startDinosaurOrbit(
       Dinosaur dinosaur,
       ) async {
+    if (_isDinosaurOrbiting) {
+      return false;
+    }
+
+    if (_client == null || !_isConnected) {
+      debugPrint(
+        'Cannot start dinosaur orbit: '
+            'Liquid Galaxy is not connected',
+      );
+
+      return false;
+    }
+
     try {
-      if (_client == null || !_isConnected) {
-        debugPrint(
-          'Cannot start dinosaur orbit: '
-              'Liquid Galaxy is not connected',
-        );
-        return false;
-      }
+      /*
+     * Centro exacto del dinosaurio/cubo.
+     */
+      final cubePosition =
+      _calculateCubePosition(dinosaur);
 
-      if (_isDinosaurOrbiting) {
-        debugPrint(
-          'Dinosaur orbit is already running',
-        );
-        return false;
-      }
+      final double latitude =
+      cubePosition['latitude']!;
 
-      final cubePosition = _calculateCubePosition(dinosaur);
-      final double latitude = cubePosition['latitude']!;
-      final double longitude = cubePosition['longitude']!;
+      final double longitude =
+      cubePosition['longitude']!;
 
-      const double altitude = 160.0;
-      const double tilt = 72.0;
-      const double range = 610.0;
-      double heading = dinosaur.heading;
+      /*
+     * Mantenemos estos valores fijos.
+     */
+      const double orbitRange = 610.0;
+      const double orbitTilt = 72.0;
+
+      /*
+     * Copiamos la misma lógica
+     * de la órbita que sabemos que funciona.
+     */
+      const int steps = 60;
+      const int stepDuration = 400;
+
+      int currentStep = 0;
+
+      bool isMoving = false;
+
+      /*
+     * Empezamos desde la orientación
+     * actual del dinosaurio.
+     */
+      final double startHeading =
+          dinosaur.heading;
 
       _isDinosaurOrbiting = true;
+
       notifyListeners();
 
-      debugPrint('ORBIT: Starting orbit');
-      debugPrint('ORBIT: Target Lat: $latitude');
-      debugPrint('ORBIT: Target Lon: $longitude');
-      debugPrint('ORBIT: Altitude: $altitude');
-      debugPrint('ORBIT: Range: $range');
-      debugPrint('ORBIT: Tilt: $tilt');
-      debugPrint('ORBIT: Initial Heading: $heading');
+      debugPrint('ORBIT: START');
+      debugPrint('ORBIT: latitude=$latitude');
+      debugPrint('ORBIT: longitude=$longitude');
+      debugPrint('ORBIT: range=$orbitRange');
+      debugPrint('ORBIT: tilt=$orbitTilt');
 
-      while (_isDinosaurOrbiting) {
-        heading = (heading + 10.0) % 360.0;
+      /*
+     * Evitamos tener dos timers.
+     */
+      _dinosaurOrbitTimer?.cancel();
 
-        final lookAt = _buildDinosaurOrbitLookAt(
-          latitude: latitude,
-          longitude: longitude,
-          heading: heading,
-        );
+      _dinosaurOrbitTimer =
+          Timer.periodic(
+            const Duration(
+              milliseconds: stepDuration,
+            ),
+                (timer) async {
+              if (!_isDinosaurOrbiting) {
+                timer.cancel();
+                return;
+              }
 
-        debugPrint('ORBIT: Heading: $heading');
+              /*
+         * Si el movimiento anterior todavía
+         * se está enviando, no mandamos otro.
+         */
+              if (isMoving) {
+                return;
+              }
 
-        final result = await execute(
-          'echo "flytoview=$lookAt" > /tmp/query.txt',
-          'Orbit view sent',
-        );
+              try {
+                isMoving = true;
 
-        if (result == null) {
-          debugPrint('ORBIT: Could not send orbit view');
-        }
+                /*
+           * 60 pasos:
+           *
+           * 360 / 60 = 6 grados por paso.
+           */
+                double heading =
+                    startHeading +
+                        (
+                            currentStep *
+                                (360.0 / steps)
+                        );
 
-        await Future.delayed(
-          const Duration(milliseconds: 500),
-        );
-      }
+                heading %= 360.0;
 
-      debugPrint('ORBIT: Loop finished');
+                await _flyToDinosaurOrbit(
+                  latitude: latitude,
+                  longitude: longitude,
+                  range: orbitRange,
+                  tilt: orbitTilt,
+                  heading: heading,
+                );
+
+                /*
+           * Pasamos al siguiente punto.
+           */
+                currentStep++;
+
+                /*
+           * Al llegar al final de la vuelta,
+           * empezamos otra desde 0.
+           *
+           * De esta forma la órbita continúa
+           * hasta pulsar Stop.
+           */
+                if (currentStep >= steps) {
+                  currentStep = 0;
+                }
+              } catch (e) {
+                debugPrint(
+                  'Error during dinosaur orbit '
+                      'step $currentStep: $e',
+                );
+              } finally {
+                isMoving = false;
+              }
+            },
+          );
+
       return true;
     } catch (e, stackTrace) {
-      debugPrint('ORBIT: Error during dinosaur orbit: $e');
+      debugPrint(
+        'Error starting dinosaur orbit: $e',
+      );
+
       debugPrint('$stackTrace');
+
+      _dinosaurOrbitTimer?.cancel();
+      _dinosaurOrbitTimer = null;
+
       _isDinosaurOrbiting = false;
+
       notifyListeners();
+
       return false;
     }
   }
 
   Future<void> stopDinosaurOrbit() async {
+    _dinosaurOrbitTimer?.cancel();
+
+    _dinosaurOrbitTimer = null;
+
     _isDinosaurOrbiting = false;
+
     notifyListeners();
-    debugPrint('ORBIT: Orbit stopped');
+
+    debugPrint(
+      'ORBIT: STOP',
+    );
   }
 
 
@@ -2126,7 +2249,7 @@ echo "search=http://lg1:81/kmls.txt" > /tmp/query.txt
      * El cubo mide 250 metros de alto.
      * Miramos aproximadamente a su centro vertical.
      */
-      const double targetAltitude = 160.0;
+      const double targetAltitude = 15;
       const double fixedTilt = 72.0;
       const double fixedRange = 610.0;
 
