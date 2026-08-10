@@ -30,15 +30,11 @@ class AppDrawer extends StatelessWidget {
           children: [
             const SizedBox(height: 28),
 
-            CircleAvatar(
-              radius: 38,
-              backgroundColor:
-              colorScheme.primary,
-              child: Icon(
-                Icons.public,
-                size: 42,
-                color:
-                colorScheme.onPrimary,
+            SizedBox(
+              height: 95,
+              child: Image.asset(
+                'assets/images/Geosaurio.png',
+                fit: BoxFit.contain,
               ),
             ),
 

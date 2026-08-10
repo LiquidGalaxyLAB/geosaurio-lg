@@ -290,7 +290,8 @@ class AboutScreen extends StatelessWidget {
                           'I would like to express my sincere gratitude to Andreu, my mentors Victor and Gabriel and the Liquid Galaxy LAB team who contributed to the development of GeoSaurio. '
                               'Their assistance, support and valuable feedback played an important role in making this project possible.\n\n'
                               'Special thanks to:\n\n'
-                              '• Alex Moix — for creating the complete dinosaur database, providing all the images used in the application, and generating the AI-narrated audio for every dinosaur.\n\n',
+                              '• Alex Moix — for creating the complete dinosaur database, providing all the images used in the application, and generating the AI-narrated audio for every dinosaur.\n\n'
+                              '• Paula Torné — GeoSaurio logo design.\n\n',
                           textAlign:
                           TextAlign.left,
                           style: TextStyle(

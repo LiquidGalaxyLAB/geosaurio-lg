@@ -103,9 +103,9 @@ class LgService extends ChangeNotifier {
 
   final Map<String, List<double>> _continentViews = {
     'Africa': [
-      20.0,       // longitude
-      2.0,        // latitude
-      9000000.0,  // range
+      20.0, // longitude
+      2.0, // latitude
+      9000000.0, // range
     ],
     'Asia': [
       100.0,
@@ -258,7 +258,6 @@ class LgService extends ChangeNotifier {
   };
 
 
-
   LgConnectionModel get connectionModel => _lgConnectionModel;
 
   bool get isConnected => _isConnected;
@@ -393,10 +392,8 @@ class LgService extends ChangeNotifier {
     }
   }
 
-  Future<void> _setRefreshInterval(
-      int screenNumber,
-      int interval,
-      ) async {
+  Future<void> _setRefreshInterval(int screenNumber,
+      int interval,) async {
     try {
       final search =
           '<href>##LG_PHPIFACE##kml\\/slave_$screenNumber.kml<\\/href>';
@@ -423,9 +420,7 @@ class LgService extends ChangeNotifier {
     }
   }
 
-  Future<void> _removeRefreshInterval(
-      int screenNumber,
-      ) async {
+  Future<void> _removeRefreshInterval(int screenNumber,) async {
     try {
       final search =
           '<href>##LG_PHPIFACE##kml\\/slave_$screenNumber.kml<\\/href>'
@@ -452,9 +447,7 @@ class LgService extends ChangeNotifier {
     }
   }
 
-  Future<void> _forceRefresh(
-      int screenNumber,
-      ) async {
+  Future<void> _forceRefresh(int screenNumber,) async {
     try {
       await _setRefreshInterval(
         screenNumber,
@@ -508,7 +501,7 @@ class LgService extends ChangeNotifier {
   }
 
   void disconnect() {
-     _isDinosaurOrbiting = false;
+    _isDinosaurOrbiting = false;
 
     _client?.close();
     _client = null;
@@ -516,6 +509,7 @@ class LgService extends ChangeNotifier {
 
     notifyListeners();
   }
+
   Future<dynamic> execute(String command, String successMessage) async {
     if (_client == null || !_isConnected) {
       debugPrint('SSH client not connected. Trying reconnect...');
@@ -587,10 +581,8 @@ class LgService extends ChangeNotifier {
         .replaceAll('__', '_');
   }
 
-  Future<bool> writeSoloKml(
-      int machineNo,
-      String kml,
-      ) async {
+  Future<bool> writeSoloKml(int machineNo,
+      String kml,) async {
     final result = await execute(
       "echo '$kml' > /var/www/html/kml/slave_$machineNo.kml",
       'Solo KML written to slave_$machineNo.kml',
@@ -599,9 +591,7 @@ class LgService extends ChangeNotifier {
     return result != null;
   }
 
-  Future<bool> notifySoloKmlChanged(
-      int machineNo,
-      ) async {
+  Future<bool> notifySoloKmlChanged(int machineNo,) async {
     try {
       await _forceRefresh(machineNo);
       return true;
@@ -677,7 +667,9 @@ class LgService extends ChangeNotifier {
       // "kml/dino_marker.png" do not require creating temporary folders.
       final tempDir = await getTemporaryDirectory();
 
-      final localFileName = fileName.split('/').last;
+      final localFileName = fileName
+          .split('/')
+          .last;
 
       final file = File(
         '${tempDir.path}/$localFileName',
@@ -789,10 +781,8 @@ class LgService extends ChangeNotifier {
         .trim();
   }
 
-  Future<bool> createDinosaurInfoColumn(
-      Dinosaur dinosaur,
-      String fileName,
-      ) async {
+  Future<bool> createDinosaurInfoColumn(Dinosaur dinosaur,
+      String fileName,) async {
     try {
       const double width = 1000;
       const double height = 2600;
@@ -960,7 +950,9 @@ class LgService extends ChangeNotifier {
         );
 
         drawText(
-          text: value.trim().isEmpty
+          text: value
+              .trim()
+              .isEmpty
               ? 'Unknown'
               : value,
           fontSize: 32,
@@ -1220,7 +1212,9 @@ class LgService extends ChangeNotifier {
       ]
           .where(
             (value) =>
-        value.trim().isNotEmpty,
+        value
+            .trim()
+            .isNotEmpty,
       )
           .join(', ');
 
@@ -1388,7 +1382,9 @@ class LgService extends ChangeNotifier {
       ]
           .where(
             (value) =>
-        value.trim().isNotEmpty,
+        value
+            .trim()
+            .isNotEmpty,
       )
           .join(' – ');
 
@@ -1429,13 +1425,13 @@ class LgService extends ChangeNotifier {
       // Calculate paragraph first so card can fit text.
       final aboutBuilder =
       ui.ParagraphBuilder(
-         ui.ParagraphStyle(
+        ui.ParagraphStyle(
           fontSize: 30,
           height: 1.4,
         ),
       )
         ..pushStyle(
-           ui.TextStyle(
+          ui.TextStyle(
             color: textColor,
             fontSize: 30,
           ),
@@ -1538,9 +1534,7 @@ class LgService extends ChangeNotifier {
     }
   }
 
-  Future<bool> showDinosaurSelectionMarkers(
-      List<Dinosaur> dinosaurs,
-      ) async {
+  Future<bool> showDinosaurSelectionMarkers(List<Dinosaur> dinosaurs,) async {
     try {
       if (_client == null || !_isConnected) {
         debugPrint(
@@ -1685,7 +1679,7 @@ class LgService extends ChangeNotifier {
 ''';
 
       // --------------------------------------------------
-      // 5. SABER QUÉ PANTALLA CONTIENE EL LOGO
+      // 5. PANTALLA DEL LOGO Y PANTALLA DE INFORMACIÓN
       // --------------------------------------------------
 
       final logoScreen =
@@ -1693,14 +1687,45 @@ class LgService extends ChangeNotifier {
         _lgConnectionModel.screens,
       );
 
+      final rightScreen =
+      calculateRightMostScreen(
+        _lgConnectionModel.screens,
+      );
+
       // --------------------------------------------------
-      // 6. LIMPIAR KMLS.TXT
+      // 6. QUITAR SOLO REFERENCIAS ANTIGUAS
+      //    DE LOS MARCADORES
+      //
+      // IMPORTANTE:
+      // NO vaciamos kmls.txt entero.
       // --------------------------------------------------
 
       await execute(
-        '> /var/www/html/kmls.txt',
-        'Old dinosaur marker references removed',
+        '''
+sed -i '\\|master.kml|d' /var/www/html/kmls.txt
+''',
+        'Old master marker reference removed',
       );
+
+      for (
+      int screen = 1;
+      screen <= _lgConnectionModel.screens;
+      screen++
+      ) {
+        if (
+        screen == logoScreen ||
+            screen == rightScreen
+        ) {
+          continue;
+        }
+
+        await execute(
+          '''
+sed -i '\\|slave_$screen.kml|d' /var/www/html/kmls.txt
+''',
+          'Old slave_$screen marker reference removed',
+        );
+      }
 
       // --------------------------------------------------
       // 7. ESCRIBIR LOS MARCADORES EN MASTER.KML
@@ -1738,7 +1763,9 @@ EOFKML
       // --------------------------------------------------
       // 9. ESCRIBIR EN LOS SLAVES
       //
-      // NO tocamos la pantalla del logo.
+      // NO tocamos:
+      // - pantalla del logo
+      // - pantalla de información del país
       // --------------------------------------------------
 
       for (
@@ -1746,10 +1773,13 @@ EOFKML
       screen <= _lgConnectionModel.screens;
       screen++
       ) {
-        if (screen == logoScreen) {
+        if (
+        screen == logoScreen ||
+            screen == rightScreen
+        ) {
           debugPrint(
             'Skipping slave_$screen '
-                'to preserve logo',
+                'to preserve overlay',
           );
 
           continue;
@@ -1810,6 +1840,8 @@ EOFKML
 
       // --------------------------------------------------
       // 12. FORZAR REFRESCO EN LOS SLAVES
+      //
+      // TAMPOCO refrescamos logo ni columna derecha.
       // --------------------------------------------------
 
       for (
@@ -1817,7 +1849,10 @@ EOFKML
       screen <= _lgConnectionModel.screens;
       screen++
       ) {
-        if (screen == logoScreen) {
+        if (
+        screen == logoScreen ||
+            screen == rightScreen
+        ) {
           continue;
         }
 
@@ -1970,9 +2005,7 @@ echo "search=http://lg1:81/kmls.txt" > /tmp/query.txt
     }
   }
 
-  Future<bool> startDinosaurOrbit(
-      Dinosaur dinosaur,
-      ) async {
+  Future<bool> startDinosaurOrbit(Dinosaur dinosaur,) async {
     if (_isDinosaurOrbiting) {
       return false;
     }
@@ -2142,35 +2175,59 @@ echo "search=http://lg1:81/kmls.txt" > /tmp/query.txt
   }
 
 
-  Future<bool> showDinosaurAboutColumn(Dinosaur dinosaur) async {
+  Future<bool> showDinosaurAboutColumn(
+      Dinosaur dinosaur,
+      ) async {
     try {
-      final screen = calculateRightMostScreen(
+      if (_client == null || !_isConnected) {
+        debugPrint(
+          'Cannot show dinosaur information: '
+              'Liquid Galaxy is not connected',
+        );
+
+        return false;
+      }
+
+      final screen =
+      calculateRightMostScreen(
         _lgConnectionModel.screens,
       );
 
       final imageFileName =
           '${cleanDinosaurImageName(dinosaur.name)}_info.png';
 
-      final created = await createDinosaurInfoColumn(
+      final created =
+      await createDinosaurInfoColumn(
         dinosaur,
         imageFileName,
       );
 
       if (!created) {
-        debugPrint('Could not create dinosaur information column');
+        debugPrint(
+          'Could not create dinosaur '
+              'information column',
+        );
+
         return false;
       }
 
       final kml = '''
 <?xml version="1.0" encoding="UTF-8"?>
+
 <kml xmlns="http://www.opengis.net/kml/2.2">
+
   <Document>
 
     <ScreenOverlay>
-      <name>${_cleanText(dinosaur.name)} Information</name>
+
+      <name>
+        ${_cleanText(dinosaur.name)} Information
+      </name>
 
       <Icon>
-        <href>http://lg1:81/$imageFileName</href>
+        <href>
+          http://lg1:81/$imageFileName
+        </href>
       </Icon>
 
       <overlayXY
@@ -2187,9 +2244,16 @@ echo "search=http://lg1:81/kmls.txt" > /tmp/query.txt
         yunits="fraction"
       />
 
-      <size
-        x="850"
+      <rotationXY
+        x="0"
         y="0"
+        xunits="fraction"
+        yunits="fraction"
+      />
+
+      <size
+        x="0"
+        y="950"
         xunits="pixels"
         yunits="pixels"
       />
@@ -2197,20 +2261,28 @@ echo "search=http://lg1:81/kmls.txt" > /tmp/query.txt
     </ScreenOverlay>
 
   </Document>
+
 </kml>
 ''';
 
       await cleanRightScreenKml();
 
-      final result = await execute(
-        "echo '$kml' > /var/www/html/kml/slave_$screen.kml",
+      final result =
+      await execute(
+        "echo '$kml' > "
+            "/var/www/html/kml/slave_$screen.kml",
         'Dinosaur information column sent',
       );
 
       return result != null;
     } catch (e, stackTrace) {
-      debugPrint('Error showing dinosaur information column: $e');
+      debugPrint(
+        'Error showing dinosaur '
+            'information column: $e',
+      );
+
       debugPrint('$stackTrace');
+
       return false;
     }
   }
@@ -2287,9 +2359,7 @@ echo "search=http://lg1:81/kmls.txt" > /tmp/query.txt
     }
   }
 
-  Future<bool> flyToContinent(
-      String continent,
-      ) async {
+  Future<bool> flyToContinent(String continent,) async {
     try {
       if (_client == null || !_isConnected) {
         debugPrint(
@@ -2368,11 +2438,9 @@ echo "search=http://lg1:81/kmls.txt" > /tmp/query.txt
     }
   }
 
-  Future<bool> flyToCountry(
-      String country,
+  Future<bool> flyToCountry(String country,
       String continent,
-      List<Dinosaur> dinosaurs,
-      ) async {
+      List<Dinosaur> dinosaurs,) async {
     try {
       if (_client == null || !_isConnected) {
         debugPrint(
@@ -2505,9 +2573,7 @@ echo "search=http://lg1:81/kmls.txt" > /tmp/query.txt
     }
   }
 
-  Map<String, double> _calculateCubePosition(
-      Dinosaur dinosaur,
-      ) {
+  Map<String, double> _calculateCubePosition(Dinosaur dinosaur,) {
     /*
    * Distancia a la que queremos colocar el cubo
    * delante de la cámara.
@@ -2528,9 +2594,7 @@ echo "search=http://lg1:81/kmls.txt" > /tmp/query.txt
     };
   }
 
-  Future<bool> showSelectedDinosaurCube(
-      Dinosaur dinosaur,
-      ) async {
+  Future<bool> showSelectedDinosaurCube(Dinosaur dinosaur,) async {
     try {
       if (_client == null) {
         debugPrint('SSH client is not connected');
@@ -3342,9 +3406,7 @@ EOFKML
     }
   }
 
-  Future<bool> showContinentInfoColumn(
-      String continent,
-      ) async {
+  Future<bool> showContinentInfoColumn(String continent,) async {
     try {
       final fact =
           _continentFacts[continent] ??
@@ -3393,10 +3455,8 @@ EOFKML
     }
   }
 
-  Future<bool> showCountryInfoColumn(
-      String country,
-      String continent,
-      ) async {
+  Future<bool> showCountryInfoColumn(String country,
+      String continent,) async {
     try {
       final fact =
           _countryFacts[country] ??
@@ -3529,7 +3589,6 @@ EOFKML
   }
 
 
-
   Future<bool> cleanKmlKeepingLogos() async {
     try {
       final logoScreen = calculateLeftMostScreen(_lgConnectionModel.screens);
@@ -3604,7 +3663,9 @@ EOFKML
       return false;
     }
 
-    final extension = assetPath.split('.').last;
+    final extension = assetPath
+        .split('.')
+        .last;
     final imageFileName = '${cleanName}_skeleton.$extension';
 
     final uploadedImage = await uploadAssetToLG(
@@ -3641,7 +3702,9 @@ EOFKML
 
     if (assetPath == null) return false;
 
-    final extension = assetPath.split('.').last;
+    final extension = assetPath
+        .split('.')
+        .last;
     final imageFileName = '${cleanName}_comparison.$extension';
 
     final uploadedImage = await uploadAssetToLG(
@@ -3670,7 +3733,8 @@ EOFKML
 
         final command =
         '''
-sshpass -p ${_lgConnectionModel.password} ssh -t lg$i "DISPLAY=:0 chromium-browser --kiosk --no-first-run --disable-infobars '$fullUrl' > /dev/null 2>&1 &"
+sshpass -p ${_lgConnectionModel
+            .password} ssh -t lg$i "DISPLAY=:0 chromium-browser --kiosk --no-first-run --disable-infobars '$fullUrl' > /dev/null 2>&1 &"
 ''';
 
         await execute(command, 'Chromium opened on lg$i');
@@ -3970,32 +4034,155 @@ EOFKML
 
   Future<bool> reboot() async {
     try {
-      for (var i = _lgConnectionModel.screens; i >= 1; i--) {
-        await execute(
-          'sshpass -p ${_lgConnectionModel.password} ssh -t lg$i "echo ${_lgConnectionModel.password} | sudo -S reboot"',
-          'Reboot sent to lg$i',
+      if (_client == null || !_isConnected) {
+        debugPrint(
+          'Cannot reboot Liquid Galaxy: '
+              'not connected',
+        );
+
+        return false;
+      }
+
+      bool allSuccessful = true;
+
+      /*
+     * Reiniciamos primero los slaves
+     * y dejamos lg1 para el final.
+     *
+     * Así mantenemos el master disponible
+     * mientras mandamos los comandos.
+     */
+      for (
+      int screen = _lgConnectionModel.screens;
+      screen >= 1;
+      screen--
+      ) {
+        debugPrint(
+          'Rebooting lg$screen...',
+        );
+
+        final result = await execute(
+          'sshpass -p ${_lgConnectionModel.password} '
+              'ssh -t lg$screen '
+              '"echo ${_lgConnectionModel.password} '
+              '| sudo -S reboot"',
+          'Reboot sent to lg$screen',
+        );
+
+        if (result == null) {
+          debugPrint(
+            'Reboot failed on lg$screen',
+          );
+
+          allSuccessful = false;
+        } else {
+          debugPrint(
+            'Reboot command sent successfully '
+                'to lg$screen',
+          );
+        }
+
+        /*
+       * Dejamos un pequeño margen antes
+       * de pasar a la siguiente máquina.
+       */
+        await Future.delayed(
+          const Duration(
+            milliseconds: 500,
+          ),
         );
       }
 
-      return true;
-    } catch (e) {
-      debugPrint('Error rebooting LG: $e');
+      debugPrint(
+        allSuccessful
+            ? 'Reboot sent to all Liquid Galaxy screens'
+            : 'Reboot finished with some errors',
+      );
+
+      return allSuccessful;
+    } catch (e, stackTrace) {
+      debugPrint(
+        'Error rebooting Liquid Galaxy: $e',
+      );
+
+      debugPrint('$stackTrace');
+
       return false;
     }
   }
 
   Future<bool> shutdown() async {
     try {
-      for (var i = _lgConnectionModel.screens; i >= 1; i--) {
-        await execute(
-          'sshpass -p ${_lgConnectionModel.password} ssh -t lg$i "echo ${_lgConnectionModel.password} | sudo -S poweroff"',
-          'Shutdown sent to lg$i',
+      if (_client == null || !_isConnected) {
+        debugPrint(
+          'Cannot shutdown Liquid Galaxy: '
+              'not connected',
+        );
+
+        return false;
+      }
+
+      bool allSuccessful = true;
+
+      /*
+     * Apagamos primero los slaves
+     * y dejamos lg1 para el final.
+     *
+     * Es importante porque lg1 es el master
+     * desde el que estamos enviando
+     * los comandos al resto.
+     */
+      for (
+      int screen = _lgConnectionModel.screens;
+      screen >= 1;
+      screen--
+      ) {
+        debugPrint(
+          'Shutting down lg$screen...',
+        );
+
+        final result = await execute(
+          'sshpass -p ${_lgConnectionModel.password} '
+              'ssh -t lg$screen '
+              '"echo ${_lgConnectionModel.password} '
+              '| sudo -S poweroff"',
+          'Shutdown sent to lg$screen',
+        );
+
+        if (result == null) {
+          debugPrint(
+            'Shutdown failed on lg$screen',
+          );
+
+          allSuccessful = false;
+        } else {
+          debugPrint(
+            'Shutdown command sent successfully '
+                'to lg$screen',
+          );
+        }
+
+        await Future.delayed(
+          const Duration(
+            milliseconds: 500,
+          ),
         );
       }
 
-      return true;
-    } catch (e) {
-      debugPrint('Error shutting down LG: $e');
+      debugPrint(
+        allSuccessful
+            ? 'Shutdown sent to all Liquid Galaxy screens'
+            : 'Shutdown finished with some errors',
+      );
+
+      return allSuccessful;
+    } catch (e, stackTrace) {
+      debugPrint(
+        'Error shutting down Liquid Galaxy: $e',
+      );
+
+      debugPrint('$stackTrace');
+
       return false;
     }
   }
@@ -4044,8 +4231,34 @@ EOFKML
   }
 
   Future<bool> relaunchLG() async {
-    final relaunchCmd =
-    '''
+    try {
+      if (_client == null || !_isConnected) {
+        debugPrint(
+          'Cannot relaunch Liquid Galaxy: '
+              'not connected',
+        );
+
+        return false;
+      }
+
+      bool allSuccessful = true;
+
+      /*
+     * Recorremos todas las máquinas.
+     *
+     * Empezamos por la última y dejamos
+     * lg1 para el final.
+     */
+      for (
+      int screen = _lgConnectionModel.screens;
+      screen >= 1;
+      screen--
+      ) {
+        debugPrint(
+          'Relaunching lg$screen...',
+        );
+
+        final relaunchCmd = '''
 RELAUNCH_CMD="\\
 if [ -f /etc/init/lxdm.conf ];
 then
@@ -4056,17 +4269,59 @@ then
 else
   exit 1
 fi
+
 if [[ \\\$(service \\\$SERVICE status) =~ 'stop' ]];
 then
   echo ${_lgConnectionModel.password} | sudo -S service \\\${SERVICE} start
 else
   echo ${_lgConnectionModel.password} | sudo -S service \\\${SERVICE} restart
 fi
-" && sshpass -p ${_lgConnectionModel.password} ssh -x -t lg@lg1 "\$RELAUNCH_CMD"
+" && sshpass -p ${_lgConnectionModel.password} ssh -x -t lg@lg$screen "\$RELAUNCH_CMD"
 ''';
 
-    final result = await execute(relaunchCmd, 'Liquid Galaxy relaunched');
+        final result = await execute(
+          relaunchCmd,
+          'Relaunch sent to lg$screen',
+        );
 
-    return result != null;
+        if (result == null) {
+          debugPrint(
+            'Relaunch failed on lg$screen',
+          );
+
+          allSuccessful = false;
+        } else {
+          debugPrint(
+            'lg$screen relaunched successfully',
+          );
+        }
+
+        /*
+       * Pequeña pausa entre máquinas.
+       */
+        await Future.delayed(
+          const Duration(
+            milliseconds: 500,
+          ),
+        );
+      }
+
+      debugPrint(
+        allSuccessful
+            ? 'Liquid Galaxy relaunched on all screens'
+            : 'Liquid Galaxy relaunch finished '
+            'with some errors',
+      );
+
+      return allSuccessful;
+    } catch (e, stackTrace) {
+      debugPrint(
+        'Error relaunching Liquid Galaxy: $e',
+      );
+
+      debugPrint('$stackTrace');
+
+      return false;
+    }
   }
 }
