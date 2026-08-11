@@ -2204,24 +2204,27 @@ echo "search=http://lg1:81/kmls.txt" > /tmp/query.txt
 
       if (!created) {
         debugPrint(
-          'Could not create dinosaur '
-              'information column',
+          'Could not create dinosaur information column',
         );
 
         return false;
       }
 
+      final cleanDinosaurName =
+      _cleanText(
+        dinosaur.name,
+      );
+
       final kml = '''
 <?xml version="1.0" encoding="UTF-8"?>
 
 <kml xmlns="http://www.opengis.net/kml/2.2">
-
   <Document>
 
     <ScreenOverlay>
 
       <name>
-        ${_cleanText(dinosaur.name)} Information
+        $cleanDinosaurName Information
       </name>
 
       <Icon>
@@ -2252,8 +2255,8 @@ echo "search=http://lg1:81/kmls.txt" > /tmp/query.txt
       />
 
       <size
-        x="0"
-        y="950"
+        x="850"
+        y="0"
         xunits="pixels"
         yunits="pixels"
       />
@@ -2261,7 +2264,6 @@ echo "search=http://lg1:81/kmls.txt" > /tmp/query.txt
     </ScreenOverlay>
 
   </Document>
-
 </kml>
 ''';
 
@@ -2277,8 +2279,7 @@ echo "search=http://lg1:81/kmls.txt" > /tmp/query.txt
       return result != null;
     } catch (e, stackTrace) {
       debugPrint(
-        'Error showing dinosaur '
-            'information column: $e',
+        'Error showing dinosaur information column: $e',
       );
 
       debugPrint('$stackTrace');
