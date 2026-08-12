@@ -604,43 +604,108 @@ class LgService extends ChangeNotifier {
   }
 
   Future<String?> getExistingImagePath(String basePath) async {
-    final extensions = ['.png', '.jpg', '.jpeg'];
+    final extensions = [
+      '.png',
+      '.jpg',
+      '.jpeg',
+      '.jfif',
+      '.PNG',
+      '.JPG',
+      '.JPEG',
+      '.JFIF',
+    ];
 
-    final variants = <String>{basePath, basePath.toLowerCase()};
+    final variants = <String>{
+      basePath,
+      basePath.toLowerCase(),
+    };
 
     if (basePath.contains('_')) {
       final lastUnderscore = basePath.lastIndexOf('_');
-      final prefix = basePath.substring(0, lastUnderscore);
-      final suffix = basePath.substring(lastUnderscore);
 
-      variants.add('$prefix $suffix');
-      variants.add('${prefix.toLowerCase()} $suffix');
+      final prefix = basePath.substring(
+        0,
+        lastUnderscore,
+      );
 
+      final suffix = basePath.substring(
+        lastUnderscore,
+      );
+
+      /*
+     * Variantes con un espacio antes del sufijo.
+     *
+     * Ejemplo:
+     * Dinosaur_name_normal
+     * Dinosaur_name _normal
+     */
+      variants.add(
+        '$prefix $suffix',
+      );
+
+      variants.add(
+        '${prefix.toLowerCase()} $suffix',
+      );
+
+      /*
+     * Compatibilidad con el error antiguo:
+     *
+     * comparison
+     * comparision
+     */
       if (suffix.contains('comparis')) {
-        final otherSuffix = suffix.contains('comparison')
-            ? suffix.replaceFirst('comparison', 'comparision')
-            : suffix.replaceFirst('comparision', 'comparison');
+        final otherSuffix =
+        suffix.contains('comparison')
+            ? suffix.replaceFirst(
+          'comparison',
+          'comparision',
+        )
+            : suffix.replaceFirst(
+          'comparision',
+          'comparison',
+        );
 
-        variants.add('$prefix$otherSuffix');
-        variants.add('${prefix.toLowerCase()}$otherSuffix');
-        variants.add('$prefix $otherSuffix');
-        variants.add('${prefix.toLowerCase()} $otherSuffix');
+        variants.add(
+          '$prefix$otherSuffix',
+        );
+
+        variants.add(
+          '${prefix.toLowerCase()}$otherSuffix',
+        );
+
+        variants.add(
+          '$prefix $otherSuffix',
+        );
+
+        variants.add(
+          '${prefix.toLowerCase()} $otherSuffix',
+        );
       }
     }
 
     for (final variant in variants) {
       for (final ext in extensions) {
-        final path = '$variant$ext';
+        final path =
+            '$variant$ext';
 
         try {
           await rootBundle.load(path);
-          debugPrint('Found: $path');
+
+          debugPrint(
+            'Found dinosaur image: $path',
+          );
+
           return path;
-        } catch (_) {}
+        } catch (_) {
+          // Probar siguiente variante/extensión.
+        }
       }
     }
 
-    debugPrint('Image not found: $basePath');
+    debugPrint(
+      'Image not found: $basePath',
+    );
+
     return null;
   }
 

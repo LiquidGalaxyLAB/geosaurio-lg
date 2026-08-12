@@ -504,21 +504,19 @@ class _DinosaurDetailScreenState
                 mainAxisSpacing: 14,
                 childAspectRatio: 1.45,
                 children: [
+                  // --------------------------------------------------
                   // ORBIT
+                  // --------------------------------------------------
 
                   optionButton(
-                    icon: lgService
-                        .isDinosaurOrbiting
-                        ? Icons
-                        .stop_circle_outlined
+                    icon: lgService.isDinosaurOrbiting
+                        ? Icons.stop_circle_outlined
                         : Icons.threesixty,
-                    text: lgService
-                        .isDinosaurOrbiting
+                    text: lgService.isDinosaurOrbiting
                         ? 'Stop Orbit'
                         : 'Orbit',
                     onTap: () async {
-                      if (!lgService
-                          .isConnected) {
+                      if (!lgService.isConnected) {
                         showSnack(
                           context,
                           'Liquid Galaxy is not connected',
@@ -528,13 +526,11 @@ class _DinosaurDetailScreenState
                         return;
                       }
 
-                      if (lgService
-                          .isDinosaurOrbiting) {
+                      if (lgService.isDinosaurOrbiting) {
                         await lgService
                             .stopDinosaurOrbit();
 
-                        if (!context
-                            .mounted) {
+                        if (!context.mounted) {
                           return;
                         }
 
@@ -553,8 +549,7 @@ class _DinosaurDetailScreenState
                         dinosaur,
                       );
 
-                      if (!context
-                          .mounted) {
+                      if (!context.mounted) {
                         return;
                       }
 
@@ -568,25 +563,22 @@ class _DinosaurDetailScreenState
                     },
                   ),
 
-                  // COMPARISON
+                  // --------------------------------------------------
+                  // NARRATION
+                  // --------------------------------------------------
 
                   optionButton(
-                    icon: Icons.groups,
-                    text:
-                    'See Comparison',
-                    onTap: () {
-                      sendToLg(
-                        context,
-                        'Comparison',
-                      );
-                    },
+                    icon: Icons.volume_up,
+                    text: 'Narration',
+                    onTap: startNarration,
                   ),
 
+                  // --------------------------------------------------
                   // SKELETON
+                  // --------------------------------------------------
 
                   optionButton(
-                    icon:
-                    Icons.view_in_ar,
+                    icon: Icons.view_in_ar,
                     text: 'Skeleton',
                     onTap: () {
                       sendToLg(
@@ -596,14 +588,19 @@ class _DinosaurDetailScreenState
                     },
                   ),
 
-                  // NARRATION
+                  // --------------------------------------------------
+                  // COMPARISON
+                  // --------------------------------------------------
 
                   optionButton(
-                    icon:
-                    Icons.volume_up,
-                    text: 'Narration',
-                    onTap:
-                    startNarration,
+                    icon: Icons.groups,
+                    text: 'See Comparison',
+                    onTap: () {
+                      sendToLg(
+                        context,
+                        'Comparison',
+                      );
+                    },
                   ),
                 ],
               ),
