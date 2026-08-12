@@ -922,7 +922,6 @@ class LgOverlayService {
   }
 
   Future<bool> showRightScreenImage({   // Shows an image on the right screen
-  Future<bool> showRightScreenImage({
     required String assetPath,
     required String fileName,
   }) async {
