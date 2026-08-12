@@ -37,13 +37,14 @@ class LgConnectionModel { // Stores the IP, user, password, port and number of L
     this.screens = 5,
   });
 
-  void updateConnection({
+  void updateConnection({ // Update the Liquid Galaxy connection settings
     String? username,
     String? ip,
     int? port,
     String? password,
     int? screens,
   }) {
+    // Only change the values that are provided
     this.username = username ?? this.username;
     this.ip = ip ?? this.ip;
     this.port = port ?? this.port;
@@ -51,7 +52,7 @@ class LgConnectionModel { // Stores the IP, user, password, port and number of L
     this.screens = screens ?? this.screens;
   }
 
-  Future<void> saveToPreferences() async {
+  Future<void> saveToPreferences() async { // Save the connection settings
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyUsername, username);
     await prefs.setString(_keyIp, ip);
@@ -60,10 +61,10 @@ class LgConnectionModel { // Stores the IP, user, password, port and number of L
     await prefs.setInt(_keyScreens, screens);
   }
 
-  static Future<LgConnectionModel> loadFromPreferences() async {
+  static Future<LgConnectionModel> loadFromPreferences() async { // Load the saved connection settings
     final prefs = await SharedPreferences.getInstance();
 
-    return LgConnectionModel(
+    return LgConnectionModel( // Create the connection model using the saved values
       username: prefs.getString(_keyUsername) ?? 'lg',
       ip: prefs.getString(_keyIp) ?? '',
       port: prefs.getInt(_keyPort) ?? 22,
@@ -74,6 +75,7 @@ class LgConnectionModel { // Stores the IP, user, password, port and number of L
 }
 
 class LgService extends ChangeNotifier {
+  // Initialize all the different Liquid Galaxy services
   LgService._internal() {
     _orbitService = LgOrbitService(this);
     _navigationService = LgNavigationService(this);

@@ -6,8 +6,10 @@ import '../services/audio_service.dart';
 import '../services/lg_service.dart';
 
 class DinosaurDetailScreen extends StatefulWidget {
+  // Dinosaur selected by the user
   final Dinosaur dinosaur;
 
+  // Function to return to the dinosaur selection
   final Future<void> Function() onBackToDinosaurSelection;
 
   const DinosaurDetailScreen({
@@ -23,11 +25,17 @@ class DinosaurDetailScreen extends StatefulWidget {
 
 class _DinosaurDetailScreenState
     extends State<DinosaurDetailScreen> {
+
+  // Controls the narration state
   bool isNarrationPlaying = false;
+
+  // Avoid returning to the selection twice
   bool isReturningToSelection = false;
 
+  // Get the selected dinosaur
   Dinosaur get dinosaur => widget.dinosaur;
 
+  // Show success or error messages
   void showSnack(
       BuildContext context,
       String message, {
@@ -43,7 +51,10 @@ class _DinosaurDetailScreenState
     );
   }
 
+  // Return to the dinosaur selection
   Future<void> backToDinosaurSelection() async {
+
+    // Avoid executing the action more than once
     if (isReturningToSelection) {
       return;
     }
@@ -52,28 +63,31 @@ class _DinosaurDetailScreenState
       isReturningToSelection = true;
     });
 
+    // Stop the narration before leaving
     await AudioService().stop();
 
     if (!mounted) {
       return;
     }
 
-    /*
-     * Immediately return to selection
-     * in the application.
-     */
+    // Close the dinosaur detail screen
     Navigator.pop(context);
 
+    // Return to the previous dinosaur selection
     widget.onBackToDinosaurSelection();
   }
 
+  // Send dinosaur actions to Liquid Galaxy
   Future<void> sendToLg(
       BuildContext context,
       String action,
       ) async {
+
+    // Get the main Liquid Galaxy service
     final lgService =
     context.read<LgService>();
 
+    // Check that Liquid Galaxy is connected
     if (!lgService.isConnected) {
       showSnack(
         context,
@@ -86,10 +100,6 @@ class _DinosaurDetailScreenState
 
     bool ok = false;
 
-    /*
-     * Comparison and Skeleton stop first
-     * any active orbit.
-     */
     await lgService.stopDinosaurOrbit();
 
     /*
@@ -99,6 +109,11 @@ class _DinosaurDetailScreenState
     await lgService.flyToDinosaur(
       dinosaur,
     );
+
+    /*
+     * Comparison and Skeleton stop first
+     * any active orbit.
+     */
 
     if (action == 'Comparison') {
       ok =
@@ -251,10 +266,6 @@ class _DinosaurDetailScreenState
             children: [
               const SizedBox(height: 4),
 
-              // --------------------------------------------------
-              // CABECERA
-              // --------------------------------------------------
-
               Row(
                 children: [
                   Container(
@@ -363,10 +374,6 @@ class _DinosaurDetailScreenState
               ),
 
               const SizedBox(height: 20),
-
-              // --------------------------------------------------
-              // TARJETA PRINCIPAL
-              // --------------------------------------------------
 
               Container(
                 width: double.infinity,
