@@ -7,7 +7,7 @@ class LgSystemService {
 
   LgSystemService(this._lgService);
 
-  Future<void> setRefreshInterval(
+  Future<void> setRefreshInterval(   // Adds an automatic refresh interval to a Liquid Galaxy screen
     int screenNumber,
     int interval,
   ) async {
@@ -37,7 +37,7 @@ class LgSystemService {
     }
   }
 
-  Future<void> removeRefreshInterval(
+  Future<void> removeRefreshInterval(   // Removes the automatic refresh interval
     int screenNumber,
   ) async {
     try {
@@ -66,7 +66,7 @@ class LgSystemService {
     }
   }
 
-  Future<void> forceRefresh(
+  Future<void> forceRefresh(   // Forces a screen to refresh its KML
     int screenNumber,
   ) async {
     try {
@@ -93,7 +93,7 @@ class LgSystemService {
     return screenCount == 1 ? 1 : (screenCount / 2).floor() + 1;
   }
 
-  Future<bool> writeSoloKml(
+  Future<bool> writeSoloKml(   // Writes a KML directly to a specific Liquid Galaxy screen
     int machineNo,
     String kml,
   ) async {
@@ -119,7 +119,7 @@ class LgSystemService {
     }
   }
 
-  Future<bool> cleanKmlKeepingLogos() async {
+  Future<bool> cleanKmlKeepingLogos() async { //Clean the kml's except the logo
     try {
       final logoScreen =
           calculateLeftMostScreen(_lgService.connectionModel.screens);
@@ -157,7 +157,7 @@ class LgSystemService {
     }
   }
 
-  Future<bool> cleanAll() async {
+  Future<bool> cleanAll() async {   // Stops the current visualization and cleans Liquid Galaxy
     try {
       await _lgService.stopDinosaurOrbit();
       await _lgService.closeChromiumOnAllScreens();
@@ -226,7 +226,7 @@ EOFKML
     }
   }
 
-  Future<bool> reboot() async {
+  Future<bool> reboot() async { //Reboot all the machines
     try {
       if (!_lgService.isConnected) {
         debugPrint(
@@ -292,7 +292,7 @@ EOFKML
     }
   }
 
-  Future<bool> shutdown() async {
+  Future<bool> shutdown() async { //Power off all the machines
     try {
       if (!_lgService.isConnected) {
         debugPrint(
@@ -358,7 +358,7 @@ EOFKML
     }
   }
 
-  Future<bool> relaunchLG() async {
+  Future<bool> relaunchLG() async { //Relaunch all the machines
     try {
       if (!_lgService.isConnected) {
         debugPrint(

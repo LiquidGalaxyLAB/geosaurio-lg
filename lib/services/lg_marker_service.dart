@@ -8,7 +8,7 @@ class LgMarkerService {
 
   LgMarkerService(this._lgService);
 
-  String _cleanText(String value) {
+  String _cleanText(String value) {   // Clean text before using it inside KML
     return value
         .replaceAll('&', 'and')
         .replaceAll('<', '')
@@ -18,7 +18,7 @@ class LgMarkerService {
         .trim();
   }
 
-  Future<bool> showDinosaurSelectionMarkers(List<Dinosaur> dinosaurs) async {
+  Future<bool> showDinosaurSelectionMarkers(List<Dinosaur> dinosaurs) async {   // Show the dinosaur markers in Google Earth
     try {
       if (!_lgService.isConnected) {
         debugPrint(
@@ -28,7 +28,7 @@ class LgMarkerService {
         return false;
       }
 
-      final validDinosaurs = dinosaurs.where((dinosaur) {
+      final validDinosaurs = dinosaurs.where((dinosaur) { // Get dinosaurs with valid coordinates
         return dinosaur.latitude != 0 && dinosaur.longitude != 0;
       }).toList();
 
@@ -45,6 +45,8 @@ class LgMarkerService {
         'dinosaur placemarks',
       );
 
+      // Upload the marker image to Liquid Galaxy
+
       final markerUploaded = await _lgService.uploadAssetToLG(
         assetPath: 'assets/images/markers/dino_marker.png',
         fileName: 'kml/dino_marker.png',
@@ -54,6 +56,9 @@ class LgMarkerService {
         debugPrint('Could not upload dinosaur marker icon');
         return false;
       }
+
+
+      // Create one Placemark for each dinosaur
 
       final placemarks = validDinosaurs.map((dinosaur) {
         final safeName = _cleanText(dinosaur.name);
@@ -76,7 +81,9 @@ class LgMarkerService {
 ''';
       }).join('\n');
 
-      final kml = '''
+      // Create the KML with all dinosaur markers
+
+      final kml = ''' 
 <?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
 <Document>
@@ -201,7 +208,7 @@ EOFKML
     }
   }
 
-  Future<bool> cleanDinosaurSelectionMarkers() async {
+  Future<bool> cleanDinosaurSelectionMarkers() async {   // Remove the dinosaur selection markers
     try {
       if (!_lgService.isConnected) {
         return false;
@@ -242,7 +249,7 @@ EOFKML
     }
   }
 
-  Future<bool> showSelectedDinosaurCube(Dinosaur dinosaur) async {
+  Future<bool> showSelectedDinosaurCube(Dinosaur dinosaur) async { // Show the cube for the selected dinosaur
     try {
       if (!_lgService.isConnected) {
         debugPrint('SSH client is not connected');
@@ -254,12 +261,18 @@ EOFKML
         return false;
       }
 
+      // Size and height of the cube
+
       const double radius = 0.0025;
       const double altitude = 30.0;
+
+      // Calculate the cube position
 
       final cubePosition = _lgService.calculateCubePosition(dinosaur);
       final double latitude = cubePosition['latitude']!;
       final double longitude = cubePosition['longitude']!;
+
+      // Calculate the four sides of the cube
 
       final double north = latitude + radius;
       final double south = latitude - radius;
@@ -267,6 +280,8 @@ EOFKML
       final double west = longitude - radius;
 
       final safeName = _cleanText(dinosaur.name);
+
+      // Create the cube using KML polygons
 
       final kml = '''
 <?xml version="1.0" encoding="UTF-8"?>
@@ -420,7 +435,7 @@ EOFKML
     }
   }
 
-  Future<bool> cleanDinosaurMarkers() async {
+  Future<bool> cleanDinosaurMarkers() async { //Remove dinosaur markers and cubes
     try {
       if (!_lgService.isConnected) {
         debugPrint('SSH client is not connected');
@@ -430,7 +445,9 @@ EOFKML
       final int logoScreen =
           _lgService.calculateLeftMostScreen(_lgService.connectionModel.screens);
 
-      const String emptyKml = '''
+      // Use an empty KML to clean the screens
+
+      const String emptyKml = ''' 
 <?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>

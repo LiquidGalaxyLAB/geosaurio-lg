@@ -30,10 +30,6 @@ class AboutScreen extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  // --------------------------------------------------
-                  // TOP BAR
-                  // --------------------------------------------------
-
                   Row(
                     children: [
                       Container(
@@ -66,11 +62,6 @@ class AboutScreen extends StatelessWidget {
                           ),
                         ),
                       ),
-
-                      // --------------------------------------------------
-                      // CONNECTION INDICATOR
-                      // --------------------------------------------------
-
                       Container(
                         padding:
                         const EdgeInsets.symmetric(
@@ -117,10 +108,6 @@ class AboutScreen extends StatelessWidget {
 
                   const SizedBox(height: 30),
 
-                  // --------------------------------------------------
-                  // GEOSAURIO LOGO
-                  // --------------------------------------------------
-
                   Image.asset(
                     'assets/images/Geosaurio.png',
                     height: 170,
@@ -149,11 +136,6 @@ class AboutScreen extends StatelessWidget {
                   ),
 
                   const SizedBox(height: 32),
-
-                  // --------------------------------------------------
-                  // ABOUT GEOSAURIO
-                  // --------------------------------------------------
-
                   Container(
                     width: double.infinity,
                     padding:
@@ -201,11 +183,6 @@ class AboutScreen extends StatelessWidget {
                   ),
 
                   const SizedBox(height: 20),
-
-                  // --------------------------------------------------
-                  // AUTHOR
-                  // --------------------------------------------------
-
                   Container(
                     width: double.infinity,
                     padding:
@@ -250,11 +227,6 @@ class AboutScreen extends StatelessWidget {
                   ),
 
                   const SizedBox(height: 20),
-
-                  // --------------------------------------------------
-                  // ACKNOWLEDGEMENTS
-                  // --------------------------------------------------
-
                   Container(
                     width: double.infinity,
                     padding:

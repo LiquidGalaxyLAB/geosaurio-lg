@@ -10,7 +10,7 @@ class LgMediaService {
 
   LgMediaService(this._lgService);
 
-  Future<bool> showDinosaurSkeletonImage(Dinosaur dinosaur) async {
+  Future<bool> showDinosaurSkeletonImage(Dinosaur dinosaur) async { //Shows chromium of skeleton
     final cleanName = _lgService.cleanDinosaurImageName(dinosaur.name);
 
     final assetPath = await _lgService.getExistingImagePath(
@@ -52,7 +52,7 @@ class LgMediaService {
     );
   }
 
-  Future<bool> showDinosaurComparisonImage(Dinosaur dinosaur) async {
+  Future<bool> showDinosaurComparisonImage(Dinosaur dinosaur) async { //shows chromium of comparison
     final cleanName = _lgService.cleanDinosaurImageName(dinosaur.name);
 
     final assetPath = await _lgService.getExistingImagePath(
@@ -83,7 +83,7 @@ class LgMediaService {
     return await openChromiumOnAllScreens('http://lg1:81/comparison.html');
   }
 
-  Future<bool> openChromiumOnAllScreens(String url) async {
+  Future<bool> openChromiumOnAllScreens(String url) async { //Open Chromium
     try {
       for (var i = 1; i <= _lgService.connectionModel.screens; i++) {
         final fullUrl = '$url?screen=$i&total=${_lgService.connectionModel.screens}';
@@ -103,7 +103,7 @@ sshpass -p ${_lgService.connectionModel.password} ssh -t lg$i "DISPLAY=:0 chromi
     }
   }
 
-  Future<bool> closeChromiumOnAllScreens() async {
+  Future<bool> closeChromiumOnAllScreens() async { //Close chromiums
     try {
       for (var i = 1; i <= _lgService.connectionModel.screens; i++) {
         final command = '''
@@ -140,7 +140,7 @@ DISPLAY=:0 xdotool key F11 || true
     }
   }
 
-  Future<bool> uploadHtmlToLG({
+  Future<bool> uploadHtmlToLG({ //Sends de html to LG
     required String htmlFileName,
     required String imageFileName,
     required String title,

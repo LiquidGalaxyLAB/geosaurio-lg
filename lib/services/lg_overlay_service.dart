@@ -9,7 +9,7 @@ import 'lg_service.dart';
 class LgOverlayService {
   final LgService _lgService;
 
-  final Map<String, String> _continentFacts = {
+  final Map<String, String> _continentFacts = { // Facts shown in the continent information columns
     'Africa':
         'Africa preserves an extraordinary dinosaur fossil record covering '
         'almost the entire Age of Dinosaurs. Some of the earliest dinosaurs '
@@ -47,7 +47,7 @@ class LgOverlayService {
         'environments.',
   };
 
-  final Map<String, String> _countryFacts = {
+  final Map<String, String> _countryFacts = {   // Facts shown in the country information columns
     'China':
         'China is especially famous for exceptionally preserved feathered '
         'dinosaurs. Discoveries from northeastern China provided important '
@@ -120,7 +120,7 @@ class LgOverlayService {
         .trim();
   }
 
-  Future<bool> createDinosaurInfoColumn(
+  Future<bool> createDinosaurInfoColumn(   // Creates the dinosaur information column as an imag
     Dinosaur dinosaur,
     String fileName,
   ) async {
@@ -533,7 +533,7 @@ class LgOverlayService {
     }
   }
 
-  Future<bool> showDinosaurAboutColumn(Dinosaur dinosaur) async {
+  Future<bool> showDinosaurAboutColumn(Dinosaur dinosaur) async {   // Shows the dinosaur information column on the right screen
     try {
       if (!_lgService.isConnected) {
         debugPrint('Cannot show dinosaur information: Liquid Galaxy is not connected');
@@ -580,7 +580,7 @@ class LgOverlayService {
     }
   }
 
-  Future<bool> createLocationInfoColumn({
+  Future<bool> createLocationInfoColumn({   // Creates the information column used for continents and countries
     required String title,
     required String subtitle,
     required String introduction,
@@ -825,7 +825,7 @@ class LgOverlayService {
     }
   }
 
-  Future<bool> showContinentInfoColumn(String continent) async {
+  Future<bool> showContinentInfoColumn(String continent) async {   // Creates and shows the information for the selected continent
     try {
       final fact = _continentFacts[continent] ??
           'This continent preserves an important dinosaur fossil record with discoveries from different parts of the Mesozoic Era.';
@@ -854,7 +854,7 @@ class LgOverlayService {
     }
   }
 
-  Future<bool> showCountryInfoColumn(String country, String continent) async {
+  Future<bool> showCountryInfoColumn(String country, String continent) async {   // Creates and shows the information for the selected country
     try {
       final fact = _countryFacts[country] ??
           '$country has produced dinosaur fossils that help scientists understand dinosaur diversity and evolution during the Mesozoic Era.';
@@ -884,7 +884,7 @@ class LgOverlayService {
     }
   }
 
-  Future<bool> sendLogo() async {
+  Future<bool> sendLogo() async { //sends logo
     try {
       final screen = _lgService.calculateLeftMostScreen(_lgService.connectionModel.screens);
       final uploaded = await _lgService.uploadAssetToLG(
@@ -921,6 +921,7 @@ class LgOverlayService {
     }
   }
 
+  Future<bool> showRightScreenImage({   // Shows an image on the right screen
   Future<bool> showRightScreenImage({
     required String assetPath,
     required String fileName,
@@ -962,7 +963,7 @@ class LgOverlayService {
     }
   }
 
-  Future<void> cleanLogos() async {
+  Future<void> cleanLogos() async { //clean logos
     try {
       final screen = _lgService.calculateLeftMostScreen(_lgService.connectionModel.screens);
       const blankKml = '''<?xml version="1.0" encoding="UTF-8"?>
@@ -981,7 +982,7 @@ class LgOverlayService {
     }
   }
 
-  Future<bool> cleanRightScreenKml() async {
+  Future<bool> cleanRightScreenKml() async { //clean right screen kml
     try {
       final screen = _lgService.calculateRightMostScreen(_lgService.connectionModel.screens);
       const blankKml = '''<?xml version="1.0" encoding="UTF-8"?>

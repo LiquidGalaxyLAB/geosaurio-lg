@@ -18,7 +18,7 @@ class DinosaurService {
           return Dinosaur.fromCsv(row);
         })
         .where((dinosaur) {
-          // Solo filtramos si el nombre está vacío o el periodo es realmente desconocido
+      //We only filter if the name is empty or the period is really unknown
           return dinosaur.name.isNotEmpty &&
               dinosaur.period != DinosaurPeriod.unknown;
         })

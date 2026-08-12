@@ -8,15 +8,6 @@ import '../services/lg_service.dart';
 class DinosaurDetailScreen extends StatefulWidget {
   final Dinosaur dinosaur;
 
-  /*
-   * Este callback se recibe desde HomeScreen.
-   *
-   * Se encarga de:
-   * - limpiar el KML del cubo;
-   * - limpiar la pantalla derecha;
-   * - devolver Google Earth al país;
-   * - restaurar el logo.
-   */
   final Future<void> Function() onBackToDinosaurSelection;
 
   const DinosaurDetailScreen({
@@ -68,19 +59,11 @@ class _DinosaurDetailScreenState
     }
 
     /*
-     * Volver inmediatamente a la selección
-     * en la aplicación.
+     * Immediately return to selection
+     * in the application.
      */
     Navigator.pop(context);
 
-    /*
-     * HomeScreen se encarga ahora de:
-     * - detener orbit
-     * - volver al país
-     * - limpiar cubo
-     * - limpiar pantalla derecha
-     * - restaurar logo
-     */
     widget.onBackToDinosaurSelection();
   }
 
@@ -104,14 +87,14 @@ class _DinosaurDetailScreenState
     bool ok = false;
 
     /*
-     * Comparison y Skeleton detienen primero
-     * cualquier órbita activa.
+     * Comparison and Skeleton stop first
+     * any active orbit.
      */
     await lgService.stopDinosaurOrbit();
 
     /*
-     * Recuperar la vista normal del dinosaurio
-     * antes de abrir Chromium.
+     * Recover the dinosaur's normal sight
+     * before opening Chromium.
      */
     await lgService.flyToDinosaur(
       dinosaur,
@@ -491,9 +474,6 @@ class _DinosaurDetailScreenState
 
               const SizedBox(height: 20),
 
-              // --------------------------------------------------
-              // ACCIONES DE LIQUID GALAXY
-              // --------------------------------------------------
 
               GridView.count(
                 crossAxisCount: 2,
@@ -504,9 +484,8 @@ class _DinosaurDetailScreenState
                 mainAxisSpacing: 14,
                 childAspectRatio: 1.45,
                 children: [
-                  // --------------------------------------------------
-                  // ORBIT
-                  // --------------------------------------------------
+
+                  // Orbit button
 
                   optionButton(
                     icon: lgService.isDinosaurOrbiting
@@ -563,9 +542,7 @@ class _DinosaurDetailScreenState
                     },
                   ),
 
-                  // --------------------------------------------------
-                  // NARRATION
-                  // --------------------------------------------------
+                  //Narration button
 
                   optionButton(
                     icon: Icons.volume_up,
@@ -573,9 +550,7 @@ class _DinosaurDetailScreenState
                     onTap: startNarration,
                   ),
 
-                  // --------------------------------------------------
-                  // SKELETON
-                  // --------------------------------------------------
+                  // Skeleton button that send the skeleton image
 
                   optionButton(
                     icon: Icons.view_in_ar,
@@ -588,9 +563,7 @@ class _DinosaurDetailScreenState
                     },
                   ),
 
-                  // --------------------------------------------------
-                  // COMPARISON
-                  // --------------------------------------------------
+                  //Comparison button
 
                   optionButton(
                     icon: Icons.groups,
@@ -605,9 +578,7 @@ class _DinosaurDetailScreenState
                 ],
               ),
 
-              // --------------------------------------------------
-              // STOP NARRATION
-              // --------------------------------------------------
+              //Stop Narration button
 
               if (isNarrationPlaying) ...[
                 const SizedBox(
@@ -654,13 +625,6 @@ class _DinosaurDetailScreenState
 
               const SizedBox(height: 16),
 
-              // --------------------------------------------------
-              // RETURN TO GOOGLE EARTH
-              //
-              // Ahora también está arriba,
-              // junto a las acciones.
-              // --------------------------------------------------
-
               SizedBox(
                 width: double.infinity,
                 child:
@@ -700,10 +664,6 @@ class _DinosaurDetailScreenState
 
               const SizedBox(height: 22),
 
-              // --------------------------------------------------
-              // PAÍS Y REGIÓN
-              // --------------------------------------------------
-
               Row(
                 children: [
                   Expanded(
@@ -732,10 +692,6 @@ class _DinosaurDetailScreenState
               ),
 
               const SizedBox(height: 12),
-
-              // --------------------------------------------------
-              // LONGITUD Y PESO
-              // --------------------------------------------------
 
               Row(
                 children: [
@@ -775,10 +731,6 @@ class _DinosaurDetailScreenState
 
               const SizedBox(height: 12),
 
-              // --------------------------------------------------
-              // PERIODO Y AÑO
-              // --------------------------------------------------
-
               Row(
                 children: [
                   Expanded(
@@ -813,10 +765,6 @@ class _DinosaurDetailScreenState
 
               const SizedBox(height: 22),
 
-              // --------------------------------------------------
-              // SCIENTIFIC INFORMATION
-              // --------------------------------------------------
-
               sectionCard(
                 title:
                 'Scientific Information',
@@ -829,10 +777,6 @@ class _DinosaurDetailScreenState
               ),
 
               const SizedBox(height: 16),
-
-              // --------------------------------------------------
-              // FOSSIL MATERIAL
-              // --------------------------------------------------
 
               sectionCard(
                 title:

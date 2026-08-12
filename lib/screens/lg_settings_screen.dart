@@ -32,7 +32,7 @@ class _LgSettingsScreenState
   @override
   void initState() {
     super.initState();
-    _loadSavedSettings();
+    _loadSavedSettings(); // Load the saved connection settings
   }
 
   Future<void> _loadSavedSettings() async {
@@ -91,7 +91,7 @@ class _LgSettingsScreenState
     );
   }
 
-  Future<void> applySettings() async {
+  Future<void> applySettings() async { // Save and apply the connection settings
     final model = buildModel();
     await model.saveToPreferences();
 
@@ -106,7 +106,7 @@ class _LgSettingsScreenState
     );
   }
 
-  Future<void> connectToLg() async {
+  Future<void> connectToLg() async { //connect to lg
     if (ipController.text.trim().isEmpty ||
         userController.text.trim().isEmpty ||
         passwordController.text.isEmpty ||
@@ -145,7 +145,7 @@ class _LgSettingsScreenState
     }
   }
 
-  Future<void> disconnectLg() async {
+  Future<void> disconnectLg() async { //Disconnect from lg
     context.read<LgService>().disconnect();
     snack('Disconnected from Liquid Galaxy');
   }

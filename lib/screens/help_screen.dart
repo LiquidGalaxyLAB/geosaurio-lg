@@ -8,13 +8,15 @@ class HelpScreen extends StatelessWidget {
   const HelpScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) { // Get LG connection status
     final lgService = context.watch<LgService>();
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       backgroundColor:
       Theme.of(context).scaffoldBackgroundColor,
+
+      // Side navigation menu
 
       drawer: AppDrawer(
         isLgConnected: lgService.isConnected,
@@ -30,7 +32,7 @@ class HelpScreen extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  Row(
+                  Row( // Help screen header and connection status
                     children: [
                       Container(
                         decoration: BoxDecoration(
@@ -104,7 +106,7 @@ class HelpScreen extends StatelessWidget {
 
                   const SizedBox(height: 28),
 
-                  helpCard(
+                  helpCard( // Basic instructions about the main app features
                     context: context,
                     icon: Icons.explore,
                     title: 'How to explore dinosaurs',
@@ -185,6 +187,8 @@ class HelpScreen extends StatelessWidget {
       ),
     );
   }
+
+  // Reusable card for each help section
 
   Widget helpCard({
     required BuildContext context,

@@ -16,7 +16,7 @@ import 'lg_overlay_service.dart';
 import 'lg_media_service.dart';
 import 'lg_system_service.dart';
 
-class LgConnectionModel {
+class LgConnectionModel { // Stores the IP, user, password, port and number of LG screens.
   String username;
   String ip;
   int port;
@@ -128,7 +128,7 @@ class LgService extends ChangeNotifier {
     );
   }
 
-  Future<void> initializeConnection() async {
+  Future<void> initializeConnection() async { // Loads the saved LG configuration and starts the connection.
     try {
       final savedModel = await LgConnectionModel.loadFromPreferences();
       updateConnectionSettings(
@@ -144,7 +144,7 @@ class LgService extends ChangeNotifier {
     }
   }
 
-  Future<bool?> connectToLG({
+  Future<bool?> connectToLG({ // Connects the application to Liquid Galaxy.
     bool initializeAfterConnect = true,
   }) async {
     final pendingConnection = _connectionInProgress;
@@ -183,7 +183,7 @@ class LgService extends ChangeNotifier {
     }
   }
 
-  Future<bool?> _openSshConnection() async {
+  Future<bool?> _openSshConnection() async { // Opens and authenticates the SSH connection with the LG master.
     if (_currentConnectionAttempts >= _maxConnectionAttempts) {
       _currentConnectionAttempts = 0;
       notifyListeners();
@@ -227,6 +227,8 @@ class LgService extends ChangeNotifier {
     }
   }
 
+  // Initializes the content shown after connecting (shows logo)
+
   Future<void> _initializeLiquidGalaxyContent() async {
     if (_initializingAfterConnection || !_isConnected || _client == null) {
       return;
@@ -246,6 +248,8 @@ class LgService extends ChangeNotifier {
     }
   }
 
+  //stops orbit and close the connection
+
   void disconnect() {
     _orbitService.stopDinosaurOrbit();
     _client?.close();
@@ -254,7 +258,7 @@ class LgService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<dynamic> execute(String command, String successMessage) async {
+  Future<dynamic> execute(String command, String successMessage) async { //Sends commands to LG
     if (_client == null || !_isConnected) {
       debugPrint('SSH client not connected. Trying reconnect...');
       final connected = await connectToLG(initializeAfterConnect: false);
@@ -295,7 +299,7 @@ class LgService extends ChangeNotifier {
     }
   }
 
-  // File Transfer Helpers
+  // Auxiliary methods
   Future<bool> uploadAssetToLG({
     required String assetPath,
     required String fileName,
@@ -358,7 +362,7 @@ class LgService extends ChangeNotifier {
   // Shared Utility Methods
   int calculateLeftMostScreen(int screenCount) => _systemService.calculateLeftMostScreen(screenCount);
   int calculateRightMostScreen(int screenCount) => _systemService.calculateRightMostScreen(screenCount);
-  
+
   String cleanDinosaurImageName(String name) {
     return name
         .trim()
@@ -371,7 +375,7 @@ class LgService extends ChangeNotifier {
         .replaceAll('__', '_');
   }
 
-  Future<String?> getExistingImagePath(String basePath) async {
+  Future<String?> getExistingImagePath(String basePath) async { //search the type the image can be
     final extensions = ['.png', '.jpg', '.jpeg', '.jfif', '.PNG', '.JPG', '.JPEG', '.JFIF'];
     final variants = <String>{basePath, basePath.toLowerCase()};
 
@@ -407,11 +411,13 @@ class LgService extends ChangeNotifier {
     return null;
   }
 
+  //Calculates where the 3D KML should be
+
   Map<String, double> calculateCubePosition(Dinosaur dinosaur) =>
       _navigationService.calculateCubePosition(dinosaur);
 
-  Future<void> forceRefresh(int screenNumber) => _systemService.forceRefresh(screenNumber);
-  
+  Future<void> forceRefresh(int screenNumber) => _systemService.forceRefresh(screenNumber); //Force LG screen to refresh
+
   void notify() => notifyListeners();
 
   // Orbit Wrappers

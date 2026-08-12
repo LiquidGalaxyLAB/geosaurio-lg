@@ -29,7 +29,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
       await _audioPlayer.play();
 
-      // Esperar a que termine el audio.
+      // Wait audio to finish
       await _audioPlayer.playerStateStream.firstWhere(
             (state) =>
         state.processingState ==
@@ -40,8 +40,8 @@ class _SplashScreenState extends State<SplashScreen> {
         'Error playing splash audio: $e',
       );
 
-      // Si falla el audio,
-      // mostrar igualmente la splash 5 segundos.
+      //If the audio fails,
+      //also show the splash for 5 seconds.
       await Future.delayed(
         const Duration(seconds: 5),
       );

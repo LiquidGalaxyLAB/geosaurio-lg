@@ -8,9 +8,9 @@ import 'package:provider/provider.dart';
 import '../models/dinosaur.dart';
 import '../services/lg_service.dart';
 
-class DinosaurMiniMap extends StatefulWidget {
+class DinosaurMiniMap extends StatefulWidget { // Dinosaurs shown on the mini map
   final List<Dinosaur> dinosaurs;
-  final void Function(Dinosaur dinosaur) onDinosaurSelected;
+  final void Function(Dinosaur dinosaur) onDinosaurSelected; // Called when the user selects a dinosaur marker
 
   const DinosaurMiniMap({
     super.key,
@@ -22,10 +22,10 @@ class DinosaurMiniMap extends StatefulWidget {
   State<DinosaurMiniMap> createState() => _DinosaurMiniMapState();
 }
 
-class _DinosaurMiniMapState extends State<DinosaurMiniMap> {
+class _DinosaurMiniMapState extends State<DinosaurMiniMap> { // Timer used to avoid sending too many movements to Liquid Galaxy
   Timer? _syncTimer;
 
-  void _synchronizeWithLiquidGalaxy(MapCamera camera) {
+  void _synchronizeWithLiquidGalaxy(MapCamera camera) {   // Synchronize the mini map camera with Liquid Galaxy
     // Cancel the previous pending synchronization.
     _syncTimer?.cancel();
 

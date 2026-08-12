@@ -8,7 +8,7 @@ import '../../screens/lg_tools_screen.dart';
 import '../../services/theme_service.dart';
 
 class AppDrawer extends StatelessWidget {
-  final bool isLgConnected;
+  final bool isLgConnected;  // Current Liquid Galaxy connection status
 
   const AppDrawer({
     super.key,
@@ -16,6 +16,9 @@ class AppDrawer extends StatelessWidget {
   });
 
   @override
+
+  // Get the current app theme
+
   Widget build(BuildContext context) {
     final themeService =
     context.watch<ThemeService>();
@@ -60,9 +63,7 @@ class AppDrawer extends StatelessWidget {
 
             const SizedBox(height: 22),
 
-            // --------------------------------------------------
-            // MAIN MENU
-            // --------------------------------------------------
+            //HOME
 
             drawerTile(
               context: context,
@@ -82,9 +83,7 @@ class AppDrawer extends StatelessWidget {
               },
             ),
 
-            // --------------------------------------------------
-            // INFORMATION
-            // --------------------------------------------------
+            //ABOUT SCREEN
 
             drawerTile(
               context: context,
@@ -103,10 +102,7 @@ class AppDrawer extends StatelessWidget {
               },
             ),
 
-            // --------------------------------------------------
-            // LG SETTINGS
-            // CONNECTION SETTINGS ONLY
-            // --------------------------------------------------
+            //LG SETTINGS
 
             drawerTile(
               context: context,
@@ -125,10 +121,7 @@ class AppDrawer extends StatelessWidget {
               },
             ),
 
-            // --------------------------------------------------
-            // LG TOOLS
-            // LIQUID GALAXY ACTIONS
-            // --------------------------------------------------
+            //LG TOOLS
 
             drawerTile(
               context: context,
@@ -148,7 +141,6 @@ class AppDrawer extends StatelessWidget {
             ),
 
             //HELP
-
             drawerTile(
               context: context,
               icon: Icons.help_outline,
@@ -165,11 +157,7 @@ class AppDrawer extends StatelessWidget {
                 );
               },
             ),
-
-            // --------------------------------------------------
-            // DARK MODE
-            // --------------------------------------------------
-
+            //Dark mode
             Padding(
               padding:
               const EdgeInsets.symmetric(
@@ -215,9 +203,7 @@ class AppDrawer extends StatelessWidget {
 
             const Spacer(),
 
-            // --------------------------------------------------
-            // LIQUID GALAXY CONNECTION STATUS
-            // --------------------------------------------------
+           //Connection status
 
             Container(
               margin:

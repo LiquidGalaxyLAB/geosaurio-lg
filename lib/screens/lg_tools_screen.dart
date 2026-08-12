@@ -6,7 +6,7 @@ import '../services/lg_service.dart';
 class LgToolsScreen extends StatelessWidget {
   const LgToolsScreen({super.key});
 
-  void showSnack(
+  void showSnack(  // Show the result of an action
       BuildContext context,
       String message, {
         bool success = true,
@@ -21,7 +21,7 @@ class LgToolsScreen extends StatelessWidget {
     );
   }
 
-  Future<bool> confirmLgAction(
+  Future<bool> confirmLgAction(  // Ask for confirmation before important LG actions
       BuildContext context,
       String actionName,
       ) async {
@@ -66,7 +66,7 @@ class LgToolsScreen extends StatelessWidget {
     return result ?? false;
   }
 
-  Future<void> runAction(
+  Future<void> runAction(  // Run a Liquid Galaxy action
       BuildContext context,
       String actionName,
       Future<bool> Function(LgService lgService) action, {
@@ -74,7 +74,7 @@ class LgToolsScreen extends StatelessWidget {
       }) async {
     final lgService = context.read<LgService>();
 
-    if (!lgService.isConnected) {
+    if (!lgService.isConnected) {  // Check the Liquid Galaxy connection
       showSnack(
         context,
         'Connect to Liquid Galaxy first.',
@@ -83,7 +83,7 @@ class LgToolsScreen extends StatelessWidget {
       return;
     }
 
-    if (needsConfirmation) {
+    if (needsConfirmation) {  // Ask for confirmation if needed
       final confirmed =
       await confirmLgAction(
         context,
@@ -101,7 +101,7 @@ class LgToolsScreen extends StatelessWidget {
       success: true,
     );
 
-    final ok = await action(lgService);
+    final ok = await action(lgService); // Execute the selected action
 
     if (!context.mounted) {
       return;
@@ -116,7 +116,7 @@ class LgToolsScreen extends StatelessWidget {
     );
   }
 
-  Future<void> toggleLogos(
+  Future<void> toggleLogos( // Show or hide the GeoSaurio logo
       BuildContext context,
       ) async {
     final lgService = context.read<LgService>();
@@ -187,6 +187,8 @@ class LgToolsScreen extends StatelessWidget {
       );
     }
   }
+
+  // Build the LG tools screen
 
   @override
   Widget build(BuildContext context) {

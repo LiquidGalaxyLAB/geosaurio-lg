@@ -167,8 +167,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     /*
-   * Limpiar marcadores anteriores
-   * de selección de dinosaurios.
+   Clean markers before dinosaur selection
    */
     await lgService
         .cleanDinosaurSelectionMarkers();
@@ -186,8 +185,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     /*
-   * Mostrar los marcadores de los
-   * dinosaurios disponibles en este país.
+   * Show all avaible countries
    */
     await lgService
         .showDinosaurSelectionMarkers(
@@ -214,14 +212,13 @@ class _HomeScreenState extends State<HomeScreen> {
       );
 
       /*
-     * Quitamos los marcadores de selección
-     * antes de entrar en la vista del dinosaurio.
+     * Clean markers before going to the dinosaur
      */
       await lgService
           .cleanDinosaurSelectionMarkers();
 
       /*
-     * Volamos hacia el dinosaurio.
+     * Fly to dinosaur
      */
       final bool flyOk =
       await lgService.flyToDinosaur(
@@ -236,8 +233,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
       if (flyOk) {
         /*
-       * Esperamos un poco para que la cámara
-       * empiece a moverse.
+       * We wait a little before the camera moves
        */
         await Future.delayed(
           const Duration(
@@ -246,7 +242,7 @@ class _HomeScreenState extends State<HomeScreen> {
         );
 
         /*
-       * Mostrar el cubo del dinosaurio.
+       * Show cube
        */
         final bool cubeOk =
         await lgService
@@ -261,8 +257,7 @@ class _HomeScreenState extends State<HomeScreen> {
         );
 
         /*
-       * Esperamos un poco antes
-       * de mostrar la columna derecha.
+       * EWe wait before showing the column
        */
         await Future.delayed(
           const Duration(
@@ -271,8 +266,7 @@ class _HomeScreenState extends State<HomeScreen> {
         );
 
         /*
-       * Mostrar información del dinosaurio
-       * en la pantalla derecha.
+       * Show about
        */
         await lgService
             .showDinosaurAboutColumn(
@@ -317,14 +311,13 @@ class _HomeScreenState extends State<HomeScreen> {
               );
 
               /*
-             * Detener cualquier órbita activa.
+             * Stop orbit
              */
               await lgService
                   .stopDinosaurOrbit();
 
               /*
-             * Limpiar elementos propios
-             * de la vista del dinosaurio.
+             * Clean dinosaur markers (cube, about)
              */
               await lgService
                   .cleanDinosaurMarkers();
@@ -333,10 +326,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   .cleanRightScreenKml();
 
               /*
-             * Volver a la vista del país.
-             *
-             * flyToCountry también mostrará
-             * de nuevo la columna informativa.
+             * Go back to country section
              */
               if (country != null &&
                   continent != null) {
@@ -347,8 +337,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
 
                 /*
-               * Volver a mostrar los marcadores
-               * de los dinosaurios del país.
+               * We show the markers again
                */
                 await lgService
                     .showDinosaurSelectionMarkers(
@@ -357,7 +346,7 @@ class _HomeScreenState extends State<HomeScreen> {
               }
 
               /*
-             * Restaurar logo.
+             * Restore logo
              */
               await lgService.sendLogo();
             },
@@ -391,9 +380,6 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
-    /*
-   * Limpiar marcadores de dinosaurios.
-   */
     await lgService
         .cleanDinosaurSelectionMarkers();
 
@@ -401,8 +387,7 @@ class _HomeScreenState extends State<HomeScreen> {
         .cleanDinosaurMarkers();
 
     /*
-   * Limpiar la columna derecha porque
-   * volvemos a la selección de continentes.
+   * Clean right column
    */
     await lgService
         .cleanRightScreenKml();
@@ -411,8 +396,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> goBackToCountries() async {
     /*
-   * Guardamos el continente antes
-   * de borrar la selección de país.
+   * Save continent before erasing the country selection
    */
     final String? continent =
         selectedContinent;
@@ -431,8 +415,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     /*
-   * Quitar los marcadores de dinosaurios
-   * del país anterior.
+   * Remove markers
    */
     await lgService
         .cleanDinosaurSelectionMarkers();
@@ -441,10 +424,7 @@ class _HomeScreenState extends State<HomeScreen> {
         .cleanDinosaurMarkers();
 
     /*
-   * Volver al continente.
-   *
-   * flyToContinent mostrará también
-   * la columna informativa del continente.
+   *Go back to continents
    */
     if (continent != null) {
       await lgService.flyToContinent(
