@@ -19,7 +19,7 @@ Users can explore dinosaurs by period, continent and country, navigate to their 
 
 ---
 
-## Overview 
+## Overview
 
 GeoSaurio combines dinosaur information with the immersive visualization capabilities of **Liquid Galaxy**.
 
