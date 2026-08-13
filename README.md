@@ -8,19 +8,18 @@ Users can explore dinosaurs by period, continent and country, navigate to their 
 
 ## Table of Contents
 
-1. [Overview](#overview)
+1. [Overview](#overview-)
 2. [Key Features](#key-features)
 3. [Technologies Used](#technologies-used)
 4. [Installation](#installation)
 5. [Usage](#usage)
-6. [Project Structure](#project-structure)
-7. [Liquid Galaxy Integration](#liquid-galaxy-integration)
-8. [License](#license)
-9. [Contact](#contact)
+6. [Liquid Galaxy Integration](#liquid-galaxy-integration)
+7. [Contact](#contact)
+8. [Acknowledgements](#acknowledgements)
 
 ---
 
-## Overview 🦖
+## Overview 
 
 GeoSaurio combines dinosaur information with the immersive visualization capabilities of **Liquid Galaxy**.
 
