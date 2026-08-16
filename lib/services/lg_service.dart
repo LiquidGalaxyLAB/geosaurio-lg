@@ -15,6 +15,7 @@ import 'lg_marker_service.dart';
 import 'lg_overlay_service.dart';
 import 'lg_media_service.dart';
 import 'lg_system_service.dart';
+import 'package:http/http.dart' as http;
 
 class LgConnectionModel { // Stores the IP, user, password, port and number of LG screens.
   String username;
@@ -107,6 +108,11 @@ class LgService extends ChangeNotifier {
 
   static const int _maxConnectionAttempts = 5;
   static const Duration _connectionTimeout = Duration(seconds: 10);
+
+  static const String _dinosaurImagesBaseUrl =
+      'https://raw.githubusercontent.com/'
+      'joseporiolse/Dinosaur_Images/'
+      'refs/heads/main/dinosaurs';
 
   // Getters for status
   LgConnectionModel get connectionModel => _lgConnectionModel;
@@ -337,6 +343,64 @@ class LgService extends ChangeNotifier {
     }
   }
 
+  Future<bool> uploadRemoteImageToLG({
+    required String url,
+    required String fileName,
+  }) async {
+    try {
+      final connected =
+      await connectToLG(initializeAfterConnect: false);
+
+      if (connected != true || _client == null) {
+        debugPrint(
+          'Cannot upload $fileName: SSH is not connected',
+        );
+        return false;
+      }
+
+      final response = await http.get(Uri.parse(url));
+
+      if (response.statusCode != 200) {
+        debugPrint(
+          'Could not download remote image: '
+              '${response.statusCode} | $url',
+        );
+        return false;
+      }
+
+      final bytes = response.bodyBytes;
+
+      final sftp = await _client!.sftp();
+
+      final remoteFile = await sftp.open(
+        '/var/www/html/$fileName',
+        mode:
+        SftpFileOpenMode.create |
+        SftpFileOpenMode.truncate |
+        SftpFileOpenMode.write,
+      );
+
+      await remoteFile.write(
+        Stream.value(bytes),
+      );
+
+      await remoteFile.close();
+
+      debugPrint(
+        'Remote image uploaded successfully: $fileName',
+      );
+
+      return true;
+    } catch (e, stackTrace) {
+      debugPrint(
+        'Error uploading remote image $url: $e',
+      );
+      debugPrint('$stackTrace');
+
+      return false;
+    }
+  }
+
   Future<bool> uploadBytesToLG({
     required Uint8List bytes,
     required String fileName,
@@ -377,39 +441,59 @@ class LgService extends ChangeNotifier {
         .replaceAll('__', '_');
   }
 
-  Future<String?> getExistingImagePath(String basePath) async { //search the type the image can be
-    final extensions = ['.png', '.jpg', '.jpeg', '.jfif', '.PNG', '.JPG', '.JPEG', '.JFIF'];
-    final variants = <String>{basePath, basePath.toLowerCase()};
+  Future<String?> getExistingImageUrl(String baseName) async {
+    final extensions = [
+      '.png',
+      '.jpg',
+      '.jpeg',
+      '.jfif',
+      '.PNG',
+      '.JPG',
+      '.JPEG',
+      '.JFIF',
+    ];
 
-    if (basePath.contains('_')) {
-      final lastUnderscore = basePath.lastIndexOf('_');
-      final prefix = basePath.substring(0, lastUnderscore);
-      final suffix = basePath.substring(lastUnderscore);
-      variants.add('$prefix $suffix');
-      variants.add('${prefix.toLowerCase()} $suffix');
+    final variants = <String>{
+      baseName,
+      baseName.toLowerCase(),
+    };
 
+    if (baseName.contains('_')) {
+      final lastUnderscore = baseName.lastIndexOf('_');
+      final prefix = baseName.substring(0, lastUnderscore);
+      final suffix = baseName.substring(lastUnderscore);
+
+      variants.add('$prefix$suffix');
+      variants.add('${prefix.toLowerCase()}$suffix');
+
+      // Also support the old "comparision" typo
       if (suffix.contains('comparis')) {
         final otherSuffix = suffix.contains('comparison')
             ? suffix.replaceFirst('comparison', 'comparision')
             : suffix.replaceFirst('comparision', 'comparison');
+
         variants.add('$prefix$otherSuffix');
         variants.add('${prefix.toLowerCase()}$otherSuffix');
-        variants.add('$prefix $otherSuffix');
-        variants.add('${prefix.toLowerCase()} $otherSuffix');
       }
     }
 
     for (final variant in variants) {
       for (final ext in extensions) {
-        final path = '$variant$ext';
+        final url = '$_dinosaurImagesBaseUrl/$variant$ext';
+
         try {
-          await rootBundle.load(path);
-          debugPrint('Found dinosaur image: $path');
-          return path;
-        } catch (_) {}
+          final response = await http.head(Uri.parse(url));
+
+          if (response.statusCode == 200) {
+            debugPrint('Found remote dinosaur image: $url');
+            return url;
+          }
+        } catch (_) {
+        }
       }
     }
-    debugPrint('Image not found: $basePath');
+
+    debugPrint('Remote dinosaur image not found: $baseName');
     return null;
   }
 

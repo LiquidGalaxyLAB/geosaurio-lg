@@ -19,6 +19,7 @@ dependencies:
   shared_preferences: ^2.5.5
   path_provider: ^2.1.5
   csv: ^6.0.0
+  http: ^1.2.2
 
   # Audio playback
   just_audio: ^0.9.39
@@ -43,7 +44,6 @@ flutter:
 
   assets:
     - assets/images/
-    - assets/images/dinosaurs/
     - assets/images/markers/
     - assets/models/
     - assets/data/

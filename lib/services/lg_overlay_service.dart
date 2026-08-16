@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:ui' as ui;
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import '../models/dinosaur.dart';
 import 'lg_service.dart';
+import 'package:http/http.dart' as http;
 
 class LgOverlayService {
   final LgService _lgService;
@@ -262,21 +262,47 @@ class LgOverlayService {
 
       currentY += 35;
 
-      final cleanName = _lgService.cleanDinosaurImageName(dinosaur.name);
-      final dinosaurImagePath = await _lgService.getExistingImagePath(
-        'assets/images/dinosaurs/${cleanName}_normal',
+      final cleanName =
+      _lgService.cleanDinosaurImageName(dinosaur.name);
+
+      final dinosaurImageUrl =
+      await _lgService.getExistingImageUrl(
+        '${cleanName}_normal',
       );
 
       ui.Image? dinosaurImage;
-      if (dinosaurImagePath != null) {
+
+      if (dinosaurImageUrl != null) {
         try {
-          final data = await rootBundle.load(dinosaurImagePath);
-          final bytes = data.buffer.asUint8List();
-          final codec = await ui.instantiateImageCodec(bytes);
-          final frame = await codec.getNextFrame();
-          dinosaurImage = frame.image;
+          final response =
+          await http.get(Uri.parse(dinosaurImageUrl));
+
+          if (response.statusCode == 200) {
+            final bytes = response.bodyBytes;
+
+            final codec =
+            await ui.instantiateImageCodec(bytes);
+
+            final frame =
+            await codec.getNextFrame();
+
+            dinosaurImage = frame.image;
+
+            debugPrint(
+              'Dinosaur image downloaded for column: '
+                  '$dinosaurImageUrl',
+            );
+          } else {
+            debugPrint(
+              'Could not download dinosaur image: '
+                  '${response.statusCode}',
+            );
+          }
         } catch (e) {
-          debugPrint('Could not load dinosaur image for column: $e');
+          debugPrint(
+            'Could not load remote dinosaur image '
+                'for column: $e',
+          );
         }
       }
 

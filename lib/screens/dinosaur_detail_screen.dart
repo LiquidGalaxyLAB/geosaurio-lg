@@ -405,34 +405,65 @@ class _DinosaurDetailScreenState
                             .circular(
                           18,
                         ),
+
+                        // Load the dinosaur normal image
+                        // directly from the public GitHub repository
                         child:
                         FutureBuilder<
                             String?>(
                           future: lgService
-                              .getExistingImagePath(
-                            'assets/images/dinosaurs/'
-                                '${cleanName}_normal',
+                              .getExistingImageUrl(
+                            '${cleanName}_normal',
                           ),
                           builder: (
                               context,
                               snapshot,
                               ) {
+
+                            // Wait while the application searches
+                            // for the correct remote image
                             if (snapshot
-                                .hasData &&
-                                snapshot
-                                    .data !=
-                                    null) {
-                              return Image
-                                  .asset(
-                                snapshot
-                                    .data!,
-                                fit: BoxFit
-                                    .cover,
-                                width: double
-                                    .infinity,
+                                .connectionState ==
+                                ConnectionState
+                                    .waiting) {
+                              return const Center(
+                                child:
+                                CircularProgressIndicator(),
                               );
                             }
 
+                            // Show the image found on GitHub
+                            if (snapshot
+                                .hasData &&
+                                snapshot.data !=
+                                    null) {
+                              return Image
+                                  .network(
+                                snapshot.data!,
+                                fit:
+                                BoxFit.cover,
+                                width: double
+                                    .infinity,
+
+                                // Show a fallback icon if
+                                // the remote image cannot load
+                                errorBuilder: (
+                                    context,
+                                    error,
+                                    stackTrace,
+                                    ) {
+                                  return Icon(
+                                    Icons.pets,
+                                    size: 90,
+                                    color:
+                                    colorScheme
+                                        .primary,
+                                  );
+                                },
+                              );
+                            }
+
+                            // Fallback if no image exists
                             return Icon(
                               Icons.pets,
                               size: 90,
@@ -480,7 +511,6 @@ class _DinosaurDetailScreenState
               ),
 
               const SizedBox(height: 20),
-
 
               GridView.count(
                 crossAxisCount: 2,

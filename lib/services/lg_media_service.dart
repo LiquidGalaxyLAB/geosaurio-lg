@@ -10,25 +10,31 @@ class LgMediaService {
 
   LgMediaService(this._lgService);
 
-  Future<bool> showDinosaurSkeletonImage(Dinosaur dinosaur) async { //Shows chromium of skeleton
-    final cleanName = _lgService.cleanDinosaurImageName(dinosaur.name);
+  Future<bool> showDinosaurSkeletonImage(Dinosaur dinosaur) async {
+    final cleanName =
+    _lgService.cleanDinosaurImageName(dinosaur.name);
 
-    final assetPath = await _lgService.getExistingImagePath(
-      'assets/images/dinosaurs/${cleanName}_skeleton',
+    final imageUrl =
+    await _lgService.getExistingImageUrl(
+      '${cleanName}_skeleton',
     );
 
-    if (assetPath == null) {
+    if (imageUrl == null) {
       debugPrint(
         'Skeleton image not found for ${dinosaur.name}',
       );
       return false;
     }
 
-    final extension = assetPath.split('.').last;
-    final imageFileName = '${cleanName}_skeleton.$extension';
+    final extension =
+        Uri.parse(imageUrl).path.split('.').last;
 
-    final uploadedImage = await _lgService.uploadAssetToLG(
-      assetPath: assetPath,
+    final imageFileName =
+        '${cleanName}_skeleton.$extension';
+
+    final uploadedImage =
+    await _lgService.uploadRemoteImageToLG(
+      url: imageUrl,
       fileName: imageFileName,
     );
 
@@ -52,24 +58,39 @@ class LgMediaService {
     );
   }
 
-  Future<bool> showDinosaurComparisonImage(Dinosaur dinosaur) async { //shows chromium of comparison
-    final cleanName = _lgService.cleanDinosaurImageName(dinosaur.name);
+  Future<bool> showDinosaurComparisonImage(
+      Dinosaur dinosaur,
+      ) async {
+    final cleanName =
+    _lgService.cleanDinosaurImageName(dinosaur.name);
 
-    final assetPath = await _lgService.getExistingImagePath(
-      'assets/images/dinosaurs/${cleanName}_comparison',
+    final imageUrl =
+    await _lgService.getExistingImageUrl(
+      '${cleanName}_comparison',
     );
 
-    if (assetPath == null) return false;
+    if (imageUrl == null) {
+      debugPrint(
+        'Comparison image not found for ${dinosaur.name}',
+      );
+      return false;
+    }
 
-    final extension = assetPath.split('.').last;
-    final imageFileName = '${cleanName}_comparison.$extension';
+    final extension =
+        Uri.parse(imageUrl).path.split('.').last;
 
-    final uploadedImage = await _lgService.uploadAssetToLG(
-      assetPath: assetPath,
+    final imageFileName =
+        '${cleanName}_comparison.$extension';
+
+    final uploadedImage =
+    await _lgService.uploadRemoteImageToLG(
+      url: imageUrl,
       fileName: imageFileName,
     );
 
-    if (!uploadedImage) return false;
+    if (!uploadedImage) {
+      return false;
+    }
 
     final uploadedHtml = await uploadHtmlToLG(
       htmlFileName: 'comparison.html',
@@ -78,9 +99,13 @@ class LgMediaService {
       imageHeight: 70,
     );
 
-    if (!uploadedHtml) return false;
+    if (!uploadedHtml) {
+      return false;
+    }
 
-    return await openChromiumOnAllScreens('http://lg1:81/comparison.html');
+    return await openChromiumOnAllScreens(
+      'http://lg1:81/comparison.html',
+    );
   }
 
   Future<bool> openChromiumOnAllScreens(String url) async { //Open Chromium
