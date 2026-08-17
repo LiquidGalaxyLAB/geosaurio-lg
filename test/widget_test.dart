@@ -18,4 +18,4 @@ void main() {
 
     expect(find.byType(GeoSaurioApp), findsOneWidget);
   });
-}v
+}
