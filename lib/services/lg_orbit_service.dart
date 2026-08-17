@@ -63,17 +63,11 @@ class LgOrbitService {
         'Orbit view sent: heading=$heading',
       );
 
-      await Future.delayed(
-        const Duration(
-          milliseconds: 50,
-        ),
-      );
+      await Future.delayed(const Duration(milliseconds: 50));
 
       return result != null;
     } catch (e, stackTrace) {
-      debugPrint(
-        'Error sending orbit view: $e',
-      );
+      debugPrint('Error sending orbit view: $e');
       debugPrint('$stackTrace');
       return false;
     }
@@ -89,20 +83,17 @@ class LgOrbitService {
     if (!_lgService.isConnected) {
       debugPrint(
         'Cannot start dinosaur orbit: '
-            'Liquid Galaxy is not connected',
+        'Liquid Galaxy is not connected',
       );
       return false;
     }
 
     try {
       // Use the same position as the dinosaur cube
-      final cubePosition =
-      _lgService.calculateCubePosition(dinosaur);
+      final cubePosition = _lgService.calculateCubePosition(dinosaur);
 
-      final double latitude =
-      cubePosition['latitude']!;
-      final double longitude =
-      cubePosition['longitude']!;
+      final double latitude = cubePosition['latitude']!;
+      final double longitude = cubePosition['longitude']!;
 
       // Keep the camera distance and tilt fixed
       const double orbitRange = 610.0;
@@ -130,10 +121,8 @@ class LgOrbitService {
       // Run one orbit step every 400 ms
       _dinosaurOrbitTimer?.cancel();
       _dinosaurOrbitTimer = Timer.periodic(
-        const Duration(
-          milliseconds: stepDuration,
-        ),
-            (timer) async {
+        const Duration(milliseconds: stepDuration),
+        (timer) async {
           if (!_isDinosaurOrbiting) {
             timer.cancel();
             return;
@@ -148,9 +137,7 @@ class LgOrbitService {
             isMoving = true;
 
             // Change only the heading to rotate around the dinosaur
-            double heading =
-                startHeading +
-                    (currentStep * (360.0 / steps));
+            double heading = startHeading + (currentStep * (360.0 / steps));
 
             heading %= 360.0;
 
@@ -172,7 +159,7 @@ class LgOrbitService {
           } catch (e) {
             debugPrint(
               'Error during dinosaur orbit '
-                  'step $currentStep: $e',
+              'step $currentStep: $e',
             );
           } finally {
             isMoving = false;
@@ -182,9 +169,7 @@ class LgOrbitService {
 
       return true;
     } catch (e, stackTrace) {
-      debugPrint(
-        'Error starting dinosaur orbit: $e',
-      );
+      debugPrint('Error starting dinosaur orbit: $e');
       debugPrint('$stackTrace');
 
       _dinosaurOrbitTimer?.cancel();
@@ -204,8 +189,6 @@ class LgOrbitService {
     _isDinosaurOrbiting = false;
     _lgService.notifyListeners();
 
-    debugPrint(
-      'ORBIT: STOP',
-    );
+    debugPrint('ORBIT: STOP');
   }
 }

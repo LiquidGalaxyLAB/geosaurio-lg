@@ -11,29 +11,22 @@ class LgMediaService {
   LgMediaService(this._lgService);
 
   Future<bool> showDinosaurSkeletonImage(Dinosaur dinosaur) async {
-    final cleanName =
-    _lgService.cleanDinosaurImageName(dinosaur.name);
+    final cleanName = _lgService.cleanDinosaurImageName(dinosaur.name);
 
-    final imageUrl =
-    await _lgService.getExistingImageUrl(
+    final imageUrl = await _lgService.getExistingImageUrl(
       '${cleanName}_skeleton',
     );
 
     if (imageUrl == null) {
-      debugPrint(
-        'Skeleton image not found for ${dinosaur.name}',
-      );
+      debugPrint('Skeleton image not found for ${dinosaur.name}');
       return false;
     }
 
-    final extension =
-        Uri.parse(imageUrl).path.split('.').last;
+    final extension = Uri.parse(imageUrl).path.split('.').last;
 
-    final imageFileName =
-        '${cleanName}_skeleton.$extension';
+    final imageFileName = '${cleanName}_skeleton.$extension';
 
-    final uploadedImage =
-    await _lgService.uploadRemoteImageToLG(
+    final uploadedImage = await _lgService.uploadRemoteImageToLG(
       url: imageUrl,
       fileName: imageFileName,
     );
@@ -53,37 +46,26 @@ class LgMediaService {
       return false;
     }
 
-    return await openChromiumOnAllScreens(
-      'http://lg1:81/skeleton.html',
-    );
+    return await openChromiumOnAllScreens('http://lg1:81/skeleton.html');
   }
 
-  Future<bool> showDinosaurComparisonImage(
-      Dinosaur dinosaur,
-      ) async {
-    final cleanName =
-    _lgService.cleanDinosaurImageName(dinosaur.name);
+  Future<bool> showDinosaurComparisonImage(Dinosaur dinosaur) async {
+    final cleanName = _lgService.cleanDinosaurImageName(dinosaur.name);
 
-    final imageUrl =
-    await _lgService.getExistingImageUrl(
+    final imageUrl = await _lgService.getExistingImageUrl(
       '${cleanName}_comparison',
     );
 
     if (imageUrl == null) {
-      debugPrint(
-        'Comparison image not found for ${dinosaur.name}',
-      );
+      debugPrint('Comparison image not found for ${dinosaur.name}');
       return false;
     }
 
-    final extension =
-        Uri.parse(imageUrl).path.split('.').last;
+    final extension = Uri.parse(imageUrl).path.split('.').last;
 
-    final imageFileName =
-        '${cleanName}_comparison.$extension';
+    final imageFileName = '${cleanName}_comparison.$extension';
 
-    final uploadedImage =
-    await _lgService.uploadRemoteImageToLG(
+    final uploadedImage = await _lgService.uploadRemoteImageToLG(
       url: imageUrl,
       fileName: imageFileName,
     );
@@ -103,17 +85,18 @@ class LgMediaService {
       return false;
     }
 
-    return await openChromiumOnAllScreens(
-      'http://lg1:81/comparison.html',
-    );
+    return await openChromiumOnAllScreens('http://lg1:81/comparison.html');
   }
 
-  Future<bool> openChromiumOnAllScreens(String url) async { //Open Chromium
+  Future<bool> openChromiumOnAllScreens(String url) async {
+    //Open Chromium
     try {
       for (var i = 1; i <= _lgService.connectionModel.screens; i++) {
-        final fullUrl = '$url?screen=$i&total=${_lgService.connectionModel.screens}';
+        final fullUrl =
+            '$url?screen=$i&total=${_lgService.connectionModel.screens}';
 
-        final command = '''
+        final command =
+            '''
 sshpass -p ${_lgService.connectionModel.password} ssh -t lg$i "DISPLAY=:0 chromium-browser --kiosk --no-first-run --disable-infobars '$fullUrl' > /dev/null 2>&1 &"
 ''';
 
@@ -128,10 +111,12 @@ sshpass -p ${_lgService.connectionModel.password} ssh -t lg$i "DISPLAY=:0 chromi
     }
   }
 
-  Future<bool> closeChromiumOnAllScreens() async { //Close chromiums
+  Future<bool> closeChromiumOnAllScreens() async {
+    //Close chromiums
     try {
       for (var i = 1; i <= _lgService.connectionModel.screens; i++) {
-        final command = '''
+        final command =
+            '''
 sshpass -p ${_lgService.connectionModel.password} ssh -t lg$i "
 pkill -f chromium-browser || true
 pkill -f chromium || true
@@ -165,14 +150,16 @@ DISPLAY=:0 xdotool key F11 || true
     }
   }
 
-  Future<bool> uploadHtmlToLG({ //Sends de html to LG
+  Future<bool> uploadHtmlToLG({
+    //Sends de html to LG
     required String htmlFileName,
     required String imageFileName,
     required String title,
     double imageHeight = 95,
   }) async {
     try {
-      final html = '''
+      final html =
+          '''
 <!DOCTYPE html>
 <html>
 <head>

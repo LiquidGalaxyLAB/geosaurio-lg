@@ -43,7 +43,7 @@ class LgNavigationService {
       if (dinosaur.latitude == 0 || dinosaur.longitude == 0) {
         debugPrint(
           'Invalid coordinates for ${dinosaur.name}: '
-              '${dinosaur.latitude}, ${dinosaur.longitude}',
+          '${dinosaur.latitude}, ${dinosaur.longitude}',
         );
         return false;
       }
@@ -58,7 +58,8 @@ class LgNavigationService {
       const double fixedRange = 610.0;
 
       // Create the LookAt for Google Earth
-      final lookAt = '<LookAt>'
+      final lookAt =
+          '<LookAt>'
           '<longitude>$cubeLongitude</longitude>'
           '<latitude>$cubeLatitude</latitude>'
           '<altitude>$targetAltitude</altitude>'
@@ -70,12 +71,12 @@ class LgNavigationService {
 
       debugPrint(
         'FlyTo cube for ${dinosaur.name}: '
-            'cubeLat=$cubeLatitude, '
-            'cubeLon=$cubeLongitude, '
-            'altitude=$targetAltitude, '
-            'tilt=$fixedTilt, '
-            'range=$fixedRange, '
-            'heading=${dinosaur.heading}',
+        'cubeLat=$cubeLatitude, '
+        'cubeLon=$cubeLongitude, '
+        'altitude=$targetAltitude, '
+        'tilt=$fixedTilt, '
+        'range=$fixedRange, '
+        'heading=${dinosaur.heading}',
       );
 
       // Send the movement to Liquid Galaxy
@@ -109,7 +110,8 @@ class LgNavigationService {
       }
 
       // Create the LookAt
-      final lookAt = '<LookAt>'
+      final lookAt =
+          '<LookAt>'
           '<longitude>${view[0]}</longitude>'
           '<latitude>${view[1]}</latitude>'
           '<altitude>0</altitude>'
@@ -131,13 +133,12 @@ class LgNavigationService {
       }
 
       // Show the continent information
-      final infoShown =
-      await _lgService.showContinentInfoColumn(continent);
+      final infoShown = await _lgService.showContinentInfoColumn(continent);
 
       if (!infoShown) {
         debugPrint(
           'Continent FlyTo worked, '
-              'but information column could not be shown',
+          'but information column could not be shown',
         );
       }
 
@@ -153,10 +154,10 @@ class LgNavigationService {
 
   // Move the camera to the selected country
   Future<bool> flyToCountry(
-      String country,
-      String continent,
-      List<Dinosaur> dinosaurs,
-      ) async {
+    String country,
+    String continent,
+    List<Dinosaur> dinosaurs,
+  ) async {
     try {
       if (!_lgService.isConnected) {
         debugPrint('SSH client is not connected');
@@ -174,22 +175,24 @@ class LgNavigationService {
       }
 
       // Calculate the center using the dinosaur positions
-      final latitude = validDinosaurs
-          .map((dinosaur) => dinosaur.latitude)
-          .reduce((a, b) => a + b) /
+      final latitude =
+          validDinosaurs
+              .map((dinosaur) => dinosaur.latitude)
+              .reduce((a, b) => a + b) /
           validDinosaurs.length;
 
-      final longitude = validDinosaurs
-          .map((dinosaur) => dinosaur.longitude)
-          .reduce((a, b) => a + b) /
+      final longitude =
+          validDinosaurs
+              .map((dinosaur) => dinosaur.longitude)
+              .reduce((a, b) => a + b) /
           validDinosaurs.length;
 
       // Camera distance
-      final double range =
-      validDinosaurs.length <= 1 ? 250000.0 : 900000.0;
+      final double range = validDinosaurs.length <= 1 ? 250000.0 : 900000.0;
 
       // Create the LookAt
-      final lookAt = '<LookAt>'
+      final lookAt =
+          '<LookAt>'
           '<longitude>$longitude</longitude>'
           '<latitude>$latitude</latitude>'
           '<altitude>0</altitude>'
@@ -201,9 +204,9 @@ class LgNavigationService {
 
       debugPrint(
         'Sending FlyTo country $country: '
-            'lat=$latitude, '
-            'lon=$longitude, '
-            'range=$range',
+        'lat=$latitude, '
+        'lon=$longitude, '
+        'range=$range',
       );
 
       // Send the movement to Liquid Galaxy
@@ -218,13 +221,15 @@ class LgNavigationService {
       }
 
       // Show the country information
-      final infoShown =
-      await _lgService.showCountryInfoColumn(country, continent);
+      final infoShown = await _lgService.showCountryInfoColumn(
+        country,
+        continent,
+      );
 
       if (!infoShown) {
         debugPrint(
           'Country FlyTo worked, '
-              'but information column could not be shown',
+          'but information column could not be shown',
         );
       }
 
@@ -249,7 +254,8 @@ class LgNavigationService {
       // Convert map zoom to Google Earth range
       final range = _mapZoomToRange(zoom);
 
-      final lookAt = '<LookAt>'
+      final lookAt =
+          '<LookAt>'
           '<longitude>$longitude</longitude>'
           '<latitude>$latitude</latitude>'
           '<altitude>0</altitude>'
@@ -261,7 +267,7 @@ class LgNavigationService {
 
       debugPrint(
         'Sending map position: '
-            'lat=$latitude, lon=$longitude, zoom=$zoom, range=$range',
+        'lat=$latitude, lon=$longitude, zoom=$zoom, range=$range',
       );
 
       // Send the map position to Liquid Galaxy

@@ -8,7 +8,8 @@ class LgMarkerService {
 
   LgMarkerService(this._lgService);
 
-  String _cleanText(String value) {   // Clean text before using it inside KML
+  String _cleanText(String value) {
+    // Clean text before using it inside KML
     return value
         .replaceAll('&', 'and')
         .replaceAll('<', '')
@@ -18,7 +19,8 @@ class LgMarkerService {
         .trim();
   }
 
-  Future<bool> showDinosaurSelectionMarkers(List<Dinosaur> dinosaurs) async {   // Show the dinosaur markers in Google Earth
+  Future<bool> showDinosaurSelectionMarkers(List<Dinosaur> dinosaurs) async {
+    // Show the dinosaur markers in Google Earth
     try {
       if (!_lgService.isConnected) {
         debugPrint(
@@ -28,7 +30,8 @@ class LgMarkerService {
         return false;
       }
 
-      final validDinosaurs = dinosaurs.where((dinosaur) { // Get dinosaurs with valid coordinates
+      final validDinosaurs = dinosaurs.where((dinosaur) {
+        // Get dinosaurs with valid coordinates
         return dinosaur.latitude != 0 && dinosaur.longitude != 0;
       }).toList();
 
@@ -57,19 +60,19 @@ class LgMarkerService {
         return false;
       }
 
-
       // Create one Placemark for each dinosaur
 
-      final placemarks = validDinosaurs.map((dinosaur) {
-        final safeName = _cleanText(dinosaur.name);
+      final placemarks = validDinosaurs
+          .map((dinosaur) {
+            final safeName = _cleanText(dinosaur.name);
 
-        debugPrint(
-          'PLACEMARK: ${dinosaur.name} | '
-          'lat=${dinosaur.latitude} | '
-          'lon=${dinosaur.longitude}',
-        );
+            debugPrint(
+              'PLACEMARK: ${dinosaur.name} | '
+              'lat=${dinosaur.latitude} | '
+              'lon=${dinosaur.longitude}',
+            );
 
-        return '''
+            return '''
 <Placemark>
   <name>$safeName</name>
   <styleUrl>#dinoMarkerStyle</styleUrl>
@@ -79,11 +82,13 @@ class LgMarkerService {
   </Point>
 </Placemark>
 ''';
-      }).join('\n');
+          })
+          .join('\n');
 
       // Create the KML with all dinosaur markers
 
-      final kml = ''' 
+      final kml =
+          ''' 
 <?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
 <Document>
@@ -102,17 +107,23 @@ class LgMarkerService {
 </kml>
 ''';
 
-      final logoScreen =
-          _lgService.calculateLeftMostScreen(_lgService.connectionModel.screens);
-      final rightScreen =
-          _lgService.calculateRightMostScreen(_lgService.connectionModel.screens);
+      final logoScreen = _lgService.calculateLeftMostScreen(
+        _lgService.connectionModel.screens,
+      );
+      final rightScreen = _lgService.calculateRightMostScreen(
+        _lgService.connectionModel.screens,
+      );
 
       await _lgService.execute(
         '''sed -i '\\|master.kml|d' /var/www/html/kmls.txt''',
         'Old master marker reference removed',
       );
 
-      for (int screen = 1; screen <= _lgService.connectionModel.screens; screen++) {
+      for (
+        int screen = 1;
+        screen <= _lgService.connectionModel.screens;
+        screen++
+      ) {
         if (screen == logoScreen || screen == rightScreen) {
           continue;
         }
@@ -123,14 +134,11 @@ class LgMarkerService {
         );
       }
 
-      final masterResult = await _lgService.execute(
-        '''
+      final masterResult = await _lgService.execute('''
 cat > /var/www/html/kml/master.kml << 'EOFKML'
 $kml
 EOFKML
-''',
-        'Dinosaur markers written to master.kml',
-      );
+''', 'Dinosaur markers written to master.kml');
 
       if (masterResult == null) {
         return false;
@@ -145,20 +153,21 @@ EOFKML
         return false;
       }
 
-      for (int screen = 1; screen <= _lgService.connectionModel.screens; screen++) {
+      for (
+        int screen = 1;
+        screen <= _lgService.connectionModel.screens;
+        screen++
+      ) {
         if (screen == logoScreen || screen == rightScreen) {
           debugPrint('Skipping slave_$screen to preserve overlay');
           continue;
         }
 
-        final slaveResult = await _lgService.execute(
-          '''
+        final slaveResult = await _lgService.execute('''
 cat > /var/www/html/kml/slave_$screen.kml << 'EOFKML'
 $kml
 EOFKML
-''',
-          'Dinosaur markers written to slave_$screen.kml',
-        );
+''', 'Dinosaur markers written to slave_$screen.kml');
 
         if (slaveResult == null) {
           return false;
@@ -185,7 +194,11 @@ EOFKML
         return false;
       }
 
-      for (int screen = 2; screen <= _lgService.connectionModel.screens; screen++) {
+      for (
+        int screen = 2;
+        screen <= _lgService.connectionModel.screens;
+        screen++
+      ) {
         if (screen == logoScreen || screen == rightScreen) {
           continue;
         }
@@ -208,7 +221,8 @@ EOFKML
     }
   }
 
-  Future<bool> cleanDinosaurSelectionMarkers() async {   // Remove the dinosaur selection markers
+  Future<bool> cleanDinosaurSelectionMarkers() async {
+    // Remove the dinosaur selection markers
     try {
       if (!_lgService.isConnected) {
         return false;
@@ -227,14 +241,11 @@ EOFKML
 </kml>
 ''';
 
-      await _lgService.execute(
-        '''
+      await _lgService.execute('''
 cat > /var/www/html/kml/dinosaur_selection_markers.kml << 'EOFKML'
 $emptyKml
 EOFKML
-''',
-        'Dinosaur selection markers cleaned',
-      );
+''', 'Dinosaur selection markers cleaned');
 
       final result = await _lgService.execute(
         '''echo "search=http://lg1:81/kmls.txt" > /tmp/query.txt''',
@@ -249,7 +260,8 @@ EOFKML
     }
   }
 
-  Future<bool> showSelectedDinosaurCube(Dinosaur dinosaur) async { // Show the cube for the selected dinosaur
+  Future<bool> showSelectedDinosaurCube(Dinosaur dinosaur) async {
+    // Show the cube for the selected dinosaur
     try {
       if (!_lgService.isConnected) {
         debugPrint('SSH client is not connected');
@@ -283,7 +295,8 @@ EOFKML
 
       // Create the cube using KML polygons
 
-      final kml = '''
+      final kml =
+          '''
 <?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
 <Document>
@@ -368,41 +381,37 @@ $west,$south,0
 </kml>
 ''';
 
-      final logoScreen =
-          _lgService.calculateLeftMostScreen(_lgService.connectionModel.screens);
-
-      await _lgService.execute(
-        '> /var/www/html/kmls.txt',
-        'Old cube removed',
+      final logoScreen = _lgService.calculateLeftMostScreen(
+        _lgService.connectionModel.screens,
       );
 
-      await _lgService.execute(
-        '''
+      await _lgService.execute('> /var/www/html/kmls.txt', 'Old cube removed');
+
+      await _lgService.execute('''
 cat > /var/www/html/kml/master.kml << 'EOFKML'
 $kml
 EOFKML
-''',
-        'Master cube written',
-      );
+''', 'Master cube written');
 
       await _lgService.execute(
         'echo "http://lg1:81/kml/master.kml" >> /var/www/html/kmls.txt',
         'Master registered',
       );
 
-      for (int screen = 1; screen <= _lgService.connectionModel.screens; screen++) {
+      for (
+        int screen = 1;
+        screen <= _lgService.connectionModel.screens;
+        screen++
+      ) {
         if (screen == logoScreen) {
           continue;
         }
 
-        await _lgService.execute(
-          '''
+        await _lgService.execute('''
 cat > /var/www/html/kml/slave_$screen.kml << 'EOFKML'
 $kml
 EOFKML
-''',
-          'Slave cube written',
-        );
+''', 'Slave cube written');
 
         await _lgService.execute(
           'echo "http://lg1:81/kml/slave_$screen.kml" >> /var/www/html/kmls.txt',
@@ -417,7 +426,11 @@ EOFKML
         'Cube refreshed',
       );
 
-      for (int screen = 2; screen <= _lgService.connectionModel.screens; screen++) {
+      for (
+        int screen = 2;
+        screen <= _lgService.connectionModel.screens;
+        screen++
+      ) {
         if (screen == logoScreen) {
           continue;
         }
@@ -435,15 +448,17 @@ EOFKML
     }
   }
 
-  Future<bool> cleanDinosaurMarkers() async { //Remove dinosaur markers and cubes
+  Future<bool> cleanDinosaurMarkers() async {
+    //Remove dinosaur markers and cubes
     try {
       if (!_lgService.isConnected) {
         debugPrint('SSH client is not connected');
         return false;
       }
 
-      final int logoScreen =
-          _lgService.calculateLeftMostScreen(_lgService.connectionModel.screens);
+      final int logoScreen = _lgService.calculateLeftMostScreen(
+        _lgService.connectionModel.screens,
+      );
 
       // Use an empty KML to clean the screens
 
@@ -456,7 +471,8 @@ EOFKML
 </kml>
 ''';
 
-      final String clearMasterCommand = '''
+      final String clearMasterCommand =
+          '''
 cat > /var/www/html/kml/master.kml << 'EOFKML'
 $emptyKml
 EOFKML
@@ -471,13 +487,18 @@ EOFKML
         return false;
       }
 
-      for (int screen = 1; screen <= _lgService.connectionModel.screens; screen++) {
+      for (
+        int screen = 1;
+        screen <= _lgService.connectionModel.screens;
+        screen++
+      ) {
         if (screen == logoScreen) {
           debugPrint('Skipping slave_$screen.kml to preserve logo');
           continue;
         }
 
-        final String clearSlaveCommand = '''
+        final String clearSlaveCommand =
+            '''
 cat > /var/www/html/kml/slave_$screen.kml << 'EOFKML'
 $emptyKml
 EOFKML
@@ -511,7 +532,11 @@ EOFKML
         return false;
       }
 
-      for (int screen = 1; screen <= _lgService.connectionModel.screens; screen++) {
+      for (
+        int screen = 1;
+        screen <= _lgService.connectionModel.screens;
+        screen++
+      ) {
         if (screen == logoScreen) {
           continue;
         }
@@ -537,7 +562,11 @@ EOFKML
         return false;
       }
 
-      for (int screen = 2; screen <= _lgService.connectionModel.screens; screen++) {
+      for (
+        int screen = 2;
+        screen <= _lgService.connectionModel.screens;
+        screen++
+      ) {
         if (screen == logoScreen) {
           continue;
         }
@@ -551,9 +580,7 @@ EOFKML
         debugPrint('Markers cleaned, but logo could not be restored');
       }
 
-      debugPrint(
-        'Dinosaur cubes cleaned successfully while preserving logo',
-      );
+      debugPrint('Dinosaur cubes cleaned successfully while preserving logo');
 
       return true;
     } catch (e, stackTrace) {

@@ -8,47 +8,36 @@ class HelpScreen extends StatelessWidget {
   const HelpScreen({super.key});
 
   @override
-  Widget build(BuildContext context) { // Get LG connection status
+  Widget build(BuildContext context) {
+    // Get LG connection status
     final lgService = context.watch<LgService>();
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor:
-      Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
 
       // Side navigation menu
-
-      drawer: AppDrawer(
-        isLgConnected: lgService.isConnected,
-      ),
+      drawer: AppDrawer(isLgConnected: lgService.isConnected),
 
       body: SafeArea(
         child: Builder(
           builder: (context) {
             return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24,
-                vertical: 10,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
               child: Column(
                 children: [
-                  Row( // Help screen header and connection status
+                  Row(
+                    // Help screen header and connection status
                     children: [
                       Container(
                         decoration: BoxDecoration(
-                          color: colorScheme
-                              .surfaceContainerHighest,
-                          borderRadius:
-                          BorderRadius.circular(14),
+                          color: colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(14),
                         ),
                         child: IconButton(
-                          icon: const Icon(
-                            Icons.menu,
-                            size: 30,
-                          ),
+                          icon: const Icon(Icons.menu, size: 30),
                           onPressed: () {
-                            Scaffold.of(context)
-                                .openDrawer();
+                            Scaffold.of(context).openDrawer();
                           },
                         ),
                       ),
@@ -65,16 +54,13 @@ class HelpScreen extends StatelessWidget {
                       ),
 
                       Container(
-                        padding:
-                        const EdgeInsets.symmetric(
+                        padding: const EdgeInsets.symmetric(
                           horizontal: 10,
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: colorScheme
-                              .surfaceContainerHighest,
-                          borderRadius:
-                          BorderRadius.circular(20),
+                          color: colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(20),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -92,10 +78,8 @@ class HelpScreen extends StatelessWidget {
                                   ? 'Connected'
                                   : 'Disconnected',
                               style: TextStyle(
-                                fontWeight:
-                                FontWeight.w600,
-                                color:
-                                colorScheme.onSurface,
+                                fontWeight: FontWeight.w600,
+                                color: colorScheme.onSurface,
                               ),
                             ),
                           ],
@@ -106,12 +90,13 @@ class HelpScreen extends StatelessWidget {
 
                   const SizedBox(height: 28),
 
-                  helpCard( // Basic instructions about the main app features
+                  helpCard(
+                    // Basic instructions about the main app features
                     context: context,
                     icon: Icons.explore,
                     title: 'How to explore dinosaurs',
                     text:
-                    'Select a geological period, then choose a continent, country and dinosaur. '
+                        'Select a geological period, then choose a continent, country and dinosaur. '
                         'GeoSaurio will move the Liquid Galaxy view and display the selected dinosaur information.',
                   ),
 
@@ -122,7 +107,7 @@ class HelpScreen extends StatelessWidget {
                     icon: Icons.settings,
                     title: 'LG Settings',
                     text:
-                    'Use LG Settings to configure the Liquid Galaxy connection, including IP address, port, username, password and number of screens.',
+                        'Use LG Settings to configure the Liquid Galaxy connection, including IP address, port, username, password and number of screens.',
                   ),
 
                   const SizedBox(height: 16),
@@ -132,7 +117,7 @@ class HelpScreen extends StatelessWidget {
                     icon: Icons.handyman,
                     title: 'LG Tools',
                     text:
-                    'Use LG Tools to reboot, relaunch or shut down the Liquid Galaxy system, manage logos and clean KML content.',
+                        'Use LG Tools to reboot, relaunch or shut down the Liquid Galaxy system, manage logos and clean KML content.',
                   ),
 
                   const SizedBox(height: 16),
@@ -142,7 +127,7 @@ class HelpScreen extends StatelessWidget {
                     icon: Icons.threesixty,
                     title: 'Orbit',
                     text:
-                    'Use Orbit to move the camera around the selected dinosaur location. '
+                        'Use Orbit to move the camera around the selected dinosaur location. '
                         'Press Stop Orbit to stop the movement.',
                   ),
 
@@ -153,7 +138,7 @@ class HelpScreen extends StatelessWidget {
                     icon: Icons.view_in_ar,
                     title: 'Skeleton and Comparison',
                     text:
-                    'Use Skeleton and See Comparison to display additional dinosaur visualizations across the Liquid Galaxy screens.',
+                        'Use Skeleton and See Comparison to display additional dinosaur visualizations across the Liquid Galaxy screens.',
                   ),
 
                   const SizedBox(height: 16),
@@ -163,7 +148,7 @@ class HelpScreen extends StatelessWidget {
                     icon: Icons.volume_up,
                     title: 'Narration',
                     text:
-                    'Press Narration to listen to the dinosaur audio description. '
+                        'Press Narration to listen to the dinosaur audio description. '
                         'Use Stop Narration to stop the audio.',
                   ),
 
@@ -174,7 +159,7 @@ class HelpScreen extends StatelessWidget {
                     icon: Icons.circle,
                     title: 'Connection indicator',
                     text:
-                    'A green indicator means GeoSaurio is connected to Liquid Galaxy. '
+                        'A green indicator means GeoSaurio is connected to Liquid Galaxy. '
                         'A red indicator means the connection is not currently active.',
                   ),
 
@@ -196,25 +181,18 @@ class HelpScreen extends StatelessWidget {
     required String title,
     required String text,
   }) {
-    final colorScheme =
-        Theme.of(context).colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color:
-        colorScheme.surfaceContainerHighest,
-        borderRadius:
-        BorderRadius.circular(20),
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
         children: [
-          Icon(
-            icon,
-            size: 34,
-            color: colorScheme.primary,
-          ),
+          Icon(icon, size: 34, color: colorScheme.primary),
           const SizedBox(height: 10),
           Text(
             title,
@@ -232,8 +210,7 @@ class HelpScreen extends StatelessWidget {
             style: TextStyle(
               fontSize: 16,
               height: 1.5,
-              color:
-              colorScheme.onSurfaceVariant,
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
         ],

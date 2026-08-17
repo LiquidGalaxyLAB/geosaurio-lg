@@ -19,13 +19,10 @@ class DinosaurDetailScreen extends StatefulWidget {
   });
 
   @override
-  State<DinosaurDetailScreen> createState() =>
-      _DinosaurDetailScreenState();
+  State<DinosaurDetailScreen> createState() => _DinosaurDetailScreenState();
 }
 
-class _DinosaurDetailScreenState
-    extends State<DinosaurDetailScreen> {
-
+class _DinosaurDetailScreenState extends State<DinosaurDetailScreen> {
   // Controls the narration state
   bool isNarrationPlaying = false;
 
@@ -36,16 +33,11 @@ class _DinosaurDetailScreenState
   Dinosaur get dinosaur => widget.dinosaur;
 
   // Show success or error messages
-  void showSnack(
-      BuildContext context,
-      String message, {
-        bool success = true,
-      }) {
+  void showSnack(BuildContext context, String message, {bool success = true}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor:
-        success ? Colors.green : Colors.red,
+        backgroundColor: success ? Colors.green : Colors.red,
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -53,7 +45,6 @@ class _DinosaurDetailScreenState
 
   // Return to the dinosaur selection
   Future<void> backToDinosaurSelection() async {
-
     // Avoid executing the action more than once
     if (isReturningToSelection) {
       return;
@@ -78,22 +69,13 @@ class _DinosaurDetailScreenState
   }
 
   // Send dinosaur actions to Liquid Galaxy
-  Future<void> sendToLg(
-      BuildContext context,
-      String action,
-      ) async {
-
+  Future<void> sendToLg(BuildContext context, String action) async {
     // Get the main Liquid Galaxy service
-    final lgService =
-    context.read<LgService>();
+    final lgService = context.read<LgService>();
 
     // Check that Liquid Galaxy is connected
     if (!lgService.isConnected) {
-      showSnack(
-        context,
-        'Liquid Galaxy is not connected',
-        success: false,
-      );
+      showSnack(context, 'Liquid Galaxy is not connected', success: false);
 
       return;
     }
@@ -106,9 +88,7 @@ class _DinosaurDetailScreenState
      * Recover the dinosaur's normal sight
      * before opening Chromium.
      */
-    await lgService.flyToDinosaur(
-      dinosaur,
-    );
+    await lgService.flyToDinosaur(dinosaur);
 
     /*
      * Comparison and Skeleton stop first
@@ -116,17 +96,9 @@ class _DinosaurDetailScreenState
      */
 
     if (action == 'Comparison') {
-      ok =
-      await lgService
-          .showDinosaurComparisonImage(
-        dinosaur,
-      );
+      ok = await lgService.showDinosaurComparisonImage(dinosaur);
     } else if (action == 'Skeleton') {
-      ok =
-      await lgService
-          .showDinosaurSkeletonImage(
-        dinosaur,
-      );
+      ok = await lgService.showDinosaurSkeletonImage(dinosaur);
     }
 
     if (!context.mounted) {
@@ -152,24 +124,15 @@ class _DinosaurDetailScreenState
     });
 
     try {
-      await AudioService()
-          .playDinosaurAudio(
-        dinosaur.name,
-      );
+      await AudioService().playDinosaurAudio(dinosaur.name);
 
       if (!mounted) {
         return;
       }
 
-      showSnack(
-        context,
-        'Narration started',
-        success: true,
-      );
+      showSnack(context, 'Narration started', success: true);
     } catch (e) {
-      debugPrint(
-        'Error starting narration: $e',
-      );
+      debugPrint('Error starting narration: $e');
 
       if (!mounted) {
         return;
@@ -179,11 +142,7 @@ class _DinosaurDetailScreenState
         isNarrationPlaying = false;
       });
 
-      showSnack(
-        context,
-        'Could not start narration',
-        success: false,
-      );
+      showSnack(context, 'Could not start narration', success: false);
     }
   }
 
@@ -202,22 +161,15 @@ class _DinosaurDetailScreenState
       return;
     }
 
-    showSnack(
-      context,
-      'Narration stopped',
-      success: true,
-    );
+    showSnack(context, 'Narration stopped', success: true);
   }
 
   Future<void> returnToGoogleEarth() async {
-    final lgService =
-    context.read<LgService>();
+    final lgService = context.read<LgService>();
 
     await lgService.stopDinosaurOrbit();
 
-    final ok =
-    await lgService
-        .closeChromiumOnAllScreens();
+    final ok = await lgService.closeChromiumOnAllScreens();
 
     await AudioService().stop();
 
@@ -231,37 +183,25 @@ class _DinosaurDetailScreenState
 
     showSnack(
       context,
-      ok
-          ? 'Returned to Google Earth'
-          : 'Could not close Chromium',
+      ok ? 'Returned to Google Earth' : 'Could not close Chromium',
       success: ok,
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final lgService =
-    context.watch<LgService>();
+    final lgService = context.watch<LgService>();
 
-    final colorScheme =
-        Theme.of(context).colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
-    final cleanName =
-    lgService.cleanDinosaurImageName(
-      dinosaur.name,
-    );
+    final cleanName = lgService.cleanDinosaurImageName(dinosaur.name);
 
     return Scaffold(
-      backgroundColor:
-      Theme.of(context)
-          .scaffoldBackgroundColor,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
 
       body: SafeArea(
         child: SingleChildScrollView(
-          padding:
-          const EdgeInsets.symmetric(
-            horizontal: 24,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
             children: [
               const SizedBox(height: 4),
@@ -269,37 +209,22 @@ class _DinosaurDetailScreenState
               Row(
                 children: [
                   Container(
-                    decoration:
-                    BoxDecoration(
-                      color: colorScheme
-                          .surfaceContainerHighest,
-                      borderRadius:
-                      BorderRadius
-                          .circular(
-                        14,
-                      ),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(14),
                     ),
                     child: IconButton(
-                      tooltip:
-                      'Back to dinosaur selection',
-                      icon:
-                      isReturningToSelection
+                      tooltip: 'Back to dinosaur selection',
+                      icon: isReturningToSelection
                           ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child:
-                        CircularProgressIndicator(
-                          strokeWidth:
-                          2.5,
-                        ),
-                      )
-                          : const Icon(
-                        Icons
-                            .arrow_back,
-                        size: 30,
-                      ),
-                      onPressed:
-                      isReturningToSelection
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                              ),
+                            )
+                          : const Icon(Icons.arrow_back, size: 30),
+                      onPressed: isReturningToSelection
                           ? null
                           : backToDinosaurSelection,
                     ),
@@ -308,63 +233,41 @@ class _DinosaurDetailScreenState
                   const Expanded(
                     child: Text(
                       'Dinosaur Information',
-                      textAlign:
-                      TextAlign.center,
+                      textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 24,
-                        fontWeight:
-                        FontWeight
-                            .bold,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
 
                   Container(
-                    padding:
-                    const EdgeInsets
-                        .symmetric(
+                    padding: const EdgeInsets.symmetric(
                       horizontal: 10,
                       vertical: 6,
                     ),
-                    decoration:
-                    BoxDecoration(
-                      color: colorScheme
-                          .surfaceContainerHighest,
-                      borderRadius:
-                      BorderRadius
-                          .circular(
-                        20,
-                      ),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(
-                      mainAxisSize:
-                      MainAxisSize.min,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
                           Icons.circle,
                           size: 12,
-                          color: lgService
-                              .isConnected
+                          color: lgService.isConnected
                               ? Colors.green
                               : Colors.red,
                         ),
 
-                        const SizedBox(
-                          width: 6,
-                        ),
+                        const SizedBox(width: 6),
 
                         Text(
-                          lgService
-                              .isConnected
-                              ? 'Connected'
-                              : 'Disconnected',
+                          lgService.isConnected ? 'Connected' : 'Disconnected',
                           style: TextStyle(
-                            fontWeight:
-                            FontWeight
-                                .w600,
-                            color:
-                            colorScheme
-                                .onSurface,
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onSurface,
                           ),
                         ),
                       ],
@@ -377,87 +280,50 @@ class _DinosaurDetailScreenState
 
               Container(
                 width: double.infinity,
-                padding:
-                const EdgeInsets.all(
-                  20,
-                ),
-                decoration:
-                cardDecoration(),
+                padding: const EdgeInsets.all(20),
+                decoration: cardDecoration(),
                 child: Column(
                   children: [
                     Container(
                       height: 180,
-                      width:
-                      double.infinity,
-                      decoration:
-                      BoxDecoration(
-                        color: colorScheme
-                            .surfaceContainer,
-                        borderRadius:
-                        BorderRadius
-                            .circular(
-                          18,
-                        ),
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainer,
+                        borderRadius: BorderRadius.circular(18),
                       ),
                       child: ClipRRect(
-                        borderRadius:
-                        BorderRadius
-                            .circular(
-                          18,
-                        ),
+                        borderRadius: BorderRadius.circular(18),
 
                         // Load the dinosaur normal image
                         // directly from the public GitHub repository
-                        child:
-                        FutureBuilder<
-                            String?>(
-                          future: lgService
-                              .getExistingImageUrl(
+                        child: FutureBuilder<String?>(
+                          future: lgService.getExistingImageUrl(
                             '${cleanName}_normal',
                           ),
-                          builder: (
-                              context,
-                              snapshot,
-                              ) {
-
+                          builder: (context, snapshot) {
                             // Wait while the application searches
                             // for the correct remote image
-                            if (snapshot
-                                .connectionState ==
-                                ConnectionState
-                                    .waiting) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
                               return const Center(
-                                child:
-                                CircularProgressIndicator(),
+                                child: CircularProgressIndicator(),
                               );
                             }
 
                             // Show the image found on GitHub
-                            if (snapshot
-                                .hasData &&
-                                snapshot.data !=
-                                    null) {
-                              return Image
-                                  .network(
+                            if (snapshot.hasData && snapshot.data != null) {
+                              return Image.network(
                                 snapshot.data!,
-                                fit:
-                                BoxFit.cover,
-                                width: double
-                                    .infinity,
+                                fit: BoxFit.cover,
+                                width: double.infinity,
 
                                 // Show a fallback icon if
                                 // the remote image cannot load
-                                errorBuilder: (
-                                    context,
-                                    error,
-                                    stackTrace,
-                                    ) {
+                                errorBuilder: (context, error, stackTrace) {
                                   return Icon(
                                     Icons.pets,
                                     size: 90,
-                                    color:
-                                    colorScheme
-                                        .primary,
+                                    color: colorScheme.primary,
                                   );
                                 },
                               );
@@ -467,43 +333,32 @@ class _DinosaurDetailScreenState
                             return Icon(
                               Icons.pets,
                               size: 90,
-                              color:
-                              colorScheme
-                                  .primary,
+                              color: colorScheme.primary,
                             );
                           },
                         ),
                       ),
                     ),
 
-                    const SizedBox(
-                      height: 18,
-                    ),
+                    const SizedBox(height: 18),
 
                     Text(
                       dinosaur.name,
-                      textAlign:
-                      TextAlign.center,
+                      textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 30,
-                        fontWeight:
-                        FontWeight
-                            .bold,
-                        color: colorScheme
-                            .onSurface,
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface,
                       ),
                     ),
 
-                    const SizedBox(
-                      height: 10,
-                    ),
+                    const SizedBox(height: 10),
 
                     Text(
                       dinosaur.periodName,
                       style: TextStyle(
                         fontSize: 17,
-                        color: colorScheme
-                            .onSurfaceVariant,
+                        color: colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -515,22 +370,17 @@ class _DinosaurDetailScreenState
               GridView.count(
                 crossAxisCount: 2,
                 shrinkWrap: true,
-                physics:
-                const NeverScrollableScrollPhysics(),
+                physics: const NeverScrollableScrollPhysics(),
                 crossAxisSpacing: 14,
                 mainAxisSpacing: 14,
                 childAspectRatio: 1.45,
                 children: [
-
                   // Orbit button
-
                   optionButton(
                     icon: lgService.isDinosaurOrbiting
                         ? Icons.stop_circle_outlined
                         : Icons.threesixty,
-                    text: lgService.isDinosaurOrbiting
-                        ? 'Stop Orbit'
-                        : 'Orbit',
+                    text: lgService.isDinosaurOrbiting ? 'Stop Orbit' : 'Orbit',
                     onTap: () async {
                       if (!lgService.isConnected) {
                         showSnack(
@@ -543,27 +393,18 @@ class _DinosaurDetailScreenState
                       }
 
                       if (lgService.isDinosaurOrbiting) {
-                        await lgService
-                            .stopDinosaurOrbit();
+                        await lgService.stopDinosaurOrbit();
 
                         if (!context.mounted) {
                           return;
                         }
 
-                        showSnack(
-                          context,
-                          'Orbit stopped',
-                          success: true,
-                        );
+                        showSnack(context, 'Orbit stopped', success: true);
 
                         return;
                       }
 
-                      final ok =
-                      await lgService
-                          .startDinosaurOrbit(
-                        dinosaur,
-                      );
+                      final ok = await lgService.startDinosaurOrbit(dinosaur);
 
                       if (!context.mounted) {
                         return;
@@ -571,16 +412,13 @@ class _DinosaurDetailScreenState
 
                       showSnack(
                         context,
-                        ok
-                            ? 'Orbit started'
-                            : 'Could not start the orbit',
+                        ok ? 'Orbit started' : 'Could not start the orbit',
                         success: ok,
                       );
                     },
                   ),
 
                   //Narration button
-
                   optionButton(
                     icon: Icons.volume_up,
                     text: 'Narration',
@@ -588,72 +426,41 @@ class _DinosaurDetailScreenState
                   ),
 
                   // Skeleton button that send the skeleton image
-
                   optionButton(
                     icon: Icons.view_in_ar,
                     text: 'Skeleton',
                     onTap: () {
-                      sendToLg(
-                        context,
-                        'Skeleton',
-                      );
+                      sendToLg(context, 'Skeleton');
                     },
                   ),
 
                   //Comparison button
-
                   optionButton(
                     icon: Icons.groups,
                     text: 'See Comparison',
                     onTap: () {
-                      sendToLg(
-                        context,
-                        'Comparison',
-                      );
+                      sendToLg(context, 'Comparison');
                     },
                   ),
                 ],
               ),
 
               //Stop Narration button
-
               if (isNarrationPlaying) ...[
-                const SizedBox(
-                  height: 16,
-                ),
+                const SizedBox(height: 16),
 
                 SizedBox(
-                  width:
-                  double.infinity,
-                  child:
-                  ElevatedButton.icon(
-                    onPressed:
-                    stopNarration,
-                    icon: const Icon(
-                      Icons.stop,
-                    ),
-                    label: const Text(
-                      'Stop Narration',
-                    ),
-                    style:
-                    ElevatedButton
-                        .styleFrom(
-                      backgroundColor:
-                      Colors.orange,
-                      foregroundColor:
-                      Colors.white,
-                      padding:
-                      const EdgeInsets
-                          .symmetric(
-                        vertical: 16,
-                      ),
-                      shape:
-                      RoundedRectangleBorder(
-                        borderRadius:
-                        BorderRadius
-                            .circular(
-                          18,
-                        ),
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: stopNarration,
+                    icon: const Icon(Icons.stop),
+                    label: const Text('Stop Narration'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
                       ),
                     ),
                   ),
@@ -664,36 +471,16 @@ class _DinosaurDetailScreenState
 
               SizedBox(
                 width: double.infinity,
-                child:
-                ElevatedButton.icon(
-                  onPressed:
-                  returnToGoogleEarth,
-                  icon: const Icon(
-                    Icons
-                        .desktop_windows,
-                  ),
-                  label: const Text(
-                    'Return to Google Earth',
-                  ),
-                  style:
-                  ElevatedButton
-                      .styleFrom(
-                    backgroundColor:
-                    Colors.red,
-                    foregroundColor:
-                    Colors.white,
-                    padding:
-                    const EdgeInsets
-                        .symmetric(
-                      vertical: 16,
-                    ),
-                    shape:
-                    RoundedRectangleBorder(
-                      borderRadius:
-                      BorderRadius
-                          .circular(
-                        18,
-                      ),
+                child: ElevatedButton.icon(
+                  onPressed: returnToGoogleEarth,
+                  icon: const Icon(Icons.desktop_windows),
+                  label: const Text('Return to Google Earth'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
                     ),
                   ),
                 ),
@@ -705,24 +492,19 @@ class _DinosaurDetailScreenState
                 children: [
                   Expanded(
                     child: infoCard(
-                      icon:
-                      Icons.public,
+                      icon: Icons.public,
                       title: 'Country',
-                      value:
-                      dinosaur.country,
+                      value: dinosaur.country,
                     ),
                   ),
 
-                  const SizedBox(
-                    width: 12,
-                  ),
+                  const SizedBox(width: 12),
 
                   Expanded(
                     child: infoCard(
                       icon: Icons.place,
                       title: 'Region',
-                      value:
-                      dinosaur.region,
+                      value: dinosaur.region,
                     ),
                   ),
                 ],
@@ -734,33 +516,23 @@ class _DinosaurDetailScreenState
                 children: [
                   Expanded(
                     child: infoCard(
-                      icon: Icons
-                          .straighten,
+                      icon: Icons.straighten,
                       title: 'Length',
-                      value: dinosaur
-                          .length
-                          .isEmpty
+                      value: dinosaur.length.isEmpty
                           ? 'Unknown'
-                          : dinosaur
-                          .length,
+                          : dinosaur.length,
                     ),
                   ),
 
-                  const SizedBox(
-                    width: 12,
-                  ),
+                  const SizedBox(width: 12),
 
                   Expanded(
                     child: infoCard(
-                      icon: Icons
-                          .monitor_weight,
+                      icon: Icons.monitor_weight,
                       title: 'Weight',
-                      value: dinosaur
-                          .weight
-                          .isEmpty
+                      value: dinosaur.weight.isEmpty
                           ? 'Unknown'
-                          : dinosaur
-                          .weight,
+                          : dinosaur.weight,
                     ),
                   ),
                 ],
@@ -772,29 +544,19 @@ class _DinosaurDetailScreenState
                 children: [
                   Expanded(
                     child: infoCard(
-                      icon:
-                      Icons.timeline,
+                      icon: Icons.timeline,
                       title: 'Period',
-                      value: dinosaur
-                          .periodName,
+                      value: dinosaur.periodName,
                     ),
                   ),
 
-                  const SizedBox(
-                    width: 12,
-                  ),
+                  const SizedBox(width: 12),
 
                   Expanded(
                     child: infoCard(
-                      icon: Icons
-                          .calendar_month,
+                      icon: Icons.calendar_month,
                       title: 'Year',
-                      value: dinosaur
-                          .year
-                          .isEmpty
-                          ? 'Unknown'
-                          : dinosaur
-                          .year,
+                      value: dinosaur.year.isEmpty ? 'Unknown' : dinosaur.year,
                     ),
                   ),
                 ],
@@ -803,10 +565,9 @@ class _DinosaurDetailScreenState
               const SizedBox(height: 22),
 
               sectionCard(
-                title:
-                'Scientific Information',
+                title: 'Scientific Information',
                 text:
-                'Status: ${emptyText(dinosaur.status)}\n'
+                    'Status: ${emptyText(dinosaur.status)}\n'
                     'Author: ${emptyText(dinosaur.author)}\n'
                     'Formation: ${emptyText(dinosaur.formation)}\n'
                     'Time: ${emptyText(dinosaur.time1)}'
@@ -816,11 +577,8 @@ class _DinosaurDetailScreenState
               const SizedBox(height: 16),
 
               sectionCard(
-                title:
-                'Fossil Material',
-                text: emptyText(
-                  dinosaur.material,
-                ),
+                title: 'Fossil Material',
+                text: emptyText(dinosaur.material),
               ),
 
               const SizedBox(height: 30),
@@ -831,38 +589,26 @@ class _DinosaurDetailScreenState
     );
   }
 
-  String emptyText(
-      String value,
-      ) {
-    return value.trim().isEmpty
-        ? 'Unknown'
-        : value;
+  String emptyText(String value) {
+    return value.trim().isEmpty ? 'Unknown' : value;
   }
 
-  Widget sectionCard({
-    required String title,
-    required String text,
-  }) {
-    final colorScheme =
-        Theme.of(context).colorScheme;
+  Widget sectionCard({required String title, required String text}) {
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
       width: double.infinity,
-      padding:
-      const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(18),
       decoration: cardDecoration(),
       child: Column(
-        crossAxisAlignment:
-        CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
             style: TextStyle(
               fontSize: 22,
-              fontWeight:
-              FontWeight.bold,
-              color:
-              colorScheme.onSurface,
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
             ),
           ),
 
@@ -873,8 +619,7 @@ class _DinosaurDetailScreenState
             style: TextStyle(
               fontSize: 16,
               height: 1.35,
-              color: colorScheme
-                  .onSurfaceVariant,
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -887,31 +632,22 @@ class _DinosaurDetailScreenState
     required String title,
     required String value,
   }) {
-    final colorScheme =
-        Theme.of(context).colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
-      padding:
-      const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(14),
       decoration: cardDecoration(),
       child: Column(
         children: [
-          Icon(
-            icon,
-            color:
-            colorScheme.primary,
-            size: 28,
-          ),
+          Icon(icon, color: colorScheme.primary, size: 28),
 
           const SizedBox(height: 8),
 
           Text(
             title,
             style: TextStyle(
-              fontWeight:
-              FontWeight.bold,
-              color: colorScheme
-                  .onSurfaceVariant,
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
 
@@ -919,13 +655,8 @@ class _DinosaurDetailScreenState
 
           Text(
             emptyText(value),
-            textAlign:
-            TextAlign.center,
-            style: TextStyle(
-              fontSize: 15,
-              color: colorScheme
-                  .onSurface,
-            ),
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 15, color: colorScheme.onSurface),
           ),
         ],
       ),
@@ -937,47 +668,28 @@ class _DinosaurDetailScreenState
     required String text,
     required VoidCallback onTap,
   }) {
-    final colorScheme =
-        Theme.of(context).colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return ElevatedButton(
       onPressed: onTap,
-      style:
-      ElevatedButton.styleFrom(
-        backgroundColor:
-        colorScheme.primary,
-        foregroundColor:
-        colorScheme.onPrimary,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: colorScheme.primary,
+        foregroundColor: colorScheme.onPrimary,
         elevation: 5,
-        padding:
-        const EdgeInsets.all(12),
-        shape:
-        RoundedRectangleBorder(
-          borderRadius:
-          BorderRadius.circular(
-            18,
-          ),
-        ),
+        padding: const EdgeInsets.all(12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       ),
       child: Column(
-        mainAxisAlignment:
-        MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            icon,
-            size: 30,
-          ),
+          Icon(icon, size: 30),
 
           const SizedBox(height: 8),
 
           Text(
             text,
-            textAlign:
-            TextAlign.center,
-            style: const TextStyle(
-              fontWeight:
-              FontWeight.bold,
-            ),
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
         ],
       ),
@@ -985,23 +697,16 @@ class _DinosaurDetailScreenState
   }
 
   BoxDecoration cardDecoration() {
-    final colorScheme =
-        Theme.of(context).colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return BoxDecoration(
-      color: colorScheme
-          .surfaceContainerHighest,
-      borderRadius:
-      BorderRadius.circular(22),
+      color: colorScheme.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(22),
       boxShadow: [
         BoxShadow(
-          color: colorScheme.shadow
-              .withValues(
-            alpha: 0.12,
-          ),
+          color: colorScheme.shadow.withValues(alpha: 0.12),
           blurRadius: 10,
-          offset:
-          const Offset(0, 4),
+          offset: const Offset(0, 4),
         ),
       ],
     );

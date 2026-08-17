@@ -7,8 +7,7 @@ class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() =>
-      _SplashScreenState();
+  State<SplashScreen> createState() => _SplashScreenState();
 }
 
 class _SplashScreenState extends State<SplashScreen> {
@@ -23,37 +22,27 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _startSplash() async {
     try {
-      await _audioPlayer.setAsset(
-        'assets/audio/start.mp3',
-      );
+      await _audioPlayer.setAsset('assets/audio/start.mp3');
 
       await _audioPlayer.play();
 
       // Wait audio to finish
       await _audioPlayer.playerStateStream.firstWhere(
-            (state) =>
-        state.processingState ==
-            ProcessingState.completed,
+        (state) => state.processingState == ProcessingState.completed,
       );
     } catch (e) {
-      debugPrint(
-        'Error playing splash audio: $e',
-      );
+      debugPrint('Error playing splash audio: $e');
 
       //If the audio fails,
       //also show the splash for 5 seconds.
-      await Future.delayed(
-        const Duration(seconds: 5),
-      );
+      await Future.delayed(const Duration(seconds: 5));
     }
 
     if (!mounted) return;
 
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(
-        builder: (_) => const HomeScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const HomeScreen()),
     );
   }
 
@@ -71,9 +60,7 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Center(
           child: Image.asset(
             'assets/images/logos.png',
-            width:
-            MediaQuery.of(context).size.width *
-                1.10,
+            width: MediaQuery.of(context).size.width * 1.10,
             fit: BoxFit.contain,
           ),
         ),

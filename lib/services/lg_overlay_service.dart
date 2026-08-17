@@ -9,7 +9,8 @@ import 'package:http/http.dart' as http;
 class LgOverlayService {
   final LgService _lgService;
 
-  final Map<String, String> _continentFacts = { // Facts shown in the continent information columns
+  final Map<String, String> _continentFacts = {
+    // Facts shown in the continent information columns
     'Africa':
         'Africa preserves an extraordinary dinosaur fossil record covering '
         'almost the entire Age of Dinosaurs. Some of the earliest dinosaurs '
@@ -47,7 +48,8 @@ class LgOverlayService {
         'environments.',
   };
 
-  final Map<String, String> _countryFacts = {   // Facts shown in the country information columns
+  final Map<String, String> _countryFacts = {
+    // Facts shown in the country information columns
     'China':
         'China is especially famous for exceptionally preserved feathered '
         'dinosaurs. Discoveries from northeastern China provided important '
@@ -120,7 +122,8 @@ class LgOverlayService {
         .trim();
   }
 
-  Future<bool> createDinosaurInfoColumn(   // Creates the dinosaur information column as an imag
+  Future<bool> createDinosaurInfoColumn(
+    // Creates the dinosaur information column as an imag
     Dinosaur dinosaur,
     String fileName,
   ) async {
@@ -162,22 +165,23 @@ class LgOverlayService {
         double lineHeight = 1.25,
         ui.TextAlign textAlign = ui.TextAlign.left,
       }) {
-        final builder = ui.ParagraphBuilder(
-          ui.ParagraphStyle(
-            textAlign: textAlign,
-            fontSize: fontSize,
-            fontWeight: fontWeight,
-            height: lineHeight,
-          ),
-        )
-          ..pushStyle(
-            ui.TextStyle(
-              color: color,
-              fontSize: fontSize,
-              fontWeight: fontWeight,
-            ),
-          )
-          ..addText(text);
+        final builder =
+            ui.ParagraphBuilder(
+                ui.ParagraphStyle(
+                  textAlign: textAlign,
+                  fontSize: fontSize,
+                  fontWeight: fontWeight,
+                  height: lineHeight,
+                ),
+              )
+              ..pushStyle(
+                ui.TextStyle(
+                  color: color,
+                  fontSize: fontSize,
+                  fontWeight: fontWeight,
+                ),
+              )
+              ..addText(text);
 
         final paragraph = builder.build();
         paragraph.layout(ui.ParagraphConstraints(width: maxWidth));
@@ -262,11 +266,9 @@ class LgOverlayService {
 
       currentY += 35;
 
-      final cleanName =
-      _lgService.cleanDinosaurImageName(dinosaur.name);
+      final cleanName = _lgService.cleanDinosaurImageName(dinosaur.name);
 
-      final dinosaurImageUrl =
-      await _lgService.getExistingImageUrl(
+      final dinosaurImageUrl = await _lgService.getExistingImageUrl(
         '${cleanName}_normal',
       );
 
@@ -274,34 +276,31 @@ class LgOverlayService {
 
       if (dinosaurImageUrl != null) {
         try {
-          final response =
-          await http.get(Uri.parse(dinosaurImageUrl));
+          final response = await http.get(Uri.parse(dinosaurImageUrl));
 
           if (response.statusCode == 200) {
             final bytes = response.bodyBytes;
 
-            final codec =
-            await ui.instantiateImageCodec(bytes);
+            final codec = await ui.instantiateImageCodec(bytes);
 
-            final frame =
-            await codec.getNextFrame();
+            final frame = await codec.getNextFrame();
 
             dinosaurImage = frame.image;
 
             debugPrint(
               'Dinosaur image downloaded for column: '
-                  '$dinosaurImageUrl',
+              '$dinosaurImageUrl',
             );
           } else {
             debugPrint(
               'Could not download dinosaur image: '
-                  '${response.statusCode}',
+              '${response.statusCode}',
             );
           }
         } catch (e) {
           debugPrint(
             'Could not load remote dinosaur image '
-                'for column: $e',
+            'for column: $e',
           );
         }
       }
@@ -327,9 +326,24 @@ class LgOverlayService {
           color: secondaryCardColor,
         );
 
-        final sourceRect = ui.Rect.fromLTWH(0, 0, originalWidth, originalHeight);
-        final destinationRect = ui.Rect.fromLTWH(imageX, currentY, imageWidth, imageHeight);
-        canvas.drawImageRect(dinosaurImage, sourceRect, destinationRect, ui.Paint());
+        final sourceRect = ui.Rect.fromLTWH(
+          0,
+          0,
+          originalWidth,
+          originalHeight,
+        );
+        final destinationRect = ui.Rect.fromLTWH(
+          imageX,
+          currentY,
+          imageWidth,
+          imageHeight,
+        );
+        canvas.drawImageRect(
+          dinosaurImage,
+          sourceRect,
+          destinationRect,
+          ui.Paint(),
+        );
         currentY += imageHeight + 55;
       }
 
@@ -393,11 +407,17 @@ class LgOverlayService {
       );
       currentY += 170;
 
-      final location = [dinosaur.region, dinosaur.country]
-          .where((value) => value.trim().isNotEmpty)
-          .join(', ');
+      final location = [
+        dinosaur.region,
+        dinosaur.country,
+      ].where((value) => value.trim().isNotEmpty).join(', ');
 
-      drawCard(x: padding, y: currentY, cardWidth: width - (padding * 2), cardHeight: 125);
+      drawCard(
+        x: padding,
+        y: currentY,
+        cardWidth: width - (padding * 2),
+        cardHeight: 125,
+      );
       drawText(
         text: 'Location',
         fontSize: 27,
@@ -497,9 +517,10 @@ class LgOverlayService {
         color: accentColor,
       );
       scientificY += 38;
-      final timeRange = [dinosaur.time1, dinosaur.time2]
-          .where((value) => value.trim().isNotEmpty)
-          .join(' – ');
+      final timeRange = [
+        dinosaur.time1,
+        dinosaur.time2,
+      ].where((value) => value.trim().isNotEmpty).join(' – ');
       drawText(
         text: timeRange.isEmpty ? 'Unknown' : timeRange,
         fontSize: 31,
@@ -521,17 +542,26 @@ class LgOverlayService {
           ? 'No additional information available.'
           : dinosaur.generalInfo;
 
-      final aboutBuilder = ui.ParagraphBuilder(
-        ui.ParagraphStyle(fontSize: 30, height: 1.4),
-      )
-        ..pushStyle(ui.TextStyle(color: textColor, fontSize: 30))
-        ..addText(aboutText);
+      final aboutBuilder =
+          ui.ParagraphBuilder(ui.ParagraphStyle(fontSize: 30, height: 1.4))
+            ..pushStyle(ui.TextStyle(color: textColor, fontSize: 30))
+            ..addText(aboutText);
       final aboutParagraph = aboutBuilder.build();
-      aboutParagraph.layout(ui.ParagraphConstraints(width: width - (padding * 2) - 56));
+      aboutParagraph.layout(
+        ui.ParagraphConstraints(width: width - (padding * 2) - 56),
+      );
       final aboutCardHeight = aboutParagraph.height + 56;
 
-      drawCard(x: padding, y: currentY, cardWidth: width - (padding * 2), cardHeight: aboutCardHeight);
-      canvas.drawParagraph(aboutParagraph, ui.Offset(padding + 28, currentY + 28));
+      drawCard(
+        x: padding,
+        y: currentY,
+        cardWidth: width - (padding * 2),
+        cardHeight: aboutCardHeight,
+      );
+      canvas.drawParagraph(
+        aboutParagraph,
+        ui.Offset(padding + 28, currentY + 28),
+      );
 
       final picture = recorder.endRecording();
       final image = await picture.toImage(width.toInt(), height.toInt());
@@ -543,7 +573,10 @@ class LgOverlayService {
       }
 
       final bytes = byteData.buffer.asUint8List();
-      final uploaded = await _lgService.uploadBytesToLG(bytes: bytes, fileName: fileName);
+      final uploaded = await _lgService.uploadBytesToLG(
+        bytes: bytes,
+        fileName: fileName,
+      );
 
       if (!uploaded) {
         debugPrint('Could not upload dinosaur info column');
@@ -559,15 +592,21 @@ class LgOverlayService {
     }
   }
 
-  Future<bool> showDinosaurAboutColumn(Dinosaur dinosaur) async {   // Shows the dinosaur information column on the right screen
+  Future<bool> showDinosaurAboutColumn(Dinosaur dinosaur) async {
+    // Shows the dinosaur information column on the right screen
     try {
       if (!_lgService.isConnected) {
-        debugPrint('Cannot show dinosaur information: Liquid Galaxy is not connected');
+        debugPrint(
+          'Cannot show dinosaur information: Liquid Galaxy is not connected',
+        );
         return false;
       }
 
-      final screen = _lgService.calculateRightMostScreen(_lgService.connectionModel.screens);
-      final imageFileName = '${_lgService.cleanDinosaurImageName(dinosaur.name)}_info.png';
+      final screen = _lgService.calculateRightMostScreen(
+        _lgService.connectionModel.screens,
+      );
+      final imageFileName =
+          '${_lgService.cleanDinosaurImageName(dinosaur.name)}_info.png';
       final created = await createDinosaurInfoColumn(dinosaur, imageFileName);
 
       if (!created) {
@@ -576,7 +615,8 @@ class LgOverlayService {
       }
 
       final cleanDinosaurName = _cleanText(dinosaur.name);
-      final kml = '''<?xml version="1.0" encoding="UTF-8"?>
+      final kml =
+          '''<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
     <ScreenOverlay>
@@ -606,7 +646,8 @@ class LgOverlayService {
     }
   }
 
-  Future<bool> createLocationInfoColumn({   // Creates the information column used for continents and countries
+  Future<bool> createLocationInfoColumn({
+    // Creates the information column used for continents and countries
     required String title,
     required String subtitle,
     required String introduction,
@@ -653,22 +694,23 @@ class LgOverlayService {
         double lineHeight = 1.3,
         ui.TextAlign textAlign = ui.TextAlign.left,
       }) {
-        final builder = ui.ParagraphBuilder(
-          ui.ParagraphStyle(
-            textAlign: textAlign,
-            fontSize: fontSize,
-            fontWeight: fontWeight,
-            height: lineHeight,
-          ),
-        )
-          ..pushStyle(
-            ui.TextStyle(
-              color: color,
-              fontSize: fontSize,
-              fontWeight: fontWeight,
-            ),
-          )
-          ..addText(text);
+        final builder =
+            ui.ParagraphBuilder(
+                ui.ParagraphStyle(
+                  textAlign: textAlign,
+                  fontSize: fontSize,
+                  fontWeight: fontWeight,
+                  height: lineHeight,
+                ),
+              )
+              ..pushStyle(
+                ui.TextStyle(
+                  color: color,
+                  fontSize: fontSize,
+                  fontWeight: fontWeight,
+                ),
+              )
+              ..addText(text);
 
         final paragraph = builder.build();
         paragraph.layout(ui.ParagraphConstraints(width: maxWidth));
@@ -763,7 +805,11 @@ class LgOverlayService {
 
       currentY += 20;
       const double factCardHeight = 485;
-      drawCard(y: currentY, cardHeight: factCardHeight, color: secondaryCardColor);
+      drawCard(
+        y: currentY,
+        cardHeight: factCardHeight,
+        color: secondaryCardColor,
+      );
       drawText(
         text: fact,
         fontSize: 31,
@@ -793,7 +839,10 @@ class LgOverlayService {
       }
 
       final bytes = byteData.buffer.asUint8List();
-      final uploaded = await _lgService.uploadBytesToLG(bytes: bytes, fileName: fileName);
+      final uploaded = await _lgService.uploadBytesToLG(
+        bytes: bytes,
+        fileName: fileName,
+      );
 
       if (!uploaded) {
         debugPrint('Could not upload location info column');
@@ -819,9 +868,12 @@ class LgOverlayService {
         return false;
       }
 
-      final screen = _lgService.calculateRightMostScreen(_lgService.connectionModel.screens);
+      final screen = _lgService.calculateRightMostScreen(
+        _lgService.connectionModel.screens,
+      );
       final cleanLocationName = _cleanText(locationName);
-      final kml = '''<?xml version="1.0" encoding="UTF-8"?>
+      final kml =
+          '''<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
     <ScreenOverlay>
@@ -851,11 +903,14 @@ class LgOverlayService {
     }
   }
 
-  Future<bool> showContinentInfoColumn(String continent) async {   // Creates and shows the information for the selected continent
+  Future<bool> showContinentInfoColumn(String continent) async {
+    // Creates and shows the information for the selected continent
     try {
-      final fact = _continentFacts[continent] ??
+      final fact =
+          _continentFacts[continent] ??
           'This continent preserves an important dinosaur fossil record with discoveries from different parts of the Mesozoic Era.';
-      const instructions = '→ Select a country to continue exploring\n\n'
+      const instructions =
+          '→ Select a country to continue exploring\n\n'
           '→ Discover which dinosaurs were found there\n\n'
           '→ Explore dinosaur fossil locations\n\n'
           '→ Travel across the discoveries using Liquid Galaxy';
@@ -864,7 +919,8 @@ class LgOverlayService {
       final created = await createLocationInfoColumn(
         title: continent,
         subtitle: 'GeoSaurio',
-        introduction: 'Explore the dinosaur discoveries of $continent and learn how dinosaur life changed across this part of the world.',
+        introduction:
+            'Explore the dinosaur discoveries of $continent and learn how dinosaur life changed across this part of the world.',
         instructions: instructions,
         fact: fact,
         fileName: fileName,
@@ -872,7 +928,10 @@ class LgOverlayService {
 
       if (!created) return false;
 
-      return await showLocationInfoOverlay(fileName: fileName, locationName: continent);
+      return await showLocationInfoOverlay(
+        fileName: fileName,
+        locationName: continent,
+      );
     } catch (e, stackTrace) {
       debugPrint('Error showing continent information: $e');
       debugPrint('$stackTrace');
@@ -880,11 +939,14 @@ class LgOverlayService {
     }
   }
 
-  Future<bool> showCountryInfoColumn(String country, String continent) async {   // Creates and shows the information for the selected country
+  Future<bool> showCountryInfoColumn(String country, String continent) async {
+    // Creates and shows the information for the selected country
     try {
-      final fact = _countryFacts[country] ??
+      final fact =
+          _countryFacts[country] ??
           '$country has produced dinosaur fossils that help scientists understand dinosaur diversity and evolution during the Mesozoic Era.';
-      const instructions = '→ Explore the dinosaurs found in this country\n\n'
+      const instructions =
+          '→ Explore the dinosaurs found in this country\n\n'
           '→ Select a dinosaur to visit its fossil location\n\n'
           '→ Discover information about each species\n\n'
           '→ View its skeleton and size comparison\n\n'
@@ -894,7 +956,8 @@ class LgOverlayService {
       final created = await createLocationInfoColumn(
         title: country,
         subtitle: '$continent • GeoSaurio',
-        introduction: 'Explore the dinosaurs discovered in $country and learn more about the fossil sites that preserve their history.',
+        introduction:
+            'Explore the dinosaurs discovered in $country and learn more about the fossil sites that preserve their history.',
         instructions: instructions,
         fact: fact,
         fileName: fileName,
@@ -902,7 +965,10 @@ class LgOverlayService {
 
       if (!created) return false;
 
-      return await showLocationInfoOverlay(fileName: fileName, locationName: country);
+      return await showLocationInfoOverlay(
+        fileName: fileName,
+        locationName: country,
+      );
     } catch (e, stackTrace) {
       debugPrint('Error showing country information: $e');
       debugPrint('$stackTrace');
@@ -910,9 +976,12 @@ class LgOverlayService {
     }
   }
 
-  Future<bool> sendLogo() async { //sends logo
+  Future<bool> sendLogo() async {
+    //sends logo
     try {
-      final screen = _lgService.calculateLeftMostScreen(_lgService.connectionModel.screens);
+      final screen = _lgService.calculateLeftMostScreen(
+        _lgService.connectionModel.screens,
+      );
       final uploaded = await _lgService.uploadAssetToLG(
         assetPath: 'assets/images/logos.png',
         fileName: 'logos.png',
@@ -947,12 +1016,15 @@ class LgOverlayService {
     }
   }
 
-  Future<bool> showRightScreenImage({   // Shows an image on the right screen
+  Future<bool> showRightScreenImage({
+    // Shows an image on the right screen
     required String assetPath,
     required String fileName,
   }) async {
     try {
-      final screen = _lgService.calculateRightMostScreen(_lgService.connectionModel.screens);
+      final screen = _lgService.calculateRightMostScreen(
+        _lgService.connectionModel.screens,
+      );
       final uploaded = await _lgService.uploadAssetToLG(
         assetPath: assetPath,
         fileName: fileName,
@@ -960,7 +1032,8 @@ class LgOverlayService {
 
       if (!uploaded) return false;
 
-      final kml = '''<?xml version="1.0" encoding="UTF-8"?>
+      final kml =
+          '''<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
     <ScreenOverlay>
@@ -988,9 +1061,12 @@ class LgOverlayService {
     }
   }
 
-  Future<void> cleanLogos() async { //clean logos
+  Future<void> cleanLogos() async {
+    //clean logos
     try {
-      final screen = _lgService.calculateLeftMostScreen(_lgService.connectionModel.screens);
+      final screen = _lgService.calculateLeftMostScreen(
+        _lgService.connectionModel.screens,
+      );
       const blankKml = '''<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
@@ -1007,9 +1083,12 @@ class LgOverlayService {
     }
   }
 
-  Future<bool> cleanRightScreenKml() async { //clean right screen kml
+  Future<bool> cleanRightScreenKml() async {
+    //clean right screen kml
     try {
-      final screen = _lgService.calculateRightMostScreen(_lgService.connectionModel.screens);
+      final screen = _lgService.calculateRightMostScreen(
+        _lgService.connectionModel.screens,
+      );
       const blankKml = '''<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>

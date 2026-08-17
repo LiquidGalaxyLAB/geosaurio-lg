@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 class ThemeService extends ChangeNotifier {
-
   // Stores if dark mode is enabled
   bool _isDarkMode = false;
 

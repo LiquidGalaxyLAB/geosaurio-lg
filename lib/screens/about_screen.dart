@@ -13,40 +13,28 @@ class AboutScreen extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor:
-      Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
 
-      drawer: AppDrawer(
-        isLgConnected: lgService.isConnected,
-      ),
+      drawer: AppDrawer(isLgConnected: lgService.isConnected),
 
       body: SafeArea(
         child: Builder(
           builder: (context) {
             return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24,
-                vertical: 10,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
               child: Column(
                 children: [
                   Row(
                     children: [
                       Container(
                         decoration: BoxDecoration(
-                          color:
-                          colorScheme.surfaceContainerHighest,
-                          borderRadius:
-                          BorderRadius.circular(14),
+                          color: colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(14),
                         ),
                         child: IconButton(
-                          icon: const Icon(
-                            Icons.menu,
-                            size: 30,
-                          ),
+                          icon: const Icon(Icons.menu, size: 30),
                           onPressed: () {
-                            Scaffold.of(context)
-                                .openDrawer();
+                            Scaffold.of(context).openDrawer();
                           },
                         ),
                       ),
@@ -57,32 +45,26 @@ class AboutScreen extends StatelessWidget {
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 25,
-                            fontWeight:
-                            FontWeight.w600,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
                       Container(
-                        padding:
-                        const EdgeInsets.symmetric(
+                        padding: const EdgeInsets.symmetric(
                           horizontal: 10,
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: colorScheme
-                              .surfaceContainerHighest,
-                          borderRadius:
-                          BorderRadius.circular(20),
+                          color: colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(20),
                         ),
                         child: Row(
-                          mainAxisSize:
-                          MainAxisSize.min,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
                               Icons.circle,
                               size: 12,
-                              color:
-                              lgService.isConnected
+                              color: lgService.isConnected
                                   ? Colors.green
                                   : Colors.red,
                             ),
@@ -94,10 +76,8 @@ class AboutScreen extends StatelessWidget {
                                   ? 'Connected'
                                   : 'Disconnected',
                               style: TextStyle(
-                                fontWeight:
-                                FontWeight.w600,
-                                color: colorScheme
-                                    .onSurface,
+                                fontWeight: FontWeight.w600,
+                                color: colorScheme.onSurface,
                               ),
                             ),
                           ],
@@ -108,19 +88,13 @@ class AboutScreen extends StatelessWidget {
 
                   const SizedBox(height: 30),
 
-                  Image.asset(
-                    'assets/images/Geosaurio.png',
-                    height: 170,
-                  ),
+                  Image.asset('assets/images/Geosaurio.png', height: 170),
 
                   const SizedBox(height: 18),
 
                   const Text(
                     'GEOSAURIO',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                   ),
 
                   const SizedBox(height: 6),
@@ -128,8 +102,7 @@ class AboutScreen extends StatelessWidget {
                   Text(
                     'FOR LIQUID GALAXY',
                     style: TextStyle(
-                      color:
-                      colorScheme.onSurfaceVariant,
+                      color: colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.w600,
                       fontSize: 16,
                     ),
@@ -138,13 +111,10 @@ class AboutScreen extends StatelessWidget {
                   const SizedBox(height: 32),
                   Container(
                     width: double.infinity,
-                    padding:
-                    const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: colorScheme
-                          .surfaceContainerHighest,
-                      borderRadius:
-                      BorderRadius.circular(20),
+                      color: colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(20),
                     ),
                     child: Column(
                       children: [
@@ -160,8 +130,7 @@ class AboutScreen extends StatelessWidget {
                           'About GeoSaurio',
                           style: TextStyle(
                             fontSize: 22,
-                            fontWeight:
-                            FontWeight.bold,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
 
@@ -169,14 +138,10 @@ class AboutScreen extends StatelessWidget {
 
                         const Text(
                           'GeoSaurio is an educational application developed for the Liquid Galaxy platform as part of Google Summer of Code.\n\n'
-                              'The application allows users to explore dinosaurs by geological period, continent and country while visualizing their locations in Google Earth. '
-                              'It also provides scientific information, narration, skeleton visualizations and comparison images to create an interactive educational experience.',
-                          textAlign:
-                          TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 16,
-                            height: 1.55,
-                          ),
+                          'The application allows users to explore dinosaurs by geological period, continent and country while visualizing their locations in Google Earth. '
+                          'It also provides scientific information, narration, skeleton visualizations and comparison images to create an interactive educational experience.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 16, height: 1.55),
                         ),
                       ],
                     ),
@@ -185,13 +150,10 @@ class AboutScreen extends StatelessWidget {
                   const SizedBox(height: 20),
                   Container(
                     width: double.infinity,
-                    padding:
-                    const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: colorScheme
-                          .surfaceContainerHighest,
-                      borderRadius:
-                      BorderRadius.circular(20),
+                      color: colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(20),
                     ),
                     child: Column(
                       children: [
@@ -207,8 +169,7 @@ class AboutScreen extends StatelessWidget {
                           'Author',
                           style: TextStyle(
                             fontSize: 22,
-                            fontWeight:
-                            FontWeight.bold,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
 
@@ -216,11 +177,8 @@ class AboutScreen extends StatelessWidget {
 
                         const Text(
                           'Josep Miquel Sert Esteban',
-                          textAlign:
-                          TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 16,
-                          ),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 16),
                         ),
                       ],
                     ),
@@ -229,13 +187,10 @@ class AboutScreen extends StatelessWidget {
                   const SizedBox(height: 20),
                   Container(
                     width: double.infinity,
-                    padding:
-                    const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: colorScheme
-                          .surfaceContainerHighest,
-                      borderRadius:
-                      BorderRadius.circular(20),
+                      color: colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(20),
                     ),
                     child: Column(
                       children: [
@@ -251,8 +206,7 @@ class AboutScreen extends StatelessWidget {
                           'Acknowledgements',
                           style: TextStyle(
                             fontSize: 22,
-                            fontWeight:
-                            FontWeight.bold,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
 
@@ -260,16 +214,12 @@ class AboutScreen extends StatelessWidget {
 
                         const Text(
                           'I would like to express my sincere gratitude to Andreu, my mentors Victor and Gabriel and the Liquid Galaxy LAB team who contributed to the development of GeoSaurio. '
-                              'Their assistance, support and valuable feedback played an important role in making this project possible.\n\n'
-                              'Special thanks to:\n\n'
-                              '• Alex Moix — for creating the complete dinosaur database, providing all the images used in the application, and generating the AI-narrated audio for every dinosaur.\n\n'
-                              '• Paula Torné — GeoSaurio logo design.\n\n',
-                          textAlign:
-                          TextAlign.left,
-                          style: TextStyle(
-                            fontSize: 16,
-                            height: 1.6,
-                          ),
+                          'Their assistance, support and valuable feedback played an important role in making this project possible.\n\n'
+                          'Special thanks to:\n\n'
+                          '• Alex Moix — for creating the complete dinosaur database, providing all the images used in the application, and generating the AI-narrated audio for every dinosaur.\n\n'
+                          '• Paula Torné — GeoSaurio logo design.\n\n',
+                          textAlign: TextAlign.left,
+                          style: TextStyle(fontSize: 16, height: 1.6),
                         ),
                       ],
                     ),
