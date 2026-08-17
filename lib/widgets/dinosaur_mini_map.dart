@@ -8,9 +8,11 @@ import 'package:provider/provider.dart';
 import '../models/dinosaur.dart';
 import '../services/lg_service.dart';
 
-class DinosaurMiniMap extends StatefulWidget { // Dinosaurs shown on the mini map
+class DinosaurMiniMap extends StatefulWidget {
+  // Dinosaurs shown on the mini map
   final List<Dinosaur> dinosaurs;
-  final void Function(Dinosaur dinosaur) onDinosaurSelected; // Called when the user selects a dinosaur marker
+  final void Function(Dinosaur dinosaur)
+  onDinosaurSelected; // Called when the user selects a dinosaur marker
 
   const DinosaurMiniMap({
     super.key,
@@ -22,31 +24,30 @@ class DinosaurMiniMap extends StatefulWidget { // Dinosaurs shown on the mini ma
   State<DinosaurMiniMap> createState() => _DinosaurMiniMapState();
 }
 
-class _DinosaurMiniMapState extends State<DinosaurMiniMap> { // Timer used to avoid sending too many movements to Liquid Galaxy
+class _DinosaurMiniMapState extends State<DinosaurMiniMap> {
+  // Timer used to avoid sending too many movements to Liquid Galaxy
   Timer? _syncTimer;
 
-  void _synchronizeWithLiquidGalaxy(MapCamera camera) {   // Synchronize the mini map camera with Liquid Galaxy
+  void _synchronizeWithLiquidGalaxy(MapCamera camera) {
+    // Synchronize the mini map camera with Liquid Galaxy
     // Cancel the previous pending synchronization.
     _syncTimer?.cancel();
 
     // Wait until the user has practically stopped moving the map.
-    _syncTimer = Timer(
-      const Duration(milliseconds: 500),
-          () async {
-        if (!mounted) return;
+    _syncTimer = Timer(const Duration(milliseconds: 500), () async {
+      if (!mounted) return;
 
-        final lgService = context.read<LgService>();
+      final lgService = context.read<LgService>();
 
-        if (!lgService.isConnected) return;
+      if (!lgService.isConnected) return;
 
-        await lgService.flyToMapPosition(
-          latitude: camera.center.latitude,
-          longitude: camera.center.longitude,
-          zoom: camera.zoom,
-          bearing: camera.rotation,
-        );
-      },
-    );
+      await lgService.flyToMapPosition(
+        latitude: camera.center.latitude,
+        longitude: camera.center.longitude,
+        zoom: camera.zoom,
+        bearing: camera.rotation,
+      );
+    });
   }
 
   @override
@@ -69,20 +70,14 @@ class _DinosaurMiniMapState extends State<DinosaurMiniMap> { // Timer used to av
           color: Colors.white,
           borderRadius: BorderRadius.circular(18),
         ),
-        child: const Text(
-          'No coordinates available',
-        ),
+        child: const Text('No coordinates available'),
       );
     }
 
     // Initial position of the minimap.
-    final firstCoords =
-    validDinosaurs.first.getMarkerCoordinates();
+    final firstCoords = validDinosaurs.first.getMarkerCoordinates();
 
-    final center = LatLng(
-      firstCoords['latitude']!,
-      firstCoords['longitude']!,
-    );
+    final center = LatLng(firstCoords['latitude']!, firstCoords['longitude']!);
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(18),
@@ -103,37 +98,25 @@ class _DinosaurMiniMapState extends State<DinosaurMiniMap> { // Timer used to av
           ),
           children: [
             TileLayer(
-              urlTemplate:
-              'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-              userAgentPackageName:
-              'com.example.geosaurio',
+              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+              userAgentPackageName: 'com.example.geosaurio',
             ),
 
             MarkerLayer(
               markers: validDinosaurs.map((dinosaur) {
-                final coords =
-                dinosaur.getMarkerCoordinates();
+                final coords = dinosaur.getMarkerCoordinates();
 
                 return Marker(
-                  point: LatLng(
-                    coords['latitude']!,
-                    coords['longitude']!,
-                  ),
+                  point: LatLng(coords['latitude']!, coords['longitude']!),
                   width: 45,
                   height: 45,
                   child: GestureDetector(
                     onTap: () {
-                      widget.onDinosaurSelected(
-                        dinosaur,
-                      );
+                      widget.onDinosaurSelected(dinosaur);
                     },
                     child: Image.asset(
                       'assets/images/markers/dino_marker.png',
-                      errorBuilder: (
-                          context,
-                          error,
-                          stackTrace,
-                          ) {
+                      errorBuilder: (context, error, stackTrace) {
                         return const Icon(
                           Icons.location_on,
                           color: Colors.red,

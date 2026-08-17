@@ -7,7 +7,8 @@ class LgSystemService {
 
   LgSystemService(this._lgService);
 
-  Future<void> setRefreshInterval(   // Adds an automatic refresh interval to a Liquid Galaxy screen
+  Future<void> setRefreshInterval(
+    // Adds an automatic refresh interval to a Liquid Galaxy screen
     int screenNumber,
     int interval,
   ) async {
@@ -31,13 +32,12 @@ class LgSystemService {
         'Added refresh interval to screen $screenNumber',
       );
     } catch (e) {
-      debugPrint(
-        'Error setting refresh interval: $e',
-      );
+      debugPrint('Error setting refresh interval: $e');
     }
   }
 
-  Future<void> removeRefreshInterval(   // Removes the automatic refresh interval
+  Future<void> removeRefreshInterval(
+    // Removes the automatic refresh interval
     int screenNumber,
   ) async {
     try {
@@ -60,28 +60,20 @@ class LgSystemService {
         'Removed refresh interval from screen $screenNumber',
       );
     } catch (e) {
-      debugPrint(
-        'Error removing refresh interval: $e',
-      );
+      debugPrint('Error removing refresh interval: $e');
     }
   }
 
-  Future<void> forceRefresh(   // Forces a screen to refresh its KML
+  Future<void> forceRefresh(
+    // Forces a screen to refresh its KML
     int screenNumber,
   ) async {
     try {
-      await setRefreshInterval(
-        screenNumber,
-        2,
-      );
+      await setRefreshInterval(screenNumber, 2);
 
-      await removeRefreshInterval(
-        screenNumber,
-      );
+      await removeRefreshInterval(screenNumber);
     } catch (e) {
-      debugPrint(
-        'Error during force refresh: $e',
-      );
+      debugPrint('Error during force refresh: $e');
     }
   }
 
@@ -93,7 +85,8 @@ class LgSystemService {
     return screenCount == 1 ? 1 : (screenCount / 2).floor() + 1;
   }
 
-  Future<bool> writeSoloKml(   // Writes a KML directly to a specific Liquid Galaxy screen
+  Future<bool> writeSoloKml(
+    // Writes a KML directly to a specific Liquid Galaxy screen
     int machineNo,
     String kml,
   ) async {
@@ -105,24 +98,22 @@ class LgSystemService {
     return result != null;
   }
 
-  Future<bool> notifySoloKmlChanged(
-    int machineNo,
-  ) async {
+  Future<bool> notifySoloKmlChanged(int machineNo) async {
     try {
       await forceRefresh(machineNo);
       return true;
     } catch (e) {
-      debugPrint(
-        'Error notifying Solo KML change: $e',
-      );
+      debugPrint('Error notifying Solo KML change: $e');
       return false;
     }
   }
 
-  Future<bool> cleanKmlKeepingLogos() async { //Clean the kml's except the logo
+  Future<bool> cleanKmlKeepingLogos() async {
+    //Clean the kml's except the logo
     try {
-      final logoScreen =
-          calculateLeftMostScreen(_lgService.connectionModel.screens);
+      final logoScreen = calculateLeftMostScreen(
+        _lgService.connectionModel.screens,
+      );
 
       const blankKml = '''<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
@@ -145,10 +136,7 @@ class LgSystemService {
         'Loaded geographic KMLs cleaned',
       );
 
-      await _lgService.execute(
-        "echo '' > /tmp/query.txt",
-        'Query cleaned',
-      );
+      await _lgService.execute("echo '' > /tmp/query.txt", 'Query cleaned');
 
       return true;
     } catch (e) {
@@ -157,7 +145,8 @@ class LgSystemService {
     }
   }
 
-  Future<bool> cleanAll() async {   // Stops the current visualization and cleans Liquid Galaxy
+  Future<bool> cleanAll() async {
+    // Stops the current visualization and cleans Liquid Galaxy
     try {
       await _lgService.stopDinosaurOrbit();
       await _lgService.closeChromiumOnAllScreens();
@@ -176,22 +165,20 @@ class LgSystemService {
   </Document>
 </kml>''';
 
-      final logoScreen =
-          calculateLeftMostScreen(_lgService.connectionModel.screens);
+      final logoScreen = calculateLeftMostScreen(
+        _lgService.connectionModel.screens,
+      );
 
       for (var i = 2; i <= _lgService.connectionModel.screens; i++) {
         if (i == logoScreen) {
           continue;
         }
 
-        await _lgService.execute(
-          '''
+        await _lgService.execute('''
 cat > /var/www/html/kml/slave_$i.kml << 'EOFKML'
 $blankKml
 EOFKML
-''',
-          'Cleaned screen $i',
-        );
+''', 'Cleaned screen $i');
 
         await forceRefresh(i);
       }
@@ -201,14 +188,9 @@ EOFKML
         'Stop tour',
       );
 
-      await Future.delayed(
-        const Duration(milliseconds: 300),
-      );
+      await Future.delayed(const Duration(milliseconds: 300));
 
-      await _lgService.execute(
-        "echo '' > /tmp/query.txt",
-        'Clean query',
-      );
+      await _lgService.execute("echo '' > /tmp/query.txt", 'Clean query');
 
       await _lgService.execute(
         'rm -f '
@@ -226,7 +208,8 @@ EOFKML
     }
   }
 
-  Future<bool> reboot() async { //Reboot all the machines
+  Future<bool> reboot() async {
+    //Reboot all the machines
     try {
       if (!_lgService.isConnected) {
         debugPrint(
@@ -239,25 +222,23 @@ EOFKML
 
       bool allSuccessful = true;
 
-      for (int screen = _lgService.connectionModel.screens;
-          screen >= 1;
-          screen--) {
-        debugPrint(
-          'Rebooting lg$screen...',
-        );
+      for (
+        int screen = _lgService.connectionModel.screens;
+        screen >= 1;
+        screen--
+      ) {
+        debugPrint('Rebooting lg$screen...');
 
         final result = await _lgService.execute(
           'sshpass -p ${_lgService.connectionModel.password} '
-          'ssh -t lg$screen '
-          '"echo ${_lgService.connectionModel.password} '
-          '| sudo -S reboot"',
+              'ssh -t lg$screen '
+              '"echo ${_lgService.connectionModel.password} '
+              '| sudo -S reboot"',
           'Reboot sent to lg$screen',
         );
 
         if (result == null) {
-          debugPrint(
-            'Reboot failed on lg$screen',
-          );
+          debugPrint('Reboot failed on lg$screen');
 
           allSuccessful = false;
         } else {
@@ -267,11 +248,7 @@ EOFKML
           );
         }
 
-        await Future.delayed(
-          const Duration(
-            milliseconds: 500,
-          ),
-        );
+        await Future.delayed(const Duration(milliseconds: 500));
       }
 
       debugPrint(
@@ -282,9 +259,7 @@ EOFKML
 
       return allSuccessful;
     } catch (e, stackTrace) {
-      debugPrint(
-        'Error rebooting Liquid Galaxy: $e',
-      );
+      debugPrint('Error rebooting Liquid Galaxy: $e');
 
       debugPrint('$stackTrace');
 
@@ -292,7 +267,8 @@ EOFKML
     }
   }
 
-  Future<bool> shutdown() async { //Power off all the machines
+  Future<bool> shutdown() async {
+    //Power off all the machines
     try {
       if (!_lgService.isConnected) {
         debugPrint(
@@ -305,25 +281,23 @@ EOFKML
 
       bool allSuccessful = true;
 
-      for (int screen = _lgService.connectionModel.screens;
-          screen >= 1;
-          screen--) {
-        debugPrint(
-          'Shutting down lg$screen...',
-        );
+      for (
+        int screen = _lgService.connectionModel.screens;
+        screen >= 1;
+        screen--
+      ) {
+        debugPrint('Shutting down lg$screen...');
 
         final result = await _lgService.execute(
           'sshpass -p ${_lgService.connectionModel.password} '
-          'ssh -t lg$screen '
-          '"echo ${_lgService.connectionModel.password} '
-          '| sudo -S poweroff"',
+              'ssh -t lg$screen '
+              '"echo ${_lgService.connectionModel.password} '
+              '| sudo -S poweroff"',
           'Shutdown sent to lg$screen',
         );
 
         if (result == null) {
-          debugPrint(
-            'Shutdown failed on lg$screen',
-          );
+          debugPrint('Shutdown failed on lg$screen');
 
           allSuccessful = false;
         } else {
@@ -333,11 +307,7 @@ EOFKML
           );
         }
 
-        await Future.delayed(
-          const Duration(
-            milliseconds: 500,
-          ),
-        );
+        await Future.delayed(const Duration(milliseconds: 500));
       }
 
       debugPrint(
@@ -348,9 +318,7 @@ EOFKML
 
       return allSuccessful;
     } catch (e, stackTrace) {
-      debugPrint(
-        'Error shutting down Liquid Galaxy: $e',
-      );
+      debugPrint('Error shutting down Liquid Galaxy: $e');
 
       debugPrint('$stackTrace');
 
@@ -358,7 +326,8 @@ EOFKML
     }
   }
 
-  Future<bool> relaunchLG() async { //Relaunch all the machines
+  Future<bool> relaunchLG() async {
+    //Relaunch all the machines
     try {
       if (!_lgService.isConnected) {
         debugPrint(
@@ -371,14 +340,15 @@ EOFKML
 
       bool allSuccessful = true;
 
-      for (int screen = _lgService.connectionModel.screens;
-          screen >= 1;
-          screen--) {
-        debugPrint(
-          'Relaunching lg$screen...',
-        );
+      for (
+        int screen = _lgService.connectionModel.screens;
+        screen >= 1;
+        screen--
+      ) {
+        debugPrint('Relaunching lg$screen...');
 
-        final relaunchCmd = '''
+        final relaunchCmd =
+            '''
 RELAUNCH_CMD="\\
 if [ -f /etc/init/lxdm.conf ];
 then
@@ -405,36 +375,26 @@ fi
         );
 
         if (result == null) {
-          debugPrint(
-            'Relaunch failed on lg$screen',
-          );
+          debugPrint('Relaunch failed on lg$screen');
 
           allSuccessful = false;
         } else {
-          debugPrint(
-            'lg$screen relaunched successfully',
-          );
+          debugPrint('lg$screen relaunched successfully');
         }
 
-        await Future.delayed(
-          const Duration(
-            milliseconds: 500,
-          ),
-        );
+        await Future.delayed(const Duration(milliseconds: 500));
       }
 
       debugPrint(
         allSuccessful
             ? 'Liquid Galaxy relaunched on all screens'
             : 'Liquid Galaxy relaunch finished '
-                'with some errors',
+                  'with some errors',
       );
 
       return allSuccessful;
     } catch (e, stackTrace) {
-      debugPrint(
-        'Error relaunching Liquid Galaxy: $e',
-      );
+      debugPrint('Error relaunching Liquid Galaxy: $e');
 
       debugPrint('$stackTrace');
 

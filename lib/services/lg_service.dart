@@ -17,7 +17,8 @@ import 'lg_media_service.dart';
 import 'lg_system_service.dart';
 import 'package:http/http.dart' as http;
 
-class LgConnectionModel { // Stores the IP, user, password, port and number of LG screens.
+class LgConnectionModel {
+  // Stores the IP, user, password, port and number of LG screens.
   String username;
   String ip;
   int port;
@@ -38,7 +39,8 @@ class LgConnectionModel { // Stores the IP, user, password, port and number of L
     this.screens = 5,
   });
 
-  void updateConnection({ // Update the Liquid Galaxy connection settings
+  void updateConnection({
+    // Update the Liquid Galaxy connection settings
     String? username,
     String? ip,
     int? port,
@@ -53,7 +55,8 @@ class LgConnectionModel { // Stores the IP, user, password, port and number of L
     this.screens = screens ?? this.screens;
   }
 
-  Future<void> saveToPreferences() async { // Save the connection settings
+  Future<void> saveToPreferences() async {
+    // Save the connection settings
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyUsername, username);
     await prefs.setString(_keyIp, ip);
@@ -62,10 +65,12 @@ class LgConnectionModel { // Stores the IP, user, password, port and number of L
     await prefs.setInt(_keyScreens, screens);
   }
 
-  static Future<LgConnectionModel> loadFromPreferences() async { // Load the saved connection settings
+  static Future<LgConnectionModel> loadFromPreferences() async {
+    // Load the saved connection settings
     final prefs = await SharedPreferences.getInstance();
 
-    return LgConnectionModel( // Create the connection model using the saved values
+    return LgConnectionModel(
+      // Create the connection model using the saved values
       username: prefs.getString(_keyUsername) ?? 'lg',
       ip: prefs.getString(_keyIp) ?? '',
       port: prefs.getInt(_keyPort) ?? 22,
@@ -136,7 +141,8 @@ class LgService extends ChangeNotifier {
     );
   }
 
-  Future<void> initializeConnection() async { // Loads the saved LG configuration and starts the connection.
+  Future<void> initializeConnection() async {
+    // Loads the saved LG configuration and starts the connection.
     try {
       final savedModel = await LgConnectionModel.loadFromPreferences();
       updateConnectionSettings(
@@ -152,7 +158,8 @@ class LgService extends ChangeNotifier {
     }
   }
 
-  Future<bool?> connectToLG({ // Connects the application to Liquid Galaxy.
+  Future<bool?> connectToLG({
+    // Connects the application to Liquid Galaxy.
     bool initializeAfterConnect = true,
   }) async {
     final pendingConnection = _connectionInProgress;
@@ -191,7 +198,8 @@ class LgService extends ChangeNotifier {
     }
   }
 
-  Future<bool?> _openSshConnection() async { // Opens and authenticates the SSH connection with the LG master.
+  Future<bool?> _openSshConnection() async {
+    // Opens and authenticates the SSH connection with the LG master.
     if (_currentConnectionAttempts >= _maxConnectionAttempts) {
       _currentConnectionAttempts = 0;
       notifyListeners();
@@ -266,7 +274,8 @@ class LgService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<dynamic> execute(String command, String successMessage) async { //Sends commands to LG
+  Future<dynamic> execute(String command, String successMessage) async {
+    //Sends commands to LG
     if (_client == null || !_isConnected) {
       debugPrint('SSH client not connected. Trying reconnect...');
       final connected = await connectToLG(initializeAfterConnect: false);
@@ -330,9 +339,14 @@ class LgService extends ChangeNotifier {
 
       final remoteFile = await sftp.open(
         remotePath,
-        mode: SftpFileOpenMode.create | SftpFileOpenMode.truncate | SftpFileOpenMode.write,
+        mode:
+            SftpFileOpenMode.create |
+            SftpFileOpenMode.truncate |
+            SftpFileOpenMode.write,
       );
-      await remoteFile.write(Stream.value(Uint8List.fromList(await file.readAsBytes())));
+      await remoteFile.write(
+        Stream.value(Uint8List.fromList(await file.readAsBytes())),
+      );
       await remoteFile.close();
       debugPrint('Asset uploaded successfully to $remotePath');
       return true;
@@ -348,13 +362,10 @@ class LgService extends ChangeNotifier {
     required String fileName,
   }) async {
     try {
-      final connected =
-      await connectToLG(initializeAfterConnect: false);
+      final connected = await connectToLG(initializeAfterConnect: false);
 
       if (connected != true || _client == null) {
-        debugPrint(
-          'Cannot upload $fileName: SSH is not connected',
-        );
+        debugPrint('Cannot upload $fileName: SSH is not connected');
         return false;
       }
 
@@ -363,7 +374,7 @@ class LgService extends ChangeNotifier {
       if (response.statusCode != 200) {
         debugPrint(
           'Could not download remote image: '
-              '${response.statusCode} | $url',
+          '${response.statusCode} | $url',
         );
         return false;
       }
@@ -375,26 +386,20 @@ class LgService extends ChangeNotifier {
       final remoteFile = await sftp.open(
         '/var/www/html/$fileName',
         mode:
-        SftpFileOpenMode.create |
-        SftpFileOpenMode.truncate |
-        SftpFileOpenMode.write,
+            SftpFileOpenMode.create |
+            SftpFileOpenMode.truncate |
+            SftpFileOpenMode.write,
       );
 
-      await remoteFile.write(
-        Stream.value(bytes),
-      );
+      await remoteFile.write(Stream.value(bytes));
 
       await remoteFile.close();
 
-      debugPrint(
-        'Remote image uploaded successfully: $fileName',
-      );
+      debugPrint('Remote image uploaded successfully: $fileName');
 
       return true;
     } catch (e, stackTrace) {
-      debugPrint(
-        'Error uploading remote image $url: $e',
-      );
+      debugPrint('Error uploading remote image $url: $e');
       debugPrint('$stackTrace');
 
       return false;
@@ -414,7 +419,10 @@ class LgService extends ChangeNotifier {
       final sftp = await _client!.sftp();
       final remoteFile = await sftp.open(
         '/var/www/html/$fileName',
-        mode: SftpFileOpenMode.create | SftpFileOpenMode.truncate | SftpFileOpenMode.write,
+        mode:
+            SftpFileOpenMode.create |
+            SftpFileOpenMode.truncate |
+            SftpFileOpenMode.write,
       );
       await remoteFile.write(Stream.value(bytes));
       await remoteFile.close();
@@ -426,8 +434,10 @@ class LgService extends ChangeNotifier {
   }
 
   // Shared Utility Methods
-  int calculateLeftMostScreen(int screenCount) => _systemService.calculateLeftMostScreen(screenCount);
-  int calculateRightMostScreen(int screenCount) => _systemService.calculateRightMostScreen(screenCount);
+  int calculateLeftMostScreen(int screenCount) =>
+      _systemService.calculateLeftMostScreen(screenCount);
+  int calculateRightMostScreen(int screenCount) =>
+      _systemService.calculateRightMostScreen(screenCount);
 
   String cleanDinosaurImageName(String name) {
     return name
@@ -453,10 +463,7 @@ class LgService extends ChangeNotifier {
       '.JFIF',
     ];
 
-    final variants = <String>{
-      baseName,
-      baseName.toLowerCase(),
-    };
+    final variants = <String>{baseName, baseName.toLowerCase()};
 
     if (baseName.contains('_')) {
       final lastUnderscore = baseName.lastIndexOf('_');
@@ -488,8 +495,7 @@ class LgService extends ChangeNotifier {
             debugPrint('Found remote dinosaur image: $url');
             return url;
           }
-        } catch (_) {
-        }
+        } catch (_) {}
       }
     }
 
@@ -502,54 +508,83 @@ class LgService extends ChangeNotifier {
   Map<String, double> calculateCubePosition(Dinosaur dinosaur) =>
       _navigationService.calculateCubePosition(dinosaur);
 
-  Future<void> forceRefresh(int screenNumber) => _systemService.forceRefresh(screenNumber); //Force LG screen to refresh
+  Future<void> forceRefresh(int screenNumber) =>
+      _systemService.forceRefresh(screenNumber); //Force LG screen to refresh
 
   void notify() => notifyListeners();
 
   // Orbit Wrappers
-  Future<bool> startDinosaurOrbit(Dinosaur dinosaur) => _orbitService.startDinosaurOrbit(dinosaur);
+  Future<bool> startDinosaurOrbit(Dinosaur dinosaur) =>
+      _orbitService.startDinosaurOrbit(dinosaur);
   Future<void> stopDinosaurOrbit() => _orbitService.stopDinosaurOrbit();
 
   // Navigation Wrappers
-  Future<bool> flyToDinosaur(Dinosaur dinosaur) => _navigationService.flyToDinosaur(dinosaur);
-  Future<bool> flyToContinent(String continent) => _navigationService.flyToContinent(continent);
-  Future<bool> flyToCountry(String country, String continent, List<Dinosaur> dinosaurs) =>
-      _navigationService.flyToCountry(country, continent, dinosaurs);
-  Future<bool> flyToMapPosition({required double latitude, required double longitude, required double zoom, double bearing = 0}) =>
-      _navigationService.flyToMapPosition(latitude: latitude, longitude: longitude, zoom: zoom, bearing: bearing);
+  Future<bool> flyToDinosaur(Dinosaur dinosaur) =>
+      _navigationService.flyToDinosaur(dinosaur);
+  Future<bool> flyToContinent(String continent) =>
+      _navigationService.flyToContinent(continent);
+  Future<bool> flyToCountry(
+    String country,
+    String continent,
+    List<Dinosaur> dinosaurs,
+  ) => _navigationService.flyToCountry(country, continent, dinosaurs);
+  Future<bool> flyToMapPosition({
+    required double latitude,
+    required double longitude,
+    required double zoom,
+    double bearing = 0,
+  }) => _navigationService.flyToMapPosition(
+    latitude: latitude,
+    longitude: longitude,
+    zoom: zoom,
+    bearing: bearing,
+  );
 
   // Marker Wrappers
   Future<bool> showDinosaurSelectionMarkers(List<Dinosaur> dinosaurs) =>
       _markerService.showDinosaurSelectionMarkers(dinosaurs);
-  Future<bool> cleanDinosaurSelectionMarkers() => _markerService.cleanDinosaurSelectionMarkers();
+  Future<bool> cleanDinosaurSelectionMarkers() =>
+      _markerService.cleanDinosaurSelectionMarkers();
   Future<bool> showSelectedDinosaurCube(Dinosaur dinosaur) =>
       _markerService.showSelectedDinosaurCube(dinosaur);
   Future<bool> cleanDinosaurMarkers() => _markerService.cleanDinosaurMarkers();
 
   // Overlay Wrappers
-  Future<bool> showDinosaurAboutColumn(Dinosaur dinosaur) => _overlayService.showDinosaurAboutColumn(dinosaur);
-  Future<bool> showContinentInfoColumn(String continent) => _overlayService.showContinentInfoColumn(continent);
+  Future<bool> showDinosaurAboutColumn(Dinosaur dinosaur) =>
+      _overlayService.showDinosaurAboutColumn(dinosaur);
+  Future<bool> showContinentInfoColumn(String continent) =>
+      _overlayService.showContinentInfoColumn(continent);
   Future<bool> showCountryInfoColumn(String country, String continent) =>
       _overlayService.showCountryInfoColumn(country, continent);
   Future<bool> sendLogo() => _overlayService.sendLogo();
-  Future<bool> showRightScreenImage({required String assetPath, required String fileName}) =>
-      _overlayService.showRightScreenImage(assetPath: assetPath, fileName: fileName);
+  Future<bool> showRightScreenImage({
+    required String assetPath,
+    required String fileName,
+  }) => _overlayService.showRightScreenImage(
+    assetPath: assetPath,
+    fileName: fileName,
+  );
   Future<bool> cleanRightScreenKml() => _overlayService.cleanRightScreenKml();
   Future<void> cleanLogos() => _overlayService.cleanLogos();
 
   // Media Wrappers
-  Future<bool> showDinosaurSkeletonImage(Dinosaur dinosaur) => _mediaService.showDinosaurSkeletonImage(dinosaur);
+  Future<bool> showDinosaurSkeletonImage(Dinosaur dinosaur) =>
+      _mediaService.showDinosaurSkeletonImage(dinosaur);
   Future<bool> showDinosaurComparisonImage(Dinosaur dinosaur) =>
       _mediaService.showDinosaurComparisonImage(dinosaur);
-  Future<bool> openChromiumOnAllScreens(String url) => _mediaService.openChromiumOnAllScreens(url);
-  Future<bool> closeChromiumOnAllScreens() => _mediaService.closeChromiumOnAllScreens();
+  Future<bool> openChromiumOnAllScreens(String url) =>
+      _mediaService.openChromiumOnAllScreens(url);
+  Future<bool> closeChromiumOnAllScreens() =>
+      _mediaService.closeChromiumOnAllScreens();
 
   // System Wrappers
   Future<bool> cleanAll() => _systemService.cleanAll();
   Future<bool> reboot() => _systemService.reboot();
   Future<bool> shutdown() => _systemService.shutdown();
   Future<bool> relaunchLG() => _systemService.relaunchLG();
-  Future<bool> writeSoloKml(int machineNo, String kml) => _systemService.writeSoloKml(machineNo, kml);
-  Future<bool> notifySoloKmlChanged(int machineNo) => _systemService.notifySoloKmlChanged(machineNo);
+  Future<bool> writeSoloKml(int machineNo, String kml) =>
+      _systemService.writeSoloKml(machineNo, kml);
+  Future<bool> notifySoloKmlChanged(int machineNo) =>
+      _systemService.notifySoloKmlChanged(machineNo);
   Future<bool> cleanKmlKeepingLogos() => _systemService.cleanKmlKeepingLogos();
 }

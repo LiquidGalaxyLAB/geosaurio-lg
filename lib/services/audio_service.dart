@@ -29,9 +29,7 @@ class AudioService {
           .replaceAll('-', '_');
 
       // Load the audio from assets
-      await _player.setAsset(
-        'assets/audio/$fileName.mp3',
-      );
+      await _player.setAsset('assets/audio/$fileName.mp3');
 
       // Play the audio
       await _player.play();

@@ -6,25 +6,26 @@ import '../services/lg_service.dart';
 class LgToolsScreen extends StatelessWidget {
   const LgToolsScreen({super.key});
 
-  void showSnack(  // Show the result of an action
-      BuildContext context,
-      String message, {
-        bool success = true,
-      }) {
+  void showSnack(
+    // Show the result of an action
+    BuildContext context,
+    String message, {
+    bool success = true,
+  }) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor:
-        success ? Colors.green : Colors.red,
+        backgroundColor: success ? Colors.green : Colors.red,
         behavior: SnackBarBehavior.floating,
       ),
     );
   }
 
-  Future<bool> confirmLgAction(  // Ask for confirmation before important LG actions
-      BuildContext context,
-      String actionName,
-      ) async {
+  Future<bool> confirmLgAction(
+    // Ask for confirmation before important LG actions
+    BuildContext context,
+    String actionName,
+  ) async {
     final result = await showDialog<bool>(
       context: context,
       builder: (context) {
@@ -34,13 +35,9 @@ class LgToolsScreen extends StatelessWidget {
           ),
           title: Text(
             '$actionName Liquid Galaxy?',
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
-          content: Text(
-            'Are you sure you want to $actionName Liquid Galaxy?',
-          ),
+          content: Text('Are you sure you want to $actionName Liquid Galaxy?'),
           actions: [
             TextButton(
               onPressed: () {
@@ -66,40 +63,31 @@ class LgToolsScreen extends StatelessWidget {
     return result ?? false;
   }
 
-  Future<void> runAction(  // Run a Liquid Galaxy action
-      BuildContext context,
-      String actionName,
-      Future<bool> Function(LgService lgService) action, {
-        bool needsConfirmation = false,
-      }) async {
+  Future<void> runAction(
+    // Run a Liquid Galaxy action
+    BuildContext context,
+    String actionName,
+    Future<bool> Function(LgService lgService) action, {
+    bool needsConfirmation = false,
+  }) async {
     final lgService = context.read<LgService>();
 
-    if (!lgService.isConnected) {  // Check the Liquid Galaxy connection
-      showSnack(
-        context,
-        'Connect to Liquid Galaxy first.',
-        success: false,
-      );
+    if (!lgService.isConnected) {
+      // Check the Liquid Galaxy connection
+      showSnack(context, 'Connect to Liquid Galaxy first.', success: false);
       return;
     }
 
-    if (needsConfirmation) {  // Ask for confirmation if needed
-      final confirmed =
-      await confirmLgAction(
-        context,
-        actionName,
-      );
+    if (needsConfirmation) {
+      // Ask for confirmation if needed
+      final confirmed = await confirmLgAction(context, actionName);
 
       if (!confirmed) {
         return;
       }
     }
 
-    showSnack(
-      context,
-      '$actionName command sent...',
-      success: true,
-    );
+    showSnack(context, '$actionName command sent...', success: true);
 
     final ok = await action(lgService); // Execute the selected action
 
@@ -109,24 +97,19 @@ class LgToolsScreen extends StatelessWidget {
 
     showSnack(
       context,
-      ok
-          ? '$actionName completed.'
-          : '$actionName failed.',
+      ok ? '$actionName completed.' : '$actionName failed.',
       success: ok,
     );
   }
 
-  Future<void> toggleLogos( // Show or hide the GeoSaurio logo
-      BuildContext context,
-      ) async {
+  Future<void> toggleLogos(
+    // Show or hide the GeoSaurio logo
+    BuildContext context,
+  ) async {
     final lgService = context.read<LgService>();
 
     if (!lgService.isConnected) {
-      showSnack(
-        context,
-        'Connect to Liquid Galaxy first.',
-        success: false,
-      );
+      showSnack(context, 'Connect to Liquid Galaxy first.', success: false);
       return;
     }
 
@@ -135,9 +118,7 @@ class LgToolsScreen extends StatelessWidget {
       builder: (context) {
         return AlertDialog(
           title: const Text('Logos'),
-          content: const Text(
-            'What do you want to do?',
-          ),
+          content: const Text('What do you want to do?'),
           actions: [
             TextButton(
               onPressed: () {
@@ -169,9 +150,7 @@ class LgToolsScreen extends StatelessWidget {
 
       showSnack(
         context,
-        ok
-            ? 'Logo shown.'
-            : 'Error showing logo.',
+        ok ? 'Logo shown.' : 'Error showing logo.',
         success: ok,
       );
     } else if (result == false) {
@@ -181,10 +160,7 @@ class LgToolsScreen extends StatelessWidget {
         return;
       }
 
-      showSnack(
-        context,
-        'Logo hidden.',
-      );
+      showSnack(context, 'Logo hidden.');
     }
   }
 
@@ -192,25 +168,19 @@ class LgToolsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isConnected =
-        context.watch<LgService>().isConnected;
+    final isConnected = context.watch<LgService>().isConnected;
 
     return Scaffold(
-      backgroundColor:
-      const Color(0xFFF7F4EF),
+      backgroundColor: const Color(0xFFF7F4EF),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 24,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
             children: [
               Row(
                 children: [
                   IconButton(
-                    icon: const Icon(
-                      Icons.arrow_back,
-                    ),
+                    icon: const Icon(Icons.arrow_back),
                     onPressed: () {
                       Navigator.pop(context);
                     },
@@ -240,12 +210,9 @@ class LgToolsScreen extends StatelessWidget {
                 child: Column(
                   children: [
                     Icon(
-                      isConnected
-                          ? Icons.public
-                          : Icons.public_off,
+                      isConnected ? Icons.public : Icons.public_off,
                       size: 60,
-                      color:
-                      const Color(0xFF3E2A1F),
+                      color: const Color(0xFF3E2A1F),
                     ),
 
                     const SizedBox(height: 10),
@@ -264,9 +231,7 @@ class LgToolsScreen extends StatelessWidget {
                     const Text(
                       'Manage the available Liquid Galaxy tools.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.black54,
-                      ),
+                      style: TextStyle(color: Colors.black54),
                     ),
                   ],
                 ),
@@ -285,8 +250,7 @@ class LgToolsScreen extends StatelessWidget {
                         runAction(
                           context,
                           'Reboot',
-                              (LgService lg) =>
-                              lg.reboot(),
+                          (LgService lg) => lg.reboot(),
                           needsConfirmation: true,
                         );
                       },
@@ -300,8 +264,7 @@ class LgToolsScreen extends StatelessWidget {
                         runAction(
                           context,
                           'Relaunch',
-                              (LgService lg) =>
-                              lg.relaunchLG(),
+                          (LgService lg) => lg.relaunchLG(),
                           needsConfirmation: true,
                         );
                       },
@@ -315,8 +278,7 @@ class LgToolsScreen extends StatelessWidget {
                         runAction(
                           context,
                           'Shutdown',
-                              (LgService lg) =>
-                              lg.shutdown(),
+                          (LgService lg) => lg.shutdown(),
                           needsConfirmation: true,
                         );
                       },
@@ -339,8 +301,7 @@ class LgToolsScreen extends StatelessWidget {
                         runAction(
                           context,
                           "Clean KML's",
-                              (LgService lg) =>
-                              lg.cleanAll(),
+                          (LgService lg) => lg.cleanAll(),
                         );
                       },
                     ),
@@ -357,13 +318,10 @@ class LgToolsScreen extends StatelessWidget {
   static BoxDecoration cardDecoration() {
     return BoxDecoration(
       color: Colors.white,
-      borderRadius:
-      BorderRadius.circular(22),
+      borderRadius: BorderRadius.circular(22),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withValues(
-            alpha: 0.08,
-          ),
+          color: Colors.black.withValues(alpha: 0.08),
           blurRadius: 10,
           offset: const Offset(0, 4),
         ),
@@ -378,9 +336,7 @@ class LgToolsScreen extends StatelessWidget {
     required VoidCallback onTap,
   }) {
     return Container(
-      margin: const EdgeInsets.only(
-        bottom: 14,
-      ),
+      margin: const EdgeInsets.only(bottom: 14),
       height: 62,
       child: ElevatedButton(
         onPressed: onTap,
@@ -388,20 +344,14 @@ class LgToolsScreen extends StatelessWidget {
           backgroundColor: color,
           foregroundColor: Colors.white,
           elevation: 5,
-          shadowColor: color.withValues(
-            alpha: 0.4,
-          ),
+          shadowColor: color.withValues(alpha: 0.4),
           shape: RoundedRectangleBorder(
-            borderRadius:
-            BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(20),
           ),
         ),
         child: Row(
           children: [
-            Icon(
-              icon,
-              size: 26,
-            ),
+            Icon(icon, size: 26),
 
             const SizedBox(width: 16),
 
@@ -415,9 +365,7 @@ class LgToolsScreen extends StatelessWidget {
               ),
             ),
 
-            const Icon(
-              Icons.chevron_right,
-            ),
+            const Icon(Icons.chevron_right),
           ],
         ),
       ),

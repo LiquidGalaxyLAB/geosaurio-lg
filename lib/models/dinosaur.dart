@@ -1,12 +1,7 @@
 import 'dart:math' as math;
 
 // Geological periods available in the app
-enum DinosaurPeriod {
-  triassic,
-  jurassic,
-  cretaceous,
-  unknown,
-}
+enum DinosaurPeriod { triassic, jurassic, cretaceous, unknown }
 
 class Dinosaur {
   // Basic information
@@ -113,12 +108,10 @@ class Dinosaur {
   }
 
   /// Calculates the projected marker position based on the camera LookAt.
-  Map<String, double> getMarkerCoordinates() { //construirlo como un objeto
+  Map<String, double> getMarkerCoordinates() {
+    //construirlo como un objeto
     if (latitude == 0 && longitude == 0) {
-      return {
-        'latitude': 0,
-        'longitude': 0,
-      };
+      return {'latitude': 0, 'longitude': 0};
     }
 
     const earthRadius = 6371000.0;
@@ -142,18 +135,14 @@ class Dinosaur {
 
     final lat2 = math.asin(
       math.sin(lat1) * math.cos(angularDistance) +
-          math.cos(lat1) *
-              math.sin(angularDistance) *
-              math.cos(h),
+          math.cos(lat1) * math.sin(angularDistance) * math.cos(h),
     );
 
-    final lon2 = lon1 +
+    final lon2 =
+        lon1 +
         math.atan2(
-          math.sin(h) *
-              math.sin(angularDistance) *
-              math.cos(lat1),
-          math.cos(angularDistance) -
-              math.sin(lat1) * math.sin(lat2),
+          math.sin(h) * math.sin(angularDistance) * math.cos(lat1),
+          math.cos(angularDistance) - math.sin(lat1) * math.sin(lat2),
         );
 
     return {
@@ -170,9 +159,7 @@ class Dinosaur {
       return 0;
     }
 
-    final normalized = text
-        .replaceAll('.', '')
-        .replaceAll(',', '.');
+    final normalized = text.replaceAll('.', '').replaceAll(',', '.');
 
     return double.tryParse(normalized) ?? 0;
   }

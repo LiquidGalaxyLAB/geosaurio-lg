@@ -18,7 +18,7 @@ class DinosaurService {
           return Dinosaur.fromCsv(row);
         })
         .where((dinosaur) {
-      //We only filter if the name is empty or the period is really unknown
+          //We only filter if the name is empty or the period is really unknown
           return dinosaur.name.isNotEmpty &&
               dinosaur.period != DinosaurPeriod.unknown;
         })
@@ -35,7 +35,7 @@ class DinosaurService {
       if (dinosaur.period != period) continue;
 
       grouped.putIfAbsent(dinosaur.area, () => {});
-      
+
       // Support multiple countries separated by comma
       final countries = dinosaur.country.split(RegExp(r',\s*'));
       for (var country in countries) {
@@ -68,7 +68,7 @@ class DinosaurService {
         final trimmedCountry = country.trim();
         if (trimmedCountry.isEmpty) continue;
         grouped.putIfAbsent(trimmedCountry, () => {});
-        
+
         for (var region in regions) {
           final trimmedRegion = region.trim();
           if (trimmedRegion.isEmpty) continue;

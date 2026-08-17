@@ -13,12 +13,8 @@ void main() {
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider.value(
-          value: lgService,
-        ),
-        ChangeNotifierProvider(
-          create: (_) => ThemeService(),
-        ),
+        ChangeNotifierProvider.value(value: lgService),
+        ChangeNotifierProvider(create: (_) => ThemeService()),
       ],
       child: const GeoSaurioApp(),
     ),
@@ -38,9 +34,7 @@ class GeoSaurioApp extends StatelessWidget {
       title: 'GeoSaurio LG',
       debugShowCheckedModeBanner: false,
 
-      themeMode: themeService.isDarkMode
-          ? ThemeMode.dark
-          : ThemeMode.light,
+      themeMode: themeService.isDarkMode ? ThemeMode.dark : ThemeMode.light,
 
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(

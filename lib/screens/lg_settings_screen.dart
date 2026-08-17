@@ -7,12 +7,10 @@ class LgSettingsScreen extends StatefulWidget {
   const LgSettingsScreen({super.key});
 
   @override
-  State<LgSettingsScreen> createState() =>
-      _LgSettingsScreenState();
+  State<LgSettingsScreen> createState() => _LgSettingsScreenState();
 }
 
-class _LgSettingsScreenState
-    extends State<LgSettingsScreen> {
+class _LgSettingsScreenState extends State<LgSettingsScreen> {
   final TextEditingController ipController = TextEditingController();
   final TextEditingController userController = TextEditingController(
     text: 'lg',
@@ -91,7 +89,8 @@ class _LgSettingsScreenState
     );
   }
 
-  Future<void> applySettings() async { // Save and apply the connection settings
+  Future<void> applySettings() async {
+    // Save and apply the connection settings
     final model = buildModel();
     await model.saveToPreferences();
 
@@ -106,7 +105,8 @@ class _LgSettingsScreenState
     );
   }
 
-  Future<void> connectToLg() async { //connect to lg
+  Future<void> connectToLg() async {
+    //connect to lg
     if (ipController.text.trim().isEmpty ||
         userController.text.trim().isEmpty ||
         passwordController.text.isEmpty ||
@@ -134,9 +134,7 @@ class _LgSettingsScreenState
     setState(() => isConnecting = false);
 
     snack(
-      connected
-          ? 'Connected to Liquid Galaxy'
-          : 'Could not connect to LG',
+      connected ? 'Connected to Liquid Galaxy' : 'Could not connect to LG',
       success: connected,
     );
 
@@ -145,7 +143,8 @@ class _LgSettingsScreenState
     }
   }
 
-  Future<void> disconnectLg() async { //Disconnect from lg
+  Future<void> disconnectLg() async {
+    //Disconnect from lg
     context.read<LgService>().disconnect();
     snack('Disconnected from Liquid Galaxy');
   }
