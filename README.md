@@ -15,7 +15,8 @@ Users can explore dinosaurs by period, continent and country, navigate to their 
 5. [Usage](#usage)
 6. [Liquid Galaxy Integration](#liquid-galaxy-integration)
 7. [Contact](#contact)
-8. [Acknowledgements](#acknowledgements)
+8. [License](#license)
+9. [Acknowledgements](#acknowledgements)
 
 ---
 
