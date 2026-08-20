@@ -277,6 +277,12 @@ KML is used to display and control different elements in Liquid Galaxy, includin
 
 ---
 
+## License
+
+GeoSaurio for Liquid Galaxy is licensed under the [MIT License](https://opensource.org/license/MIT)
+
+---
+
 ## Contact
 
 **Developer:** Josep Miquel Sert Esteban
